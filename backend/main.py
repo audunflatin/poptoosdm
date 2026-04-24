@@ -28,3 +28,26 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(health_router)
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def root(request: Request):
+    is_admin = bool(request.session.get("is_admin"))
+
+    # Ikke innlogget -> login-side
+    if "user_email" not in request.session:
+        with open("frontend/login.html", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+
+    # Innlogget -> hoved-GUI
+    with open("frontend/index.html", encoding="utf-8") as f:
+        html = f.read()
+
+    # Injiser admin-flag til GUI
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+
+    return HTMLResponse(html)
