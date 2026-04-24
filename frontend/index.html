@@ -38,6 +38,13 @@
     <input id="datasetId" type="text" required />
 
     <label>Miljø</label>
+
+    <label>Optional delivery</label>
+    <select id="optionalDelivery">
+      <option value="false" selected>Nei</option>
+      <option value="true">Ja</option>
+    </select>
+
     <select id="environment">
       <option value="prod">Produksjon</option>
       <option value="test">Test</option>
@@ -116,8 +123,8 @@ async function generateOsdm() {
   startProgress();
 
   const fd = new FormData();
-  ["exchangeRate","validFrom","validTo","datasetId","environment"]
-    .forEach(id => fd.append(id, document.getElementById(id).value));
+  ["exchangeRate","validFrom","validTo","datasetId","environment","optionalDelivery"]
+  .forEach(id => fd.append(id, document.getElementById(id).value));
 
   const r = await fetch("/ui/generate-osdm", { method: "POST", body: fd });
   const res = await r.json();
