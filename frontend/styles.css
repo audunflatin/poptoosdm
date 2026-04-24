@@ -1,0 +1,202 @@
+:root {
+  --entur-blue-light: #e8f1fb;
+  --entur-blue: #0066cc;
+  --entur-blue-dark: #004fa3;
+  --entur-border: #d6e4f5;
+  --background: #f5f7fa;
+  --panel-bg: #ffffff;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--background);
+  margin: 0;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.logo-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.logo {
+  max-height: 56px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--entur-blue-dark);
+}
+
+.panel {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--entur-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.panel h2 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--entur-border);
+  padding-bottom: 0.5rem;
+  color: var(--entur-blue-dark);
+}
+
+label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.45rem;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--entur-blue);
+  box-shadow: 0 0 0 2px var(--entur-blue-light);
+}
+
+button {
+  margin-top: 1.5rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--entur-blue);
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--entur-blue-dark);
+}
+
+pre {
+  background: var(--entur-blue-light);
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+  margin-top: 1rem;
+  border: 1px solid var(--entur-border);
+}
+
+progress {
+  width: 100%;
+  height: 1.2rem;
+  margin-top: 1rem;
+}
+
+.spinner {
+  display: none;
+  margin: 12px auto;
+  width: 32px;
+  height: 32px;
+  border: 4px solid #ddd;
+  border-top: 4px solid var(--entur-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.status-ok {
+  border-left: 6px solid #2ecc71;
+  background: #ecf9f1;
+}
+
+.status-error {
+  border-left: 6px solid #e74c3c;
+  background: #fdecea;
+}
+button:disabled {
+  background: #9fb7d9;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.example-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+
+.example-table th,
+.example-table td {
+  border: 1px solid #d6e4f5;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.example-table th {
+  background: #e8f1fb;
+  font-weight: 600;
+}
+
+.example-table tr:nth-child(even) {
+  background: #f8fbff;
+}
+.validation-error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: #fdecea;
+  border: 1px solid #e74c3c;
+  color: #a32626;
+  font-weight: 600;
+}
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  background: #f5f7fa;
+  padding: 1rem 0 0.5rem 0;
+  margin-bottom: 1.5rem;
+
+  border-bottom: 1px solid #d6e4f5;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+
+.app-header h1 {
+  margin: 0.5rem 0 0 0;
+}
+
+.container {
+  padding-top: 1rem;
+}
+
+.logout-button {
+  background: transparent;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.logout-button:hover {
+  text-decoration: underline;
+}

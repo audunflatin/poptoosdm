@@ -1,0 +1,3 @@
+import os
+
+SESSION_SECRET = os.getenv("SESSION_SECRET", "CHANGE_ME_BEFORE_PROD")
