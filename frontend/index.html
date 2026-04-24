@@ -104,30 +104,56 @@ async function validateTen() {
   generateBtn.disabled = !res.ok;
 }
 
+
 async function generateOsdm() {
+  const statusEl = document.getElementById("finalStatus");
+  const downloadBtn = document.getElementById("downloadBtn");
+
+  statusEl.className = "";
+  downloadBtn.disabled = true;
+
   show("spinnerOsdm");
   startProgress();
 
   const fd = new FormData();
-  ["exchangeRate","validFrom","validTo","datasetId","environment"]
-    .forEach(id => fd.append(id, document.getElementById(id).value));
+  fd.append("exchangeRate", document.getElementById("exchangeRate").value);
+  fd.append("validFrom", document.getElementById("validFrom").value);
+  fd.append("validTo", document.getElementById("validTo").value);
+  fd.append("datasetId", document.getElementById("datasetId").value);
+  fd.append("environment", document.getElementById("environment").value);
 
-  const r = await fetch("/ui/generate-osdm", { method: "POST", body: fd });
-  const res = await r.json();
+  const r = await fetch("/ui/generate-osdm", {
+    method: "POST",
+    body: fd
+  });
+
+  const response = await r.json();
 
   hide("spinnerOsdm");
 
-  const status = document.getElementById("finalStatus");
-  const downloadBtn = document.getElementById("downloadBtn");
+  // ✅ lagre filnavn for nedlasting
+  lastGeneratedFile = response.outputFile || null;
 
-  lastGeneratedFile = res.outputFile || null;
+  // ✅ vis status (uten exampleFares)
+  const responseForStatus = structuredClone(response);
+  if (responseForStatus.summary) {
+    delete responseForStatus.summary.exampleFares;
+  }
 
-  status.innerText = JSON.stringify(res, null, 2);
-  status.className = res.ok ? "status-ok" : "status-error";
+  statusEl.innerText = renderNumberedList(responseForStatus);
 
-  renderExampleTable(res.summary?.exampleFares);
-  downloadBtn.disabled = !res.ok;
+  // ✅ RIKTIG OK-deteksjon
+  if (response.ok === true) {
+    statusEl.classList.add("status-ok");
+    downloadBtn.disabled = false;
+  } else {
+    statusEl.classList.add("status-error");
+  }
+
+  // ✅ vis eksempelstrekninger separat
+  renderExampleTable(response.summary?.exampleFares);
 }
+
 
 function downloadOsdm() {
   if (!lastGeneratedFile) return;
