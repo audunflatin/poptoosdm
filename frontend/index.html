@@ -194,7 +194,7 @@ async function validateTen() {
   const fd = new FormData();
   fd.append("tenFile", fileInput.files[0]);
 
-  const r = await fetch("http://127.0.0.1:8000/ui/validate-ten", {
+  const r = await fetch("/ui/validate-ten", {
     method: "POST",
     body: fd
   });
@@ -234,7 +234,7 @@ async function generateOsdm() {
   fd.append("environment", document.getElementById("environment").value);
   fd.append("optionalDelivery", document.getElementById("optionalDelivery").value);
 
-  const r = await fetch("http://127.0.0.1:8000/ui/generate-osdm", {
+  const r = await fetch("/ui/generate-osdm", {
     method: "POST",
     body: fd
   });
@@ -285,7 +285,7 @@ function downloadOsdm() {
 
 
 async function loadSummary() {
-  const r = await fetch("http://127.0.0.1:8000/ui/summary");
+  const r = await fetch("/ui/summary");
   document.getElementById("summaryStatus").innerText =
     renderNumberedList(await r.json());
 }
@@ -325,7 +325,7 @@ function startProgress() {
   bar.style.display = "block";
 
   progressTimer = setInterval(async () => {
-    const r = await fetch("http://127.0.0.1:8000/ui/progress");
+    const r = await fetch("/ui/progress");
     const p = await r.json();
 
     bar.value = p.percent;
