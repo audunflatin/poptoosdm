@@ -129,7 +129,12 @@ async function generateOsdm() {
   const clean = structuredClone(res);
   if (clean.summary) delete clean.summary.exampleFares;
 
-  status.innerText = JSON.stringify(clean, null, 2);
+  status.innerText =
+  `✅ OSDM generert\n` +
+  `Fil: ${response.outputFile}\n` +
+  `Antall priser: ${response.summary?.pricesUpdated}\n` +
+  `Miljø: ${response.summary?.environment}`;
+
   status.classList.add(res.ok ? "status-ok" : "status-error");
 
   downloadBtn.disabled = !res.ok;
