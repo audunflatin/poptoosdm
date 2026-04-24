@@ -9,10 +9,12 @@
 
 <header class="app-header">
   <div class="logo-bar">
-    <img src="/static/Enturlogo_Blue_RGB.svg" alt="tatic/logo-uic-osdm.svg" alt="UIC logo</h1>
-
+    <img src="/static/Enturlogo_Blue_RGB.svg" alt="Entur logo" class="logo" />
+    <img src="/static/logo-uic-osdm.svg" alt="UIC logo" class="logo" />
+  </div>
+  <h1>PopToOSDM</h1>
   <div>
-    /logoutLogg ut</a>
+    <a href="/logout" class="logout-button">Logg ut</a>
   </div>
 </header>
 
@@ -59,7 +61,7 @@
     <div id="spinnerOsdm" class="spinner"></div>
     <progress id="progressBar" value="0" max="100" style="display:none;"></progress>
 
-    <pre id="finalStatus" class="status-output"></pre>
+    <pre id="finalStatus"></pre>
     <div id="exampleTable"></div>
 
     <button id="downloadBtn" onclick="downloadOsdm()" disabled>
@@ -76,15 +78,15 @@ function show(id) { document.getElementById(id).style.display = "block"; }
 function hide(id) { document.getElementById(id).style.display = "none"; }
 
 async function validateTen() {
-  const tenStatus = document.getElementById("tenStatus");
+  const status = document.getElementById("tenStatus");
   const generateBtn = document.getElementById("generateBtn");
 
-  tenStatus.className = "";
+  status.className = "";
   generateBtn.disabled = true;
 
   if (!tenFile.files.length) {
-    tenStatus.innerText = "Ingen TEN‑CSV valgt";
-    tenStatus.classList.add("status-error");
+    status.innerText = "Ingen TEN‑CSV valgt";
+    status.classList.add("status-error");
     return;
   }
 
@@ -98,62 +100,41 @@ async function validateTen() {
 
   hide("spinnerTen");
 
-  tenStatus.innerText = JSON.stringify(res, null, 2);
-  tenStatus.classList.add(res.ok ? "status-ok" : "status-error");
-
+  status.innerText = JSON.stringify(res, null, 2);
+  status.classList.add(res.ok ? "status-ok" : "status-error");
   generateBtn.disabled = !res.ok;
 }
 
-
 async function generateOsdm() {
-  const statusEl = document.getElementById("finalStatus");
+  const status = document.getElementById("finalStatus");
   const downloadBtn = document.getElementById("downloadBtn");
 
-  statusEl.className = "";
+  status.className = "";
   downloadBtn.disabled = true;
 
   show("spinnerOsdm");
   startProgress();
 
   const fd = new FormData();
-  fd.append("exchangeRate", document.getElementById("exchangeRate").value);
-  fd.append("validFrom", document.getElementById("validFrom").value);
-  fd.append("validTo", document.getElementById("validTo").value);
-  fd.append("datasetId", document.getElementById("datasetId").value);
-  fd.append("environment", document.getElementById("environment").value);
+  ["exchangeRate","validFrom","validTo","datasetId","environment"]
+    .forEach(id => fd.append(id, document.getElementById(id).value));
 
-  const r = await fetch("/ui/generate-osdm", {
-    method: "POST",
-    body: fd
-  });
-
-  const response = await r.json();
+  const r = await fetch("/ui/generate-osdm", { method: "POST", body: fd });
+  const res = await r.json();
 
   hide("spinnerOsdm");
 
-  // ✅ lagre filnavn for nedlasting
-  lastGeneratedFile = response.outputFile || null;
+  lastGeneratedFile = res.outputFile || null;
 
-  // ✅ vis status (uten exampleFares)
-  const responseForStatus = structuredClone(response);
-  if (responseForStatus.summary) {
-    delete responseForStatus.summary.exampleFares;
-  }
+  const clean = structuredClone(res);
+  if (clean.summary) delete clean.summary.exampleFares;
 
-  statusEl.innerText = renderNumberedList(responseForStatus);
+  status.innerText = JSON.stringify(clean, null, 2);
+  status.classList.add(res.ok ? "status-ok" : "status-error");
 
-  // ✅ RIKTIG OK-deteksjon
-  if (response.ok === true) {
-    statusEl.classList.add("status-ok");
-    downloadBtn.disabled = false;
-  } else {
-    statusEl.classList.add("status-error");
-  }
-
-  // ✅ vis eksempelstrekninger separat
-  renderExampleTable(response.summary?.exampleFares);
+  downloadBtn.disabled = !res.ok;
+  renderExampleTable(res.summary?.exampleFares);
 }
-
 
 function downloadOsdm() {
   if (!lastGeneratedFile) return;
@@ -167,8 +148,8 @@ function startProgress() {
   const timer = setInterval(async () => {
     const r = await fetch("/ui/progress");
     const p = await r.json();
-
     bar.value = p.percent;
+
     if (p.status === "done") {
       clearInterval(timer);
       setTimeout(() => bar.style.display = "none", 500);
@@ -176,50 +157,23 @@ function startProgress() {
   }, 500);
 }
 
-function renderExampleTable(exampleFares) {
+function renderExampleTable(examples) {
   const el = document.getElementById("exampleTable");
+  if (!examples) { el.innerHTML = ""; return; }
 
-  if (!exampleFares || Object.keys(exampleFares).length === 0) {
-    el.innerHTML = "";
-    return;
+  let html = `<table class="example-table"><thead><tr>
+    <th>#</th><th>Strekning</th><th>Pris</th><th>Avstand</th>
+  </tr></thead><tbody>`;
+
+  let i = 1;
+  for (const v of Object.values(examples)) {
+    const [route, rest] = v.split(": ");
+    const [price, km] = rest.split(" (");
+    html += `<tr><td>${i++}</td><td>${route}</td>
+      <td>${price}</td><td>${km.replace(")", "")}</td></tr>`;
   }
 
-  let html = `
-    <table class="example-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Strekning</th>
-          <th>Pris</th>
-          <th>Avstand</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  let idx = 1;
-  for (const value of Object.values(exampleFares)) {
-    // Eksempel:
-    // "Oslo S → Bergen stasjon: 114.40 EUR (502 km)"
-    const [routePart, rest] = value.split(": ");
-    const [pricePart, kmPart] = rest.split(" (");
-
-    html += `
-      <tr>
-        <td>${idx}</td>
-        <td>${routePart}</td>
-        <td>${pricePart}</td>
-        <td>${kmPart.replace(")", "")}</td>
-      </tr>
-    `;
-    idx++;
-  }
-
-  html += `
-      </tbody>
-    </table>
-  `;
-
+  html += "</tbody></table>";
   el.innerHTML = html;
 }
 </script>
