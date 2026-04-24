@@ -38,17 +38,17 @@
     <input id="datasetId" type="text" required />
 
     <label>Miljø</label>
-
+ <select id="environment">
+      <option value="prod">Produksjon</option>
+      <option value="test">Test</option>
+    </select>
     <label>Optional delivery</label>
     <select id="optionalDelivery">
       <option value="false" selected>Nei</option>
       <option value="true">Ja</option>
     </select>
 
-    <select id="environment">
-      <option value="prod">Produksjon</option>
-      <option value="test">Test</option>
-    </select>
+   
 
     <label>Valutakurs NOK → EUR</label>
     <input id="exchangeRate" type="number" step="0.0001" value="0.091" required />
