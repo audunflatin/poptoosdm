@@ -131,9 +131,9 @@ async function generateOsdm() {
 
   status.innerText =
   `✅ OSDM generert\n` +
-  `Fil: ${response.outputFile}\n` +
-  `Antall priser: ${response.summary?.pricesUpdated}\n` +
-  `Miljø: ${response.summary?.environment}`;
+  `Fil: ${res.outputFile}\n` +
+  `Antall priser: ${res.summary?.pricesUpdated}\n` +
+  `Miljø: ${res.summary?.environment}`;
 
   status.classList.add(res.ok ? "status-ok" : "status-error");
 
