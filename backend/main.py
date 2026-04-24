@@ -258,9 +258,11 @@ def generate_osdm(
     global OSDM_OUT
     OSDM_OUT = out
 
+   
     return {
         "step": "OSDM generation",
         "ok": True,
+        "outputFile": out.name,
         "summary": {
             "pricesUpdated": len(fs["prices"]),
             "exchangeRate": exchangeRate,
@@ -268,6 +270,7 @@ def generate_osdm(
             "exampleFares": examples
         }
     }
+
 
 # ---------------------------------------------------------------------
 # Progress
