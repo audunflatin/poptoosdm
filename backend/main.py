@@ -170,7 +170,8 @@ def generate_osdm(
     validFrom: str = Form(...),
     validTo: str = Form(...),
     datasetId: str = Form(...),
-    environment: str = Form(...)
+    environment: str = Form(...),
+    optionalDelivery: str = Form("false")
 ):
     require_login(request)
 
@@ -182,6 +183,10 @@ def generate_osdm(
 
     data = json.loads(OSDM_IN.read_text(encoding="utf-8"))
     fs = data["fareDelivery"]["fareStructure"]
+
+    data["fareDelivery"]["delivery"]["optionalDelivery"] = (
+        optionalDelivery.lower() == "true"
+    )
 
     data["fareDelivery"]["delivery"]["usage"] = (
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
