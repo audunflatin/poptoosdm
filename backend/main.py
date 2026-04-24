@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.responses import FileResponse
 
 from pathlib import Path
 import csv
@@ -279,3 +280,19 @@ def generate_osdm(
 @app.get("/ui/progress")
 def get_progress():
     return GENERATION_PROGRESS
+
+@app.get("/ui/download-osdm/{filename}")
+def download_osdm(filename: str):
+    path = Path("data/output") / filename
+
+    if not path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="OSDM-fil finnes ikke"
+        )
+
+    return FileResponse(
+        path=path,
+        media_type="application/json",
+        filename=path.name
+    )
