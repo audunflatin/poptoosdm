@@ -17,6 +17,7 @@ from backend.auth_db import SessionLocal, User
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
 
+
 # ---------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------
@@ -301,3 +302,62 @@ def download_osdm(filename: str):
         media_type="application/json",
         filename=path.name
     )
+
+@app.post("/admin/add-user")
+def admin_add_user(
+    request: Request,
+    email: str = Form(...)
+):
+    require_login(request)
+
+    if not request.session.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Ikke administrator")
+
+    db = SessionLocal()
+
+    existing = db.query(User).filter(User.email == email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Bruker finnes allerede")
+
+    password = generate_password()
+
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        is_admin=False,
+        is_active=True
+    )
+
+    db.add(user)
+    db.commit()
+
+    return {
+        "email": email,
+        "password": password
+    }
+
+
+@app.post("/admin/reset-password")
+def admin_reset_password(
+    request: Request,
+    email: str = Form(...)
+):
+    require_login(request)
+
+    if not request.session.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Ikke administrator")
+
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+
+    new_password = generate_password()
+    user.password_hash = hash_password(new_password)
+    db.commit()
+
+    return {
+        "email": email,
+        "new_password": new_password
+    }
