@@ -23,7 +23,6 @@
   <!-- 1. INPUT -->
   <section class="panel">
     <h2>1. Input</h2>
-
     <label>TEN‑CSV</label>
     <input id="tenFile" type="file" accept=".csv" onchange="validateTen()" />
     <div id="spinnerTen" class="spinner"></div>
@@ -35,20 +34,19 @@
     <h2>2. Generer OSDM</h2>
 
     <label>DeliveryId</label>
-    <input id="datasetId" type="text" value="8.0" required />
+    <input id="datasetId" type="text" required />
 
     <label>Miljø</label>
- <select id="environment">
+    <select id="environment">
       <option value="prod">Produksjon</option>
       <option value="test">Test</option>
     </select>
+
     <label>Optional delivery</label>
     <select id="optionalDelivery">
       <option value="false" selected>Nei</option>
       <option value="true">Ja</option>
     </select>
-
-   
 
     <label>Valutakurs NOK → EUR</label>
     <input id="exchangeRate" type="number" step="0.0001" value="0.091" required />
@@ -58,8 +56,6 @@
 
     <label>Gyldig til</label>
     <input id="validTo" type="date" required />
-
-    <div id="validationError" class="validation-error" style="display:none;"></div>
 
     <button id="generateBtn" onclick="generateOsdm()" disabled>
       Generer OSDM JSON
@@ -75,204 +71,125 @@
       Last ned OSDM JSON
     </button>
   </section>
-
 </div>
+
 <hr />
 
+<!-- ADMIN -->
 <div class="admin-only">
   <h2>Admin – legg til bruker</h2>
-
   <form id="addUserForm">
-    <label for="newUserEmail">E‑post</label>
-    <input id="newUserEmail" type="email" required />
-
+    <input id="newUserEmail" type="email" placeholder="E‑post" required />
     <button type="submit">Legg til bruker</button>
   </form>
-
   <pre id="addUserResult"></pre>
 
-  <hr />
-
   <h2>Admin – regenerer passord</h2>
-
   <form id="resetPasswordForm">
-    <label for="resetUserEmail">E‑post</label>
-    <input id="resetUserEmail" type="email" required />
-
+    <input id="resetUserEmail" type="email" placeholder="E‑post" required />
     <button type="submit">Regenerer passord</button>
   </form>
-
   <pre id="resetPasswordResult"></pre>
 </div>
 
 <script>
 let lastGeneratedFile = null;
 
-function show(id) { document.getElementById(id).style.display = "block"; }
-function hide(id) { document.getElementById(id).style.display = "none"; }
+function show(id){document.getElementById(id).style.display="block";}
+function hide(id){document.getElementById(id).style.display="none";}
+
+function validateGenerateInputs() {
+  if (!datasetId.value.trim()) { alert("DeliveryId mangler"); return false; }
+  if (!validFrom.value || !validTo.value) { alert("Gyldighetsdato mangler"); return false; }
+  if (validFrom.value > validTo.value) { alert("Gyldig fra > gyldig til"); return false; }
+  return true;
+}
 
 async function validateTen() {
-  const status = document.getElementById("tenStatus");
-  const generateBtn = document.getElementById("generateBtn");
-
-  status.className = "";
-  generateBtn.disabled = true;
-
-  if (!tenFile.files.length) {
-    status.innerText = "Ingen TEN‑CSV valgt";
-    status.classList.add("status-error");
-    return;
-  }
-
   show("spinnerTen");
-
   const fd = new FormData();
   fd.append("tenFile", tenFile.files[0]);
-
-  const r = await fetch("/ui/validate-ten", { method: "POST", body: fd });
+  const r = await fetch("/ui/validate-ten",{method:"POST",body:fd});
   const res = await r.json();
-
   hide("spinnerTen");
-
-  status.innerText = JSON.stringify(res, null, 2);
-  status.classList.add(res.ok ? "status-ok" : "status-error");
+  tenStatus.innerText = JSON.stringify(res,null,2);
+  tenStatus.className = res.ok ? "status-ok" : "status-error";
   generateBtn.disabled = !res.ok;
 }
 
-async function generateOsdm() {
-  const status = document.getElementById("finalStatus");
-  const downloadBtn = document.getElementById("downloadBtn");
-
-  status.className = "";
-  downloadBtn.disabled = true;
+async function generateOsdm(){
+  if(!validateGenerateInputs()) return;
 
   show("spinnerOsdm");
   startProgress();
 
-  const fd = new FormData();
+  const fd=new FormData();
   ["exchangeRate","validFrom","validTo","datasetId","environment","optionalDelivery"]
-  .forEach(id => fd.append(id, document.getElementById(id).value));
+    .forEach(id=>fd.append(id,document.getElementById(id).value));
 
-  const r = await fetch("/ui/generate-osdm", { method: "POST", body: fd });
-  const res = await r.json();
-
+  const r=await fetch("/ui/generate-osdm",{method:"POST",body:fd});
+  const res=await r.json();
   hide("spinnerOsdm");
 
-  lastGeneratedFile = res.outputFile || null;
-
-  const clean = structuredClone(res);
-  if (clean.summary) delete clean.summary.exampleFares;
-
-  status.innerText =
-  `✅ OSDM generert\n` +
-  `Fil: ${res.outputFile}\n` +
-  `Antall priser: ${res.summary?.pricesUpdated}\n` +
-  `Miljø: ${res.summary?.environment}`;
-
-  status.classList.add(res.ok ? "status-ok" : "status-error");
-
-  downloadBtn.disabled = !res.ok;
-  renderExampleTable(res.summary?.exampleFares);
-}
-
-function downloadOsdm() {
-  if (!lastGeneratedFile) return;
-  window.location.href = `/ui/download-osdm/${lastGeneratedFile}`;
-}
-
-function startProgress() {
-  const bar = document.getElementById("progressBar");
-  bar.style.display = "block";
-
-  const timer = setInterval(async () => {
-    const r = await fetch("/ui/progress");
-    const p = await r.json();
-    bar.value = p.percent;
-
-    if (p.status === "done") {
-      clearInterval(timer);
-      setTimeout(() => bar.style.display = "none", 500);
-    }
-  }, 500);
-}
-
-function renderExampleTable(examples) {
-  const el = document.getElementById("exampleTable");
-  if (!examples) { el.innerHTML = ""; return; }
-
-  let html = `<table class="example-table"><thead><tr>
-    <th>#</th><th>Strekning</th><th>Pris</th><th>Avstand</th>
-  </tr></thead><tbody>`;
-
-  let i = 1;
-  for (const v of Object.values(examples)) {
-    const [route, rest] = v.split(": ");
-    const [price, km] = rest.split(" (");
-    html += `<tr><td>${i++}</td><td>${route}</td>
-      <td>${price}</td><td>${km.replace(")", "")}</td></tr>`;
+  if(res.ok && res.outputFile){
+    lastGeneratedFile=res.outputFile;
+    finalStatus.innerText=
+      `✅ OSDM generert\n`+
+      `Fil: ${res.outputFile}\n`+
+      `Antall priser: ${res.summary.pricesUpdated}\n`+
+      `Miljø: ${res.summary.environment}`;
+    finalStatus.className="status-ok";
+    downloadBtn.disabled=false;
+    renderExampleTable(res.summary.exampleFares);
+  } else {
+    finalStatus.innerText="❌ OSDM kunne ikke genereres";
+    finalStatus.className="status-error";
   }
-
-  html += "</tbody></table>";
-  el.innerHTML = html;
 }
-// Skjul admin-funksjoner hvis ikke admin
-  if (!window.IS_ADMIN) {
-    document.querySelectorAll(".admin-only").forEach(el => {
-      el.style.display = "none";
-    });
+
+function downloadOsdm(){
+  window.location.href=`/ui/download-osdm/${lastGeneratedFile}`;
+}
+
+function startProgress(){
+  const bar=progressBar;
+  bar.style.display="block";
+  const t=setInterval(async()=>{
+    const p=(await (await fetch("/ui/progress")).json());
+    bar.value=p.percent;
+    if(p.status==="done"){clearInterval(t);bar.style.display="none";}
+  },500);
+}
+
+function renderExampleTable(data){
+  if(!data){exampleTable.innerHTML="";return;}
+  let h="<table class='example-table'><tr><th>#</th><th>Strekning</th><th>Pris</th><th>Km</th></tr>";
+  let i=1;
+  for(const v of Object.values(data)){
+    const [r,rest]=v.split(": ");
+    const [p,km]=rest.split(" (");
+    h+=`<tr><td>${i++}</td><td>${r}</td><td>${p}</td><td>${km.replace(")","")}</td></tr>`;
   }
+  exampleTable.innerHTML=h+"</table>";
+}
 
-  // Legg til bruker
-  document.getElementById("addUserForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+if(!window.IS_ADMIN){
+  document.querySelectorAll(".admin-only").forEach(e=>e.style.display="none");
+}
 
-    const email = document.getElementById("newUserEmail").value;
-    const resultEl = document.getElementById("addUserResult");
+addUserForm.onsubmit=async e=>{
+  e.preventDefault();
+  const fd=new FormData(); fd.append("email",newUserEmail.value);
+  const r=await fetch("/admin/add-user",{method:"POST",body:fd});
+  addUserResult.innerText=JSON.stringify(await r.json(),null,2);
+};
 
-    const fd = new FormData();
-    fd.append("email", email);
-
-    const r = await fetch("/admin/add-user", {
-      method: "POST",
-      body: fd
-    });
-
-    const data = await r.json();
-
-    if (!r.ok) {
-      resultEl.innerText = data.detail || "Feil";
-      return;
-    }
-
-    resultEl.innerText =
-      `✅ Bruker opprettet\nE‑post: ${data.email}\nPassord: ${data.password}`;
-  });
-
-  // Regenerer passord
-  document.getElementById("resetPasswordForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById("resetUserEmail").value;
-    const resultEl = document.getElementById("resetPasswordResult");
-
-    const fd = new FormData();
-    fd.append("email", email);
-
-    const r = await fetch("/admin/reset-password", {
-      method: "POST",
-      body: fd
-    });
-
-    const data = await r.json();
-
-    if (!r.ok) {
-      resultEl.innerText = data.detail || "Feil ved passord‑regenerering";
-      return;
-    }
-
-    resultEl.innerText =
-      `✅ Passord regenerert\nE‑post: ${data.email}\nNytt passord: ${data.new_password}`;
-  });
+resetPasswordForm.onsubmit=async e=>{
+  e.preventDefault();
+  const fd=new FormData(); fd.append("email",resetUserEmail.value);
+  const r=await fetch("/admin/reset-password",{method:"POST",body:fd});
+  resetPasswordResult.innerText=JSON.stringify(await r.json(),null,2);
+};
 </script>
 
 </body>
