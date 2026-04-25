@@ -77,6 +77,33 @@
   </section>
 
 </div>
+<hr />
+
+<div class="admin-only">
+  <h2>Admin – legg til bruker</h2>
+
+  <form id="addUserForm">
+    <label for="newUserEmail">E‑post</label>
+    <input id="newUserEmail" type="email" required />
+
+    <button type="submit">Legg til bruker</button>
+  </form>
+
+  <pre id="addUserResult"></pre>
+
+  <hr />
+
+  <h2>Admin – regenerer passord</h2>
+
+  <form id="resetPasswordForm">
+    <label for="resetUserEmail">E‑post</label>
+    <input id="resetUserEmail" type="email" required />
+
+    <button type="submit">Regenerer passord</button>
+  </form>
+
+  <pre id="resetPasswordResult"></pre>
+</div>
 
 <script>
 let lastGeneratedFile = null;
@@ -188,6 +215,64 @@ function renderExampleTable(examples) {
   html += "</tbody></table>";
   el.innerHTML = html;
 }
+// Skjul admin-funksjoner hvis ikke admin
+  if (!window.IS_ADMIN) {
+    document.querySelectorAll(".admin-only").forEach(el => {
+      el.style.display = "none";
+    });
+  }
+
+  // Legg til bruker
+  document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("newUserEmail").value;
+    const resultEl = document.getElementById("addUserResult");
+
+    const fd = new FormData();
+    fd.append("email", email);
+
+    const r = await fetch("/admin/add-user", {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await r.json();
+
+    if (!r.ok) {
+      resultEl.innerText = data.detail || "Feil";
+      return;
+    }
+
+    resultEl.innerText =
+      `✅ Bruker opprettet\nE‑post: ${data.email}\nPassord: ${data.password}`;
+  });
+
+  // Regenerer passord
+  document.getElementById("resetPasswordForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("resetUserEmail").value;
+    const resultEl = document.getElementById("resetPasswordResult");
+
+    const fd = new FormData();
+    fd.append("email", email);
+
+    const r = await fetch("/admin/reset-password", {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await r.json();
+
+    if (!r.ok) {
+      resultEl.innerText = data.detail || "Feil ved passord‑regenerering";
+      return;
+    }
+
+    resultEl.innerText =
+      `✅ Passord regenerert\nE‑post: ${data.email}\nNytt passord: ${data.new_password}`;
+  });
 </script>
 
 </body>
