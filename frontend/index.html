@@ -167,11 +167,20 @@ async function generateOsdm(){
 
   if(res.ok && res.outputFile){
     lastGeneratedFile=res.outputFile;
-    finalStatus.innerText=
-      `✅ OSDM generert\n`+
-      `Fil: ${res.outputFile}\n`+
-      `Antall priser: ${res.summary.pricesUpdated}\n`+
-      `Miljø: ${res.summary.environment}`;
+    
+const optionalText =
+  document.getElementById("optionalDelivery").value === "true"
+    ? "Ja"
+    : "Nei";
+
+    finalStatus.innerText =
+      `✅ OSDM generert\n` +
+      `Fil: ${res.outputFile}\n` +
+      `Miljø: ${res.summary.environment}\n` +
+      `Optional delivery: ${optionalText}\n` +
+      `Gyldig periode: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
+      `Antall priser: ${res.summary.pricesUpdated}`;
+
     finalStatus.className="status-ok";
     downloadBtn.disabled=false;
     renderExampleTable(res.summary.exampleFares);
