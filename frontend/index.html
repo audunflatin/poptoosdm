@@ -235,16 +235,46 @@ function startProgress(){
 }
 
 function renderExampleTable(data){
-  if(!data){exampleTable.innerHTML="";return;}
-  let h="<table class='example-table'><tr><th>#</th><th>Strekning</th><th>Pris</th><th>Km</th></tr>";
-  let i=1;
-  for(const v of Object.values(data)){
-    const [r,rest]=v.split(": ");
-    const [p,km]=rest.split(" (");
-    h+=`<tr><td>${i++}</td><td>${r}</td><td>${p}</td><td>${km.replace(")","")}</td></tr>`;
+  if(!data){
+    exampleTable.innerHTML="";
+    return;
   }
-  exampleTable.innerHTML=h+"</table>";
+
+  const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
+
+  let h =
+    "<table class='example-table'>" +
+    "<tr>" +
+    "<th>#</th>" +
+    "<th>Strekning</th>" +
+    "<th>Pris EUR</th>" +
+    "<th>Pris NOK</th>" +
+    "<th>Km</th>" +
+    "</tr>";
+
+  let i = 1;
+
+  for(const v of Object.values(data)){
+    // Eksempel: "Oslo S → Bergen: 114.40 EUR (502 km)"
+    const [route, rest] = v.split(": ");
+    const [pricePart, kmPart] = rest.split(" (");
+
+    const eur = parseFloat(pricePart.replace(" EUR",""));
+    const nok = exchangeRate > 0 ? (eur / exchangeRate) : 0;
+
+    h +=
+      "<tr>" +
+      `<td>${i++}</td>` +
+      `<td>${route}</td>` +
+      `<td>${eur.toFixed(2)} EUR</td>` +
+      `<td>${nok.toFixed(2)} NOK</td>` +
+      `<td>${kmPart.replace(")","")}</td>` +
+      "</tr>";
+  }
+
+  exampleTable.innerHTML = h + "</table>";
 }
+
 
 if(!window.IS_ADMIN){
   document.querySelectorAll(".admin-only").forEach(e=>e.style.display="none");
