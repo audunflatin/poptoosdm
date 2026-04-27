@@ -140,27 +140,45 @@ function validateGenerateInputs() {
 }
 
 async function validateTen() {
+  const statusEl = document.getElementById("tenStatus");
+  const generateBtn = document.getElementById("generateBtn");
+
+  // reset
+  statusEl.className = "";
+  generateBtn.disabled = true;
+
+  if (!tenFile.files.length) {
+    statusEl.innerText = "❌ Ingen TEN‑CSV valgt";
+    statusEl.classList.add("status-error");
+    return;
+  }
+
   show("spinnerTen");
+
   const fd = new FormData();
   fd.append("tenFile", tenFile.files[0]);
-  const r = await fetch("/ui/validate-ten",{method:"POST",body:fd});
-  const res = await r.json();
-  hide("spinnerTen");
-  
-if (res.ok === true) {
-  status.innerText =
-    `✅ TEN‑tabell validert\n` +
-    `Status: OK`;
-  status.classList.add("status-ok");
-  generateBtn.disabled = false;
-} else {
-  status.innerText =
-    `❌ TEN‑validering feilet\n` +
-    `${res.error || "Ukjent feil"}`;
-  status.classList.add("status-error");
-  generateBtn.disabled = true;
-}
 
+  const r = await fetch("/ui/validate-ten", {
+    method: "POST",
+    body: fd
+  });
+  const res = await r.json();
+
+  hide("spinnerTen");
+
+  if (res.ok === true) {
+    statusEl.innerText =
+      `✅ TEN‑tabell validert\n` +
+      `Status: OK`;
+    statusEl.classList.add("status-ok");
+    generateBtn.disabled = false;
+  } else {
+    statusEl.innerText =
+      `❌ TEN‑validering feilet\n` +
+      `${res.error || "Ukjent feil"}`;
+    statusEl.classList.add("status-error");
+    generateBtn.disabled = true;
+  }
 }
 
 async function generateOsdm(){
