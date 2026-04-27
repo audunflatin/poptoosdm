@@ -146,9 +146,21 @@ async function validateTen() {
   const r = await fetch("/ui/validate-ten",{method:"POST",body:fd});
   const res = await r.json();
   hide("spinnerTen");
-  tenStatus.innerText = JSON.stringify(res,null,2);
-  tenStatus.className = res.ok ? "status-ok" : "status-error";
-  generateBtn.disabled = !res.ok;
+  
+if (res.ok === true) {
+  status.innerText =
+    `✅ TEN‑tabell validert\n` +
+    `Status: OK`;
+  status.classList.add("status-ok");
+  generateBtn.disabled = false;
+} else {
+  status.innerText =
+    `❌ TEN‑validering feilet\n` +
+    `${res.error || "Ukjent feil"}`;
+  status.classList.add("status-error");
+  generateBtn.disabled = true;
+}
+
 }
 
 async function generateOsdm(){
