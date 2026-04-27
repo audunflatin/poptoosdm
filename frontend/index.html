@@ -75,9 +75,10 @@
     <div id="spinnerOsdm" class="spinner"></div>
     <progress id="progressBar" value="0" max="100" style="display:none;"></progress>
 
+   <div id="resultBox" class="status-ok" style="display:none;">
     <pre id="finalStatus"></pre>
-    <div id="examplePanel" style="display:none;"></div>
-    <!-- <div id="exampleTable"></div> -->
+    <div id="examplePanel"></div>
+  </div>
 
     <button id="downloadBtn" onclick="downloadOsdm()" disabled>
       Last ned OSDM JSON
@@ -217,7 +218,7 @@ const optionalText =
     renderExampleTable(res.summary.exampleFares);
   } else {
     finalStatus.innerText="❌ OSDM kunne ikke genereres";
-    finalStatus.className="status-error";
+    document.getElementById("resultBox").style.display = "block";
   }
 }
 
