@@ -259,3 +259,45 @@ button:disabled {
   padding: 0;
   font-family: inherit;
 }
+/* Eksempelpriser – forbedret lesbarhet */
+.example-panel table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: separate;   /* VIKTIG */
+  border-spacing: 0 4px;       /* luft mellom rader */
+  font-size: 0.95rem;
+}
+
+.example-panel th {
+  text-align: left;
+  padding: 6px 10px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.example-panel th:nth-child(2),
+.example-panel th:nth-child(3),
+.example-panel th:nth-child(4),
+.example-panel td:nth-child(2),
+.example-panel td:nth-child(3),
+.example-panel td:nth-child(4) {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.example-panel td {
+  padding: 8px 10px;           /* MER LUFT */
+}
+
+.example-row-even,
+.example-row-odd {
+  border-radius: 4px;
+}
+/* Tving samme font som status-tekst (TEN / OSDM) */
+.example-panel,
+.example-panel table,
+.example-panel th,
+.example-panel td {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+}
