@@ -184,6 +184,7 @@ async function validateTen() {
 }
 
 async function generateOsdm(){
+  document.getElementById("resultBox").style.display = "none";
   if(!validateGenerateInputs()) return;
 
   show("spinnerOsdm");
@@ -213,9 +214,11 @@ const optionalText =
       `Gyldig periode: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
       `Antall priser: ${res.summary.pricesUpdated}`;
 
-    finalStatus.className="status-ok";
-    downloadBtn.disabled=false;
+    finalStatus.className = "";
+    document.getElementById("resultBox").style.display = "block";
+    downloadBtn.disabled = false;
     renderExampleTable(res.summary.exampleFares);
+
   } else {
     finalStatus.innerText="❌ OSDM kunne ikke genereres";
     document.getElementById("resultBox").style.display = "block";
