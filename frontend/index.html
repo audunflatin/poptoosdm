@@ -246,10 +246,10 @@ function renderExampleTable(data){
   const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
 
   let html =
-    "<div style='margin-top:12px; padding:10px; background:#e6f4ea; border-radius:6px;'>" +
-    "<strong>Eksempelpriser</strong>" +
-    "<table style='width:100%; margin-top:6px; border-collapse:collapse; font-family:inherit;'>" +
-    "<tr style='border-bottom:1px solid #b7e1c1;'>" +
+    "<div class='example-panel'>" +
+    "<div class='example-panel-title'>Eksempelpriser</div>" +
+    "<table>" +
+    "<tr>" +
     "<th align='left'>Strekning</th>" +
     "<th align='right'>Pris EUR</th>" +
     "<th align='right'>Pris NOK</th>" +
@@ -266,16 +266,23 @@ function renderExampleTable(data){
     const nok = eur / exchangeRate;
     const km  = kmPart.replace(")","");
 
-    const bg = row++ % 2 === 0 ? "#f2fbf5" : "#e6f4ea";
+    const rowClass = row++ % 2 === 0 ? "example-row-even" : "example-row-odd";
 
     html +=
-      `<tr style="background:${bg};">` +
+      `<tr class="${rowClass}">` +
       `<td>${route}</td>` +
       `<td align="right">${eur.toFixed(2)}</td>` +
       `<td align="right">${nok.toFixed(2)}</td>` +
       `<td align="right">${km}</td>` +
       `</tr>`;
   }
+
+  html += "</table></div>";
+
+  panel.innerHTML = html;
+  panel.style.display = "block";
+}
+``
 
   html += "</table></div>";
 

@@ -200,3 +200,42 @@ button:disabled {
 .logout-button:hover {
   text-decoration: underline;
 }
+/* Eksempelpriser – resultatpanel */
+.example-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e6f4ea;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.example-panel-title {
+  font-weight: 600;
+}
+
+.example-panel table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.example-panel th {
+  padding: 6px 10px;
+  border-bottom: 1px solid #b7e1c1;
+  font-weight: 600;
+}
+
+.example-panel td {
+  padding: 6px 10px;
+}
+
+.example-row-even {
+  background: #f2fbf5;
+}
+
+.example-row-odd {
+  background: #e6f4ea;
+}
+``
