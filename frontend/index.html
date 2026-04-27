@@ -76,7 +76,8 @@
     <progress id="progressBar" value="0" max="100" style="display:none;"></progress>
 
     <pre id="finalStatus"></pre>
-    <div id="exampleTable"></div>
+    <div id="examplePanel" style="display:none;"></div>
+    <!-- <div id="exampleTable"></div> -->
 
     <button id="downloadBtn" onclick="downloadOsdm()" disabled>
       Last ned OSDM JSON
@@ -235,45 +236,53 @@ function startProgress(){
 }
 
 function renderExampleTable(data){
+  const panel = document.getElementById("examplePanel");
   if(!data){
-    exampleTable.innerHTML="";
+    panel.style.display = "none";
+    panel.innerHTML = "";
     return;
   }
 
   const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
 
-  let h =
-    "<table class='example-table'>" +
-    "<tr>" +
-    "<th>#</th>" +
-    "<th>Strekning</th>" +
-    "<th>Pris EUR</th>" +
-    "<th>Pris NOK</th>" +
-    "<th>Km</th>" +
+  let html =
+    "<div style='margin-top:12px; padding:10px; background:#e6f4ea; border-radius:6px;'>" +
+    "<strong>Eksempelpriser</strong>" +
+    "<table style='width:100%; margin-top:6px; border-collapse:collapse; font-family:inherit;'>" +
+    "<tr style='border-bottom:1px solid #b7e1c1;'>" +
+    "<th align='left'>Strekning</th>" +
+    "<th align='right'>Pris EUR</th>" +
+    "<th align='right'>Pris NOK</th>" +
+    "<th align='right'>Km</th>" +
     "</tr>";
 
-  let i = 1;
+  let row = 0;
 
-  for(const v of Object.values(data)){
-    // Eksempel: "Oslo S → Bergen: 114.40 EUR (502 km)"
+  for (const v of Object.values(data)) {
     const [route, rest] = v.split(": ");
     const [pricePart, kmPart] = rest.split(" (");
 
     const eur = parseFloat(pricePart.replace(" EUR",""));
-    const nok = exchangeRate > 0 ? (eur / exchangeRate) : 0;
+    const nok = eur / exchangeRate;
+    const km  = kmPart.replace(")","");
 
-    h +=
-      "<tr>" +
-      `<td>${i++}</td>` +
+    const bg = row++ % 2 === 0 ? "#f2fbf5" : "#e6f4ea";
+
+    html +=
+      `<tr style="background:${bg};">` +
       `<td>${route}</td>` +
-      `<td>${eur.toFixed(2)} EUR</td>` +
-      `<td>${nok.toFixed(2)} NOK</td>` +
-      `<td>${kmPart.replace(")","")}</td>` +
-      "</tr>";
+      `<td align="right">${eur.toFixed(2)}</td>` +
+      `<td align="right">${nok.toFixed(2)}</td>` +
+      `<td align="right">${km}</td>` +
+      `</tr>`;
   }
 
-  exampleTable.innerHTML = h + "</table>";
+  html += "</table></div>";
+
+  panel.innerHTML = html;
+  panel.style.display = "block";
 }
+
 
 
 if(!window.IS_ADMIN){
