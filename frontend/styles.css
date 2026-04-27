@@ -8,12 +8,11 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--background);
-  margin: 0;
-  padding: 2rem;
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
-
+button {
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
 .container {
   max-width: 900px;
   margin: 0 auto;
@@ -257,6 +256,7 @@ button:disabled {
   font-size: 0.95rem;
   margin: 0;
   padding: 0;
+  padding-left: 10px;
   font-family: inherit;
 }
 /* Eksempelpriser – forbedret lesbarhet */
@@ -300,4 +300,50 @@ button:disabled {
 .example-panel td {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.95rem;
+}
+.example-panel {
+margin-top: 12px;
+padding: 12px 14px;
+background: #dff2e5;        /* mørkere enn status-ok */
+border-radius: 6px;
+font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.example-panel-title {
+font-weight: 600;
+margin-bottom: 6px;
+}
+.example-panel table {
+width: 100%;
+border-collapse: separate;
+border-spacing: 0 4px;
+font-size: 0.95rem;
+}
+.example-panel th,
+.example-panel td {
+padding: 6px 10px;
+}
+.example-panel th {
+font-weight: 600;
+}
+.example-row-even {
+background: #eef8f2;
+}
+.example-row-odd {
+background: #e4f3ea;
+}
+#resultBox {
+margin-top: 20px;   /* avstand fra knappen */
+padding: 14px 16px;
+}
+.result-text {
+margin: 0;
+padding: 0;
+white-space: pre-wrap;
+}
+.example-panel,
+.example-panel *,
+.example-panel table,
+.example-panel th,
+.example-panel td {
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
