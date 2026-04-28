@@ -114,10 +114,41 @@ def validate_ten_csv(text: str):
 
     for i, row in enumerate(reader, start=1):
         if len(row) != 3:
-            return {"ok": False, "error": f"Linje {i}: feil kolonneantall"}
+            return {"ok": False, "error": f"Linje {i}: feil kolonneantall (forventet 3, fikk {len(row)})"}
 
-        frm, to, price = row
-        rows.append((int(frm), int(to), int(price.replace(" ", "").replace("\xa0", ""))))
+        frm, to, price = [c.strip().replace(" ", "").replace("\xa0", "") for c in row]
+
+        try:
+            frm_int = int(frm)
+        except ValueError:
+            return {"ok": False, "error": f"Linje {i}: ugyldig 'fra'-verdi: '{frm}' er ikke et heltall"}
+
+        try:
+            to_int = int(to)
+        except ValueError:
+            return {"ok": False, "error": f"Linje {i}: ugyldig 'til'-verdi: '{to}' er ikke et heltall"}
+
+        try:
+            price_int = int(price)
+        except ValueError:
+            return {"ok": False, "error": f"Linje {i}: ugyldig pris: '{price}' er ikke et heltall"}
+
+        if frm_int < 0 or to_int < 0:
+            return {"ok": False, "error": f"Linje {i}: negative km-verdier er ikke tillatt"}
+
+        if frm_int >= to_int:
+            return {"ok": False, "error": f"Linje {i}: 'fra' ({frm_int}) må være mindre enn 'til' ({to_int})"}
+
+        if price_int <= 0:
+            return {"ok": False, "error": f"Linje {i}: pris må være større enn 0 (fikk {price_int})"}
+
+        if rows and frm_int != rows[-1][1]:
+            return {"ok": False, "error": f"Linje {i}: gap eller overlapp i km-intervall (forrige til={rows[-1][1]}, denne fra={frm_int})"}
+
+        rows.append((frm_int, to_int, price_int))
+
+    if not rows:
+        return {"ok": False, "error": "Filen er tom"}
 
     return {
         "ok": True,
