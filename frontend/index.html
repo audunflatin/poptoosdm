@@ -86,24 +86,36 @@
   </section>
 
 <!-- ADMIN -->
-<section class="panel">
-    <h2>3. Admin</h2>
-<div class="admin-only">
-  <h2>Legg til bruker</h2>
-  <form id="addUserForm">
-    <input id="newUserEmail" type="email" placeholder="E‑post" required />
-    <button type="submit">Legg til bruker</button>
-  </form>
-  <pre id="addUserResult"></pre>
+<section class="panel admin-only">
+  <h2>3. Admin</h2>
+  <div >
 
-  <h2>Regenerer passord</h2>
-  <form id="resetPasswordForm">
-    <input id="resetUserEmail" type="email" placeholder="E‑post" required />
-    <button type="submit">Regenerer passord</button>
-  </form>
-  <pre id="resetPasswordResult"></pre>
-</div>
-</div>
+    <!-- Brukerliste -->
+    <h2>Brukere</h2>
+    <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;">E-post</th>
+          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;">Admin</th>
+          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;">Aktiv</th>
+          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;">Handlinger</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody">
+        <tr><td colspan="4" style="padding:8px; color:#888;">Laster brukere…</td></tr>
+      </tbody>
+    </table>
+    <pre id="userActionResult"></pre>
+
+    <!-- Legg til bruker -->
+    <h2>Legg til bruker</h2>
+    <form id="addUserForm">
+      <input id="newUserEmail" type="email" placeholder="E‑post" required />
+      <button type="submit">Legg til bruker</button>
+    </form>
+    <pre id="addUserResult"></pre>
+
+  </div>
 </section>
 
 <script src="/static/app.js" ></script>

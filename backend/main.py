@@ -332,6 +332,7 @@ def admin_add_user(
     db.commit()
 
     return {
+        "ok": True,
         "email": email,
         "password": password
     }
@@ -358,6 +359,47 @@ def admin_reset_password(
     db.commit()
 
     return {
+        "ok": True,
         "email": email,
-        "new_password": new_password
+        "password": new_password
     }
+@app.get("/admin/list-users")
+def list_users(request: Request):
+    require_login(request)
+
+    if not request.session.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Ikke administrator")
+
+    db = SessionLocal()
+    users = db.query(User).all()
+    return [
+        {
+            "email": u.email,
+            "is_admin": u.is_admin,
+            "is_active": u.is_active
+        }
+        for u in users
+    ]
+
+
+@app.post("/admin/delete-user")
+def delete_user(
+    request: Request,
+    email: str = Form(...)
+):
+    require_login(request)
+
+    if not request.session.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Ikke administrator")
+
+    if email == request.session.get("user_email"):
+        raise HTTPException(status_code=400, detail="Kan ikke slette deg selv")
+
+    db = SessionLocal()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+
+    db.delete(user)
+    db.commit()
+    return {"ok": True, "deleted": email}

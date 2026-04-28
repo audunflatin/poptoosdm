@@ -181,22 +181,89 @@ function renderExampleTable(data){
 
 
 
-if(!window.IS_ADMIN){
-  document.querySelectorAll(".admin-only").forEach(e=>e.style.display="none");
+if (!window.IS_ADMIN) {
+  document.querySelectorAll(".admin-only").forEach(e => e.style.display = "none");
+} else {
+  loadUserList();
 }
 
-addUserForm.onsubmit=async e=>{
-  e.preventDefault();
-  const fd=new FormData(); fd.append("email",newUserEmail.value);
-  const r=await fetch("/admin/add-user",{method:"POST",body:fd});
-  addUserResult.innerText=JSON.stringify(await r.json(),null,2);
-};
+// --- Brukerliste ---
 
-resetPasswordForm.onsubmit=async e=>{
+async function loadUserList() {
+  const tbody = document.getElementById("userTableBody");
+  const resultEl = document.getElementById("userActionResult");
+  resultEl.innerText = "";
+
+  const r = await fetch("/admin/list-users");
+  if (!r.ok) {
+    tbody.innerHTML = `<tr><td colspan="4" style="color:red;">Kunne ikke hente brukere.</td></tr>`;
+    return;
+  }
+  const users = await r.json();
+
+  if (users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:#888;">Ingen brukere funnet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map((u, i) => {
+    const rowBg = i % 2 === 0 ? "#f9f9f9" : "#fff";
+    return `
+      <tr style="background:${rowBg}">
+        <td style="padding:6px 8px;">${u.email}</td>
+        <td style="text-align:center; padding:6px 8px;">${u.is_admin ? "✅" : "—"}</td>
+        <td style="text-align:center; padding:6px 8px;">${u.is_active ? "✅" : "❌"}</td>
+        <td style="text-align:center; padding:6px 8px;">
+          <button onclick="resetPassword('${u.email}')">🔑 Nytt passord</button>
+          <button onclick="deleteUser('${u.email}')" style="margin-left:6px; color:#c00;">🗑 Slett</button>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+async function resetPassword(email) {
+  const resultEl = document.getElementById("userActionResult");
+  const fd = new FormData();
+  fd.append("email", email);
+  const r = await fetch("/admin/reset-password", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    resultEl.innerText = `✅ Nytt passord for ${res.email}:\n${res.password}`;
+  } else {
+    resultEl.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+  }
+}
+
+async function deleteUser(email) {
+  if (!confirm(`Sikker på at du vil slette ${email}?`)) return;
+  const resultEl = document.getElementById("userActionResult");
+  const fd = new FormData();
+  fd.append("email", email);
+  const r = await fetch("/admin/delete-user", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    resultEl.innerText = `✅ ${res.deleted} er slettet.`;
+    loadUserList();
+  } else {
+    resultEl.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+  }
+}
+
+// --- Legg til bruker ---
+
+addUserForm.onsubmit = async e => {
   e.preventDefault();
-  const fd=new FormData(); fd.append("email",resetUserEmail.value);
-  const r=await fetch("/admin/reset-password",{method:"POST",body:fd});
-  resetPasswordResult.innerText=JSON.stringify(await r.json(),null,2);
+  const fd = new FormData();
+  fd.append("email", newUserEmail.value);
+  const r = await fetch("/admin/add-user", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    addUserResult.innerText = `✅ Bruker opprettet\nE-post: ${res.email}\nPassord: ${res.password}`;
+    newUserEmail.value = "";
+    loadUserList();
+  } else {
+    addUserResult.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+  }
 };
 
 ["datasetId", "exchangeRate", "validFrom", "validTo"].forEach(id => {
