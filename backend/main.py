@@ -404,11 +404,3 @@ def delete_user(
     db.commit()
     return {"ok": True, "deleted": email}
 
-@app.get("/debug/db")
-def debug_db():
-    import os
-    from backend.auth_db import DATABASE_URL
-    return {
-        "DATABASE_URL_env": os.environ.get("DATABASE_URL", "IKKE SATT"),
-        "database_url_used": DATABASE_URL
-    }

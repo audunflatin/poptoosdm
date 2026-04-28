@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
-print("DATABASE_URL fra env:", os.environ.get("DATABASE_URL", "IKKE SATT"), flush=True)
+
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./users.db")
 
 # Render setter postgresql:// men SQLAlchemy krever postgresql+psycopg2://
