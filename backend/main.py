@@ -406,6 +406,7 @@ def delete_user(
 
 @app.get("/setup/init-admin")
 def init_admin():
+    init_db()  # Oppretter tabeller hvis de ikke finnes
     db = SessionLocal()
     email = "audun.flatin@entur.org"
     password = "Entur2026!Poptoosdm"
