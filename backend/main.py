@@ -117,7 +117,7 @@ def validate_ten_csv(text: str):
             return {"ok": False, "error": f"Linje {i}: feil kolonneantall"}
 
         frm, to, price = row
-        rows.append((int(frm), int(to), int(price)))
+        rows.append((int(frm), int(to), int(price.replace(" ", "").replace("\xa0", ""))))
 
     return {
         "ok": True,
