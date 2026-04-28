@@ -403,3 +403,8 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"ok": True, "deleted": email}
+
+@app.get("/debug/db")
+def debug_db():
+    from backend.auth_db import DATABASE_URL
+    return {"database_url": DATABASE_URL}
