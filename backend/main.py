@@ -404,21 +404,3 @@ def delete_user(
     db.commit()
     return {"ok": True, "deleted": email}
 
-@app.get("/setup/init-admin")
-def init_admin():
-    init_db()  # Oppretter tabeller hvis de ikke finnes
-    db = SessionLocal()
-    email = "audun.flatin@entur.org"
-    password = "Entur2026!Poptoosdm"
-    
-    if db.query(User).filter(User.email == email).first():
-        return {"status": "Bruker finnes allerede"}
-    
-    db.add(User(
-        email=email,
-        password_hash=hash_password(password),
-        is_admin=True,
-        is_active=True
-    ))
-    db.commit()
-    return {"status": "Admin opprettet"}
