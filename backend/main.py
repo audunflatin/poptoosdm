@@ -13,7 +13,7 @@ import io
 import json
 import math
 
-from backend.auth_db import SessionLocal, User
+from backend.auth_db import SessionLocal, User, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
 
