@@ -1,11 +1,8 @@
-from fastapi import (
-    FastAPI, Request, UploadFile, File, Form, HTTPException
-)
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi.responses import FileResponse
 
 from pathlib import Path
 import csv
@@ -17,7 +14,6 @@ from backend.auth_db import SessionLocal, User, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
 
-
 # ---------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------
@@ -26,11 +22,7 @@ app = FastAPI(title="PopToOSDM")
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SESSION_SECRET
-)
-
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,12 +31,34 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------
-# Helpers
+# Startup
+# ---------------------------------------------------------------------
+
+@app.on_event("startup")
+def startup():
+    init_db()
+
+# ---------------------------------------------------------------------
+# State
+# ---------------------------------------------------------------------
+
+TEN_TABLE = None
+GENERATION_PROGRESS = {"status": "idle", "percent": 0}
+OSDM_IN = Path("data/input/1076-OSDM-template.json")
+OSDM_OUT = None
+
+# ---------------------------------------------------------------------
+# Auth helpers
 # ---------------------------------------------------------------------
 
 def require_login(request: Request):
     if "user_email" not in request.session:
         raise HTTPException(status_code=401, detail="Ikke innlogget")
+
+def require_admin(request: Request):
+    require_login(request)
+    if not request.session.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Ikke administrator")
 
 # ---------------------------------------------------------------------
 # Root / GUI
@@ -52,13 +66,11 @@ def require_login(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
-    is_admin = bool(request.session.get("is_admin"))
-
     if "user_email" not in request.session:
         return HTMLResponse(
             Path("frontend/login.html").read_text(encoding="utf-8")
         )
-
+    is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/index.html").read_text(encoding="utf-8")
     html = html.replace(
         "</head>",
@@ -71,38 +83,24 @@ def root(request: Request):
 # ---------------------------------------------------------------------
 
 @app.post("/login")
-def login(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...)
-):
+def login(request: Request, email: str = Form(...), password: str = Form(...)):
     db = SessionLocal()
-    user = db.query(User).filter(User.email == email).first()
-
-    if not user or not user.is_active:
-        raise HTTPException(status_code=401, detail="Ugyldig innlogging")
-
-    if not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Ugyldig innlogging")
-
-    request.session["user_email"] = user.email
-    request.session["is_admin"] = user.is_admin
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="Ugyldig innlogging")
+        if not verify_password(password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Ugyldig innlogging")
+        request.session["user_email"] = user.email
+        request.session["is_admin"] = user.is_admin
+    finally:
+        db.close()
     return RedirectResponse("/", status_code=302)
 
 @app.get("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=302)
-
-# ---------------------------------------------------------------------
-# TEN / OSDM state
-# ---------------------------------------------------------------------
-
-TEN_TABLE = None
-GENERATION_PROGRESS = {"status": "idle", "percent": 0}
-
-OSDM_IN = Path("data/input/1076-OSDM-template.json")
-OSDM_OUT = None
 
 # ---------------------------------------------------------------------
 # TEN validation
@@ -159,10 +157,7 @@ def validate_ten_csv(text: str):
     }
 
 @app.post("/ui/validate-ten")
-def validate_ten(
-    request: Request,
-    tenFile: UploadFile = File(...)
-):
+def validate_ten(request: Request, tenFile: UploadFile = File(...)):
     require_login(request)
     global TEN_TABLE
 
@@ -184,7 +179,7 @@ def nok_price_from_distance(km: int):
     for frm, to, price in TEN_TABLE:
         if frm <= km <= to:
             return price
-    raise ValueError(f"Ingen TEN‑pris for {km} km")
+    raise ValueError(f"Ingen TEN-pris for {km} km")
 
 def eur_amount(nok: int, rate: float):
     eur = nok * rate
@@ -203,63 +198,59 @@ def generate_osdm(
     validTo: str = Form(...),
     datasetId: str = Form(...),
     environment: str = Form(...),
-    optionalDelivery: str = Form("false")
+    optionalDelivery: str = Form("false"),
 ):
     require_login(request)
 
     if TEN_TABLE is None:
-        raise HTTPException(status_code=400, detail="TEN‑CSV er ikke validert")
+        raise HTTPException(status_code=400, detail="TEN-CSV er ikke validert")
 
     GENERATION_PROGRESS["status"] = "running"
     GENERATION_PROGRESS["percent"] = 0
 
     data = json.loads(OSDM_IN.read_text(encoding="utf-8"))
 
-    # Finn gammel deliveryId i template og erstatt med ny datasetId overalt
+    # Erstatt gammel delivery-id med ny datasetId overalt i strukturen
     old_delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
     if old_delivery_id and old_delivery_id != datasetId:
         raw = json.dumps(data)
         raw = raw.replace(f"1076_{old_delivery_id}_", f"1076_{datasetId}_")
         data = json.loads(raw)
 
-
     fs = data["fareDelivery"]["fareStructure"]
 
-    data["fareDelivery"]["delivery"]["optionalDelivery"] = (
-        optionalDelivery.lower() == "true"
-    )
-
+    data["fareDelivery"]["delivery"]["deliveryId"] = datasetId
+    data["fareDelivery"]["delivery"]["optionalDelivery"] = (optionalDelivery.lower() == "true")
     data["fareDelivery"]["delivery"]["usage"] = (
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
     )
-    data["fareDelivery"]["delivery"]["deliveryId"] = datasetId
 
     from_date = f"{validFrom}T00:00:00+0000"
     until_date = f"{validTo}T23:59:59+0000"
-
     for cal in fs.get("calendars", []):
         cal["fromDate"] = from_date
         cal["untilDate"] = until_date
 
-    new_prices = []
-    examples = {}
-    price_index = 1
-    example_idx = 1
-    total = len(fs["regionalConstraints"])
-
-    example_routes = [
-        ("Oslo S", "Bergen stasjon", "7600100", "7602351"),
-        ("Oslo S", "Trondheim S", "7600100", "7601126"),
-        ("Oslo S", "Stavanger stasjon", "7600100", "7602234"),
-        ("Oslo S", "Halden stasjon", "7600100", "7600546"),
-    ]
-
+    # Bygg eksempel-oppslag: UIC-kode → connectionPointId
     cp_for_uic = {}
     for cp in fs["connectionPoints"]:
         for ss in cp.get("stationSets", []):
             for s in ss:
                 if s.get("codeList") == "UIC":
                     cp_for_uic[s["code"]] = cp["id"]
+
+    example_routes = [
+        ("Oslo S",          "Bergen stasjon",    "7600100", "7602351"),
+        ("Oslo S",          "Trondheim S",        "7600100", "7601126"),
+        ("Oslo S",          "Stavanger stasjon",  "7600100", "7602234"),
+        ("Oslo S",          "Halden stasjon",     "7600100", "7600546"),
+    ]
+
+    new_prices = []
+    examples = {}
+    price_index = 1
+    example_idx = 1
+    total = len(fs["regionalConstraints"])
 
     for idx, rc in enumerate(fs["regionalConstraints"], start=1):
         km = rc.get("distance")
@@ -270,7 +261,7 @@ def generate_osdm(
         amount = eur_amount(nok, exchangeRate)
 
         new_prices.append({
-            "id": f"1076_{datasetId}_{price_index}",
+            "id": f"1076_{datasetId}_I__{price_index}",
             "price": [{
                 "amount": amount,
                 "currency": "EUR",
@@ -284,9 +275,8 @@ def generate_osdm(
                 rc["entryConnectionPointId"] == cp_for_uic.get(from_uic)
                 and rc["exitConnectionPointId"] == cp_for_uic.get(to_uic)
             ):
-                eur = amount / 100
                 examples[f"example_{example_idx}"] = (
-                    f"{from_name} → {to_name}: {eur:.2f} EUR ({km} km)"
+                    f"{from_name} → {to_name}: {amount / 100:.2f} EUR ({km} km)"
                 )
                 example_idx += 1
 
@@ -294,7 +284,6 @@ def generate_osdm(
         price_index += 1
 
     fs["prices"] = new_prices
-
     GENERATION_PROGRESS["status"] = "done"
     GENERATION_PROGRESS["percent"] = 100
 
@@ -305,7 +294,6 @@ def generate_osdm(
     global OSDM_OUT
     OSDM_OUT = out
 
-   
     return {
         "step": "OSDM generation",
         "ok": True,
@@ -314,13 +302,12 @@ def generate_osdm(
             "pricesUpdated": len(fs["prices"]),
             "exchangeRate": exchangeRate,
             "environment": environment,
-            "exampleFares": examples
-        }
+            "exampleFares": examples,
+        },
     }
 
-
 # ---------------------------------------------------------------------
-# Progress
+# Progress & download
 # ---------------------------------------------------------------------
 
 @app.get("/ui/progress")
@@ -330,117 +317,73 @@ def get_progress():
 @app.get("/ui/download-osdm/{filename}")
 def download_osdm(filename: str):
     path = Path("data/output") / filename
-
     if not path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="OSDM-fil finnes ikke"
-        )
+        raise HTTPException(status_code=404, detail="OSDM-fil finnes ikke")
+    return FileResponse(path=path, media_type="application/json", filename=path.name)
 
-    return FileResponse(
-        path=path,
-        media_type="application/json",
-        filename=path.name
-    )
+# ---------------------------------------------------------------------
+# Admin
+# ---------------------------------------------------------------------
 
-@app.post("/admin/add-user")
-def admin_add_user(
-    request: Request,
-    email: str = Form(...)
-):
-    require_login(request)
-
-    if not request.session.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Ikke administrator")
-
-    db = SessionLocal()
-
-    existing = db.query(User).filter(User.email == email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Bruker finnes allerede")
-
-    password = generate_password()
-
-    user = User(
-        email=email,
-        password_hash=hash_password(password),
-        is_admin=False,
-        is_active=True
-    )
-
-    db.add(user)
-    db.commit()
-
-    return {
-        "ok": True,
-        "email": email,
-        "password": password
-    }
-
-
-@app.post("/admin/reset-password")
-def admin_reset_password(
-    request: Request,
-    email: str = Form(...)
-):
-    require_login(request)
-
-    if not request.session.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Ikke administrator")
-
-    db = SessionLocal()
-
-    user = db.query(User).filter(User.email == email).first()
-    if not user or not user.is_active:
-        raise HTTPException(status_code=404, detail="Bruker ikke funnet")
-
-    new_password = generate_password()
-    user.password_hash = hash_password(new_password)
-    db.commit()
-
-    return {
-        "ok": True,
-        "email": email,
-        "password": new_password
-    }
 @app.get("/admin/list-users")
 def list_users(request: Request):
-    require_login(request)
-
-    if not request.session.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Ikke administrator")
-
+    require_admin(request)
     db = SessionLocal()
-    users = db.query(User).all()
-    return [
-        {
-            "email": u.email,
-            "is_admin": u.is_admin,
-            "is_active": u.is_active
-        }
-        for u in users
-    ]
+    try:
+        users = db.query(User).all()
+        return [
+            {"email": u.email, "is_admin": u.is_admin, "is_active": u.is_active}
+            for u in users
+        ]
+    finally:
+        db.close()
 
+@app.post("/admin/add-user")
+def admin_add_user(request: Request, email: str = Form(...)):
+    require_admin(request)
+    db = SessionLocal()
+    try:
+        if db.query(User).filter(User.email == email).first():
+            raise HTTPException(status_code=400, detail="Bruker finnes allerede")
+        password = generate_password()
+        db.add(User(
+            email=email,
+            password_hash=hash_password(password),
+            is_admin=False,
+            is_active=True,
+        ))
+        db.commit()
+        return {"ok": True, "email": email, "password": password}
+    finally:
+        db.close()
+
+@app.post("/admin/reset-password")
+def admin_reset_password(request: Request, email: str = Form(...)):
+    require_admin(request)
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active:
+            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+        new_password = generate_password()
+        user.password_hash = hash_password(new_password)
+        db.commit()
+        return {"ok": True, "email": email, "password": new_password}
+    finally:
+        db.close()
 
 @app.post("/admin/delete-user")
-def delete_user(
-    request: Request,
-    email: str = Form(...)
-):
-    require_login(request)
-
-    if not request.session.get("is_admin"):
-        raise HTTPException(status_code=403, detail="Ikke administrator")
-
+def delete_user(request: Request, email: str = Form(...)):
+    require_admin(request)
     if email == request.session.get("user_email"):
         raise HTTPException(status_code=400, detail="Kan ikke slette deg selv")
-
     db = SessionLocal()
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Bruker ikke funnet")
-
-    db.delete(user)
-    db.commit()
-    return {"ok": True, "deleted": email}
-
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+        db.delete(user)
+        db.commit()
+        return {"ok": True, "deleted": email}
+    finally:
+        db.close()
