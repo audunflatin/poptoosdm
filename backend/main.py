@@ -214,6 +214,15 @@ def generate_osdm(
     GENERATION_PROGRESS["percent"] = 0
 
     data = json.loads(OSDM_IN.read_text(encoding="utf-8"))
+
+    # Finn gammel deliveryId i template og erstatt med ny datasetId overalt
+    old_delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
+    if old_delivery_id and old_delivery_id != datasetId:
+        raw = json.dumps(data)
+        raw = raw.replace(f"1076_{old_delivery_id}_", f"1076_{datasetId}_")
+        data = json.loads(raw)
+
+
     fs = data["fareDelivery"]["fareStructure"]
 
     data["fareDelivery"]["delivery"]["optionalDelivery"] = (
@@ -289,7 +298,7 @@ def generate_osdm(
     GENERATION_PROGRESS["status"] = "done"
     GENERATION_PROGRESS["percent"] = 100
 
-    out = Path(f"data/output/{datasetId}_{environment}.json")
+    out = Path(f"data/output/1076_{datasetId}_{environment}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
