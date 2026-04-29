@@ -225,8 +225,8 @@ def generate_osdm(
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
     )
 
-    from_date = f"{validFrom}T00:00:00+0000"
-    until_date = f"{validTo}T23:59:59+0000"
+    from_date = f"{validFrom}T00:00:00+0100"
+    until_date = f"{validTo}T23:59:59+0100"
     for cal in fs.get("calendars", []):
         cal["fromDate"] = from_date
         cal["untilDate"] = until_date
