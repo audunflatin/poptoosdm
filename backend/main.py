@@ -244,6 +244,7 @@ def generate_osdm(
         ("Oslo S",          "Trondheim S",        "7600100", "7601126"),
         ("Oslo S",          "Stavanger stasjon",  "7600100", "7602234"),
         ("Oslo S",          "Halden stasjon",     "7600100", "7600546"),
+        ("Oslo S",          "Kornsjø grense",     "7600100", "7600551"),
     ]
 
     new_prices = []

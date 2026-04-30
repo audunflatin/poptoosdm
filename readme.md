@@ -22,14 +22,15 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
   - Gyldighetsperiode
 - Visning av eksempelpriser
 - Nedlasting av ferdig OSDM‑fil
-- Enkel admin‑GUI for brukerhåndtering
+- Admin‑GUI for brukerhåndtering
 
 ---
 
 ## Arkitektur
 
-- **Backend:** FastAPI
+- **Backend:** FastAPI (Python)
 - **Frontend:** Statisk HTML/JS (servert via FastAPI)
+- **Database:** PostgreSQL (produksjon via Render) / SQLite (lokalt)
 - **Autentisering:** Session‑basert
 - **Drift:** Render
 - **DNS:** Cloudflare
@@ -40,7 +41,10 @@ Browser
 FastAPI (backend/main.py)
   ├─ /            → GUI (index.html)
   ├─ /ui/*        → API (TEN / OSDM)
+  ├─ /admin/*     → Brukeradministrasjon
   └─ /static/*    → CSS, JS, favicon
+
+Database: PostgreSQL (Render) / SQLite (lokalt)
 ```
 
 ---
@@ -80,8 +84,20 @@ Når venv er aktiv vil terminalen vise:
 ### Installer avhengigheter
 
 ```bash
-pip install fastapi uvicorn python-multipart jsonschema
+pip install -r requirements.txt
 ```
+
+---
+
+### Miljøvariabler
+
+| Variabel         | Beskrivelse                      | Standard                |
+|------------------|----------------------------------|-------------------------|
+| `SESSION_SECRET` | Hemmelig nøkkel for sessions     | `CHANGE_ME_BEFORE_PROD` |
+| `DATABASE_URL`   | PostgreSQL‑tilkobling (valgfri)  | SQLite lokalt           |
+
+Lokalt trenger du ikke sette disse — applikasjonen bruker fornuftige standardverdier.
+I produksjon (Render) settes de som miljøvariabler i dashboardet.
 
 ---
 
@@ -107,14 +123,15 @@ GUI og backend serveres fra samme FastAPI‑instans.
 
 ### 1. TEN‑validering
 
-- Last opp TEN‑pristabell (CSV)
-- Valider filen før videre bruk
+- Last opp TEN‑pristabell (CSV, semikolonseparert)
+- Filen valideres automatisk ved opplasting
+- Feilmeldinger vises med linjenummer og årsak
 
 ### 2. Generer OSDM
 
 Fyll inn:
 
-- DeliveryId  
+- DeliveryId
   _(må økes ved hver innsending til DRTF)_
 - Miljø: `test` / `prod`
 - Optional delivery
@@ -126,8 +143,17 @@ Klikk **Generer OSDM JSON**.
 ### 3. Resultat
 
 - Status vises i GUI
-- Eksempelpriser listes
+- Eksempelpriser listes (Oslo S til Bergen, Trondheim, Stavanger, Halden)
 - Ferdig OSDM‑fil kan lastes ned
+
+### 4. Admin
+
+Kun tilgjengelig for admin‑brukere:
+
+- Liste over alle brukere med status
+- Legg til ny bruker (passord genereres automatisk)
+- Generer nytt passord for eksisterende bruker
+- Slett bruker
 
 ---
 
@@ -157,11 +183,14 @@ OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
   ```
 - Root‑domene (`livetsmiler.no`) 301‑videresendes til `www`
 - HTTPS og redirect håndteres av Cloudflare
+- Automatisk deploy ved push til `main`
 
 ---
 
 ## Status
 
-✅ Produksjonsklar  
-✅ Validert mot UIC DRTF  
-✅ Klar for videre vedlikehold
+✅ Produksjonsklar
+✅ Validert mot UIC DRTF
+✅ PostgreSQL i produksjon
+✅ Admin‑GUI for brukerhåndtering
+✅ Deployet på Render (livetsmiler.no)
