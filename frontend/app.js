@@ -94,17 +94,17 @@ async function generateOsdm(){
     lastGeneratedFile=res.outputFile;
     
 const optionalText =
-  document.getElementById("optionalDelivery").value === "true"
-    ? "Ja"
-    : "Nei";
+  document.getElementById("optionalDelivery").value === "true" ? "Ja" : "Nei";
+  const sommertid = res.summary.utcOffset === 120 ? "Ja" : "Nei";
 
-    finalStatus.innerText =
-      `OSDM generert\n` +
-      `Fil: ${res.outputFile}\n` +
-      `Miljø: ${res.summary.environment}\n` +
-      `Optional delivery: ${optionalText}\n` +
-      `Gyldig periode: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
-      `Antall priser: ${res.summary.pricesUpdated}`;
+  finalStatus.innerText =
+    `OSDM generert\n` +
+    `Fil: ${res.outputFile}\n` +
+    `Miljø: ${res.summary.environment}\n` +
+    `Optional delivery: ${optionalText}\n` +
+    `Gyldig periode: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
+    `Sommertid: ${sommertid}\n` +
+    `Antall priser: ${res.summary.pricesUpdated}`;
 
     finalStatus.className = "";
     document.getElementById("resultBox").style.display = "block";

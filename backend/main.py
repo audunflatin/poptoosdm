@@ -14,6 +14,9 @@ from backend.auth_db import SessionLocal, User, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
 
+from zoneinfo import ZoneInfo
+from datetime import datetime
+
 # ---------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------
@@ -225,11 +228,19 @@ def generate_osdm(
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
     )
 
-    from_date = f"{validFrom}T00:00:00+0100"
-    until_date = f"{validTo}T23:59:59+0100"
+    # Sett datoer og utcOffset basert på Oslo-tidssone
+    oslo_tz = ZoneInfo("Europe/Oslo")
+    from_dt = datetime.fromisoformat(validFrom).replace(tzinfo=oslo_tz)
+    until_dt = datetime.fromisoformat(validTo).replace(hour=23, minute=59, second=59, tzinfo=oslo_tz)
+    utc_offset_from = int(from_dt.utcoffset().total_seconds() / 60)
+
+    from_date = f"{validFrom}T00:00:00+0000"
+    until_date = f"{validTo}T23:59:59+0000"
+
     for cal in fs.get("calendars", []):
         cal["fromDate"] = from_date
         cal["untilDate"] = until_date
+        cal["utcOffset"] = utc_offset_from
 
     # Bygg eksempel-oppslag: UIC-kode → connectionPointId
     cp_for_uic = {}
@@ -240,11 +251,11 @@ def generate_osdm(
                     cp_for_uic[s["code"]] = cp["id"]
 
     example_routes = [
-        ("Oslo S",          "Bergen stasjon",    "7600100", "7602351"),
-        ("Oslo S",          "Trondheim S",        "7600100", "7601126"),
-        ("Oslo S",          "Stavanger stasjon",  "7600100", "7602234"),
-        ("Oslo S",          "Halden stasjon",     "7600100", "7600546"),
-        ("Oslo S",          "Kornsjø grense",     "7600100", "7600551"),
+        ("Oslo S",  "Bergen stasjon",   "7600100", "7602351"),
+        ("Oslo S",  "Trondheim S",      "7600100", "7601126"),
+        ("Oslo S",  "Stavanger stasjon","7600100", "7602234"),
+        ("Oslo S",  "Halden stasjon",   "7600100", "7600546"),
+        ("Oslo S",  "Kornsjø grense",   "7600100", "7600551"),
     ]
 
     new_prices = []
@@ -303,6 +314,7 @@ def generate_osdm(
             "pricesUpdated": len(fs["prices"]),
             "exchangeRate": exchangeRate,
             "environment": environment,
+            "utcOffset": utc_offset_from,
             "exampleFares": examples,
         },
     }
