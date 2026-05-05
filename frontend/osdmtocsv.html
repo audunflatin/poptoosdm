@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>OSDM til CSV – PopToOSDM</title>
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
+
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo-bar">
+    <img src="/static/Enturlogo_Blue_RGB.svg" alt="Entur logo" class="logo" />
+    <img src="/static/logo-uic-osdm.svg" alt="UIC logo" class="logo" />
+  </div>
+  <h1>OSDM til CSV</h1>
+  <div>
+    <a href="/logout" class="logout-button">Logg ut</a>
+    <a href="/" style="color:var(--entur-blue); font-weight:600; text-decoration:none;">← PopToOSDM</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <section class="panel">
+    <h2>Last opp OSDM-fil</h2>
+    <p style="color:#555; margin-top:0;">
+      Last opp en generert OSDM fareDelivery JSON-fil. Filen konverteres til en
+      semikolonseparert CSV med alle stasjonsrelasjoner og priser per billettkategori.
+    </p>
+
+    <label>OSDM JSON-fil</label>
+    <input id="osdmFile" type="file" accept=".json" />
+
+    <div id="fileInfo" style="display:none; margin-top:0.75rem; color:#555; font-size:0.9rem;"></div>
+
+    <button id="convertBtn" onclick="convert()" disabled style="margin-top:1.5rem;">
+      Konverter til CSV
+    </button>
+
+    <div id="spinner" class="spinner"></div>
+
+    <div id="resultBox" style="display:none; margin-top:1.5rem;">
+      <div id="resultStatus"></div>
+      <button id="downloadBtn" onclick="download()" style="margin-top:1rem; display:none;">
+        Last ned CSV
+      </button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>CSV-innhold</h2>
+    <p style="color:#555; margin-top:0; margin-bottom:0;">
+      CSV-filen inneholder én rad per stasjonspar (én retning), sortert alfabetisk på fra-stasjon,
+      med følgende kolonner:
+    </p>
+    <table style="width:100%; border-collapse:collapse; margin-top:1rem; font-size:0.9rem;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 10px; border-bottom:2px solid var(--entur-border); background:var(--entur-blue-light);">Kolonne</th>
+          <th style="text-align:left; padding:6px 10px; border-bottom:2px solid var(--entur-border); background:var(--entur-blue-light);">Beskrivelse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Fra UIC</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">UIC-kode for avgangsstasjon</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Fra stasjon</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Navn på avgangsstasjon</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Til UIC</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">UIC-kode for ankomststasjon</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Til stasjon</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Navn på ankomststasjon</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Km</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Avstand i kilometer</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Voksen</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Voksen gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Senior</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Barn 6-17 år</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Barn 6-17 år gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Barn 0-5 år</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Barn 0-5 år gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">FIP leisure reduction voksen</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">FIP leisure reduction barn</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
+        <tr><td style="padding:6px 10px;">Hund</td><td style="padding:6px 10px;">Pris i EUR</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+
+<script src="/static/osdmtocsv.js?v=1"></script>
+</body>
+</html>

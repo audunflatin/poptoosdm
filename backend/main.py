@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -408,3 +408,182 @@ def delete_user(request: Request, email: str = Form(...)):
         return {"ok": True, "deleted": email}
     finally:
         db.close()
+
+# ---------------------------------------------------------------------
+# OSDM til CSV
+# ---------------------------------------------------------------------
+
+# Kolonnedefinisjoner — (nameRef-suffix, passengerConstraint-suffix, kolonnenavn)
+# Disse er relative til deliveryId og vil fungere uavhengig av versjon
+# siden vi matcher på suffix etter siste "__"
+OSDM_CSV_COLUMNS = [
+    ("P__7",  "G__1", "Voksen"),
+    ("P__34", "G__2", "Voksen gruppe"),
+    ("P__11", "G__8", "Senior"),
+    ("P__8",  "G__3", "Barn 6-17 år"),
+    ("P__35", "G__4", "Barn 6-17 år gruppe"),
+    ("P__9",  "G__6", "Barn 0-5 år"),
+    ("P__36", "G__7", "Barn 0-5 år gruppe"),
+    ("P__5",  "G__1", "FIP leisure reduction voksen"),
+    ("P__5",  "G__3", "FIP leisure reduction barn"),
+    ("P__10", "G__5", "Hund"),
+]
+
+
+def suffix(id_str: str) -> str:
+    """Hent suffix etter siste '__', f.eks '1076_7.0_P__7' -> 'P__7'"""
+    parts = id_str.split("_")
+    # finn P__, G__, osv
+    for i, p in enumerate(parts):
+        if p in ("P", "G", "I", "K", "E", "S", "C", "M", "Q", "T", "D"):
+            return p + "__" + parts[i + 1]
+    return id_str
+
+
+def osdm_to_csv_bytes(data: dict) -> bytes:
+    import csv
+    import io as _io
+
+    fs = data["fareDelivery"]["fareStructure"]
+
+    # Oppslagstabeller
+    text_map = {t["id"]: t.get("textUtf8", t.get("text", "")) for t in fs.get("texts", [])}
+    price_map = {p["id"]: p["price"][0]["amount"] for p in fs.get("prices", [])}
+    station_map = {
+        sn["code"]: sn.get("nameUtf8", sn.get("name", ""))
+        for sn in fs.get("stationNames", [])
+    }
+
+    # CP-id -> foretrukken UIC-kode (norsk fremfor svensk)
+    cp_to_uic = {}
+    for cp in fs["connectionPoints"]:
+        no_code = None
+        first_code = None
+        for ss in cp.get("stationSets", []):
+            for s in ss:
+                if s.get("codeList") == "UIC":
+                    if first_code is None:
+                        first_code = s["code"]
+                    if s.get("country") == "NO":
+                        no_code = s["code"]
+        cp_to_uic[cp["id"]] = no_code or first_code or ""
+
+    # RC-id -> RC
+    rc_map = {rc["id"]: rc for rc in fs["regionalConstraints"]}
+
+    # Bygg kolonnenøkler dynamisk basert på faktiske ID-er i filen
+    # Finn en fare og utled prefix (f.eks. "1076_7.0_")
+    sample_fare = fs["fares"][0] if fs.get("fares") else {}
+    sample_nr = sample_fare.get("nameRef", "")
+    prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else ""
+
+    col_keys = [
+        (prefix + nr_sfx, prefix + pc_sfx, col_name)
+        for nr_sfx, pc_sfx, col_name in OSDM_CSV_COLUMNS
+    ]
+
+    # Samle priser per RC
+    rc_prices: dict[str, dict] = {}
+    for fare in fs["fares"]:
+        rc_ref = fare.get("regionalConstraintRef")
+        nr = fare.get("nameRef")
+        pc = fare.get("passengerConstraintRef")
+        price_ref = fare.get("priceRef")
+        amount = price_map.get(price_ref)
+        if amount is not None and rc_ref:
+            rc_prices.setdefault(rc_ref, {})[(nr, pc)] = amount
+
+    # Bygg rader — én retning per stasjonspar
+    seen_pairs: set = set()
+    rows = []
+
+    for rc_id, prices in rc_prices.items():
+        rc = rc_map.get(rc_id)
+        if not rc:
+            continue
+        entry_uic = cp_to_uic.get(rc["entryConnectionPointId"], "")
+        exit_uic = cp_to_uic.get(rc["exitConnectionPointId"], "")
+
+        pair = tuple(sorted([entry_uic, exit_uic]))
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
+
+        entry_name = station_map.get(entry_uic, entry_uic)
+        exit_name = station_map.get(exit_uic, exit_uic)
+
+        row = {
+            "Fra UIC": entry_uic,
+            "Fra stasjon": entry_name,
+            "Til UIC": exit_uic,
+            "Til stasjon": exit_name,
+            "Km": rc.get("distance", ""),
+        }
+
+        for nr_key, pc_key, col_name in col_keys:
+            amount = prices.get((nr_key, pc_key))
+            row[col_name] = f"{amount / 100:.2f}" if amount is not None else ""
+
+        rows.append(row)
+
+    rows.sort(key=lambda r: r["Fra stasjon"])
+
+    # Skriv CSV
+    fieldnames = [
+        "Fra UIC", "Fra stasjon", "Til UIC", "Til stasjon", "Km",
+    ] + [col_name for _, _, col_name in OSDM_CSV_COLUMNS]
+
+    buf = _io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames, delimiter=";")
+    writer.writeheader()
+    writer.writerows(rows)
+
+    return buf.getvalue().encode("utf-8-sig")  # BOM for Excel
+
+
+@app.post("/ui/osdm-to-csv")
+async def osdm_to_csv(
+    request: Request,
+    osdmFile: UploadFile = File(...),
+):
+    from fastapi.responses import StreamingResponse
+    import io as _io
+
+    require_login(request)
+
+    content = await osdmFile.read()
+    try:
+        data = json.loads(content.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Ugyldig JSON-fil")
+
+    # Enkel struktursjekk
+    if "fareDelivery" not in data or "fareStructure" not in data.get("fareDelivery", {}):
+        raise HTTPException(status_code=400, detail="Filen ser ikke ut som en gyldig OSDM fareDelivery")
+
+    try:
+        csv_bytes = osdm_to_csv_bytes(data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Konvertering feilet: {str(e)}")
+
+    delivery_id = (
+        data.get("fareDelivery", {})
+        .get("delivery", {})
+        .get("deliveryId", "osdm")
+    )
+    filename = f"1076_{delivery_id}_priser.csv"
+
+    return StreamingResponse(
+        _io.BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+@app.get("/osdmtocsv", response_class=HTMLResponse)
+def osdmtocsv(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(
+            Path("frontend/login.html").read_text(encoding="utf-8")
+        )
+    return HTMLResponse(
+        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
+    )

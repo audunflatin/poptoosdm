@@ -194,6 +194,7 @@ button:disabled {
   color: #0066cc;
   cursor: pointer;
   font-weight: 600;
+  float: right;
 }
 
 .logout-button:hover {
