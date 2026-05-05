@@ -250,7 +250,7 @@ def generate_osdm(
         cal["untilDate"] = until_date
         cal["utcOffset"] = utc_offset_from
 
-    # Bygg eksempel-oppslag: UIC-kode → connectionPointId
+    # Bygg eksempel-oppslag: UIC-kode -> connectionPointId
     cp_for_uic = {}
     for cp in fs["connectionPoints"]:
         for ss in cp.get("stationSets", []):
@@ -259,18 +259,40 @@ def generate_osdm(
                     cp_for_uic[s["code"]] = cp["id"]
 
     example_routes = [
-        ("Oslo S",  "Bergen stasjon",   "7600100", "7602351"),
-        ("Oslo S",  "Trondheim S",      "7600100", "7601126"),
-        ("Oslo S",  "Stavanger stasjon","7600100", "7602234"),
-        ("Oslo S",  "Halden stasjon",   "7600100", "7600546"),
-        ("Oslo S",  "Kornsjø grense",   "7600100", "7600551"),
+        ("Oslo S",  "Bergen stasjon",    "7600100", "7602351"),
+        ("Oslo S",  "Trondheim S",       "7600100", "7601126"),
+        ("Oslo S",  "Stavanger stasjon", "7600100", "7602234"),
+        ("Oslo S",  "Halden stasjon",    "7600100", "7600546"),
+        ("Oslo S",  "Kornsjø grense",    "7600100", "7600551"),
     ]
 
+    # Kategoriratio mot voksen
+    # (nameRef-suffix, passengerConstraintRef-suffix, ratio)
+    CATEGORY_RATIOS = [
+        ("P__7",  "G__1", 1.00),   # Voksen
+        ("P__34", "G__2", 0.90),   # Voksen gruppe
+        ("P__11", "G__8", 0.50),   # Senior
+        ("P__8",  "G__3", 0.25),   # Barn 6-17 år
+        ("P__35", "G__4", 0.25),   # Barn 6-17 år gruppe
+        ("P__9",  "G__6", 0.00),   # Barn 0-5 år
+        ("P__36", "G__7", 0.00),   # Barn 0-5 år gruppe
+        ("P__5",  "G__1", 0.50),   # FIP leisure reduction voksen
+        ("P__5",  "G__3", 0.25),   # FIP leisure reduction barn
+        ("P__10", "G__5", 0.50),   # Hund
+    ]
+
+    # Finn id-prefix fra eksisterende fare-id-er (f.eks. "1076_8.2_")
+    sample_nr = fs["fares"][0].get("nameRef", "") if fs.get("fares") else ""
+    id_prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else f"1076_{datasetId}_"
+
     new_prices = []
-    examples = {}
     price_index = 1
-    example_idx = 1
     total = len(fs["regionalConstraints"])
+    examples = {}
+    example_idx = 1
+
+    # rc_id -> { (nameRef, passengerConstraintRef) -> ny price_id }
+    rc_fare_price_map: dict = {}
 
     for idx, rc in enumerate(fs["regionalConstraints"], start=1):
         km = rc.get("distance")
@@ -278,32 +300,61 @@ def generate_osdm(
             continue
 
         nok = nok_price_from_distance(km)
-        amount = eur_amount(nok, exchangeRate)
+        rc_fare_price_map[rc["id"]] = {}
+        voksen_amount = None
 
-        new_prices.append({
-            "id": f"1076_{datasetId}_I__{price_index}",
-            "price": [{
-                "amount": amount,
-                "currency": "EUR",
-                "scale": 2,
-                "vatDetails": []
-            }]
-        })
+        for nr_sfx, pc_sfx, ratio in CATEGORY_RATIOS:
+            nr_key = id_prefix + nr_sfx
+            pc_key = id_prefix + pc_sfx
 
-        for from_name, to_name, from_uic, to_uic in example_routes:
-            if (
-                rc["entryConnectionPointId"] == cp_for_uic.get(from_uic)
-                and rc["exitConnectionPointId"] == cp_for_uic.get(to_uic)
-            ):
-                examples[f"example_{example_idx}"] = (
-                    f"{from_name} → {to_name}: {amount / 100:.2f} EUR ({km} km)"
-                )
-                example_idx += 1
+            if ratio > 0:
+                raw_eur = nok * exchangeRate * ratio
+                cat_amount = int(math.ceil(raw_eur / 0.20) * 0.20 * 100)
+            else:
+                cat_amount = 0
+
+            # Lagre voksenbeløpet for eksempelpriser
+            if nr_sfx == "P__7" and pc_sfx == "G__1":
+                voksen_amount = cat_amount
+
+            price_id = f"1076_{datasetId}_I__{price_index}"
+            new_prices.append({
+                "id": price_id,
+                "price": [{
+                    "amount": cat_amount,
+                    "currency": "EUR",
+                    "scale": 2,
+                    "vatDetails": []
+                }]
+            })
+            rc_fare_price_map[rc["id"]][(nr_key, pc_key)] = price_id
+            price_index += 1
+
+        # Eksempelpriser bruker voksenprisen
+        if voksen_amount is not None:
+            for from_name, to_name, from_uic, to_uic in example_routes:
+                if (
+                    rc["entryConnectionPointId"] == cp_for_uic.get(from_uic)
+                    and rc["exitConnectionPointId"] == cp_for_uic.get(to_uic)
+                ):
+                    examples[f"example_{example_idx}"] = (
+                        f"{from_name} -> {to_name}: {voksen_amount / 100:.2f} EUR ({km} km)"
+                    )
+                    example_idx += 1
 
         GENERATION_PROGRESS["percent"] = int(idx / total * 100)
-        price_index += 1
 
     fs["prices"] = new_prices
+
+    # Oppdater priceRef i alle fares til å peke på nye price-id-er
+    for fare in fs["fares"]:
+        rc_ref = fare.get("regionalConstraintRef")
+        nr = fare.get("nameRef")
+        pc = fare.get("passengerConstraintRef")
+        new_price_id = rc_fare_price_map.get(rc_ref, {}).get((nr, pc))
+        if new_price_id:
+            fare["priceRef"] = new_price_id
+
     GENERATION_PROGRESS["status"] = "done"
     GENERATION_PROGRESS["percent"] = 100
 
@@ -326,6 +377,7 @@ def generate_osdm(
             "exampleFares": examples,
         },
     }
+
 
 # ---------------------------------------------------------------------
 # Progress & download
@@ -440,21 +492,21 @@ def suffix(id_str: str) -> str:
     return id_str
 
 
-def osdm_to_csv_bytes(data: dict) -> bytes:
-    import csv
+def osdm_to_xlsx_bytes(data: dict) -> bytes:
     import io as _io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, PatternFill
+    from openpyxl.utils import get_column_letter
 
     fs = data["fareDelivery"]["fareStructure"]
+    delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
 
-    # Oppslagstabeller
-    text_map = {t["id"]: t.get("textUtf8", t.get("text", "")) for t in fs.get("texts", [])}
-    price_map = {p["id"]: p["price"][0]["amount"] for p in fs.get("prices", [])}
     station_map = {
         sn["code"]: sn.get("nameUtf8", sn.get("name", ""))
         for sn in fs.get("stationNames", [])
     }
 
-    # CP-id -> foretrukken UIC-kode (norsk fremfor svensk)
+    # CP-id -> foretrukken norsk UIC-kode
     cp_to_uic = {}
     for cp in fs["connectionPoints"]:
         no_code = None
@@ -468,22 +520,21 @@ def osdm_to_csv_bytes(data: dict) -> bytes:
                         no_code = s["code"]
         cp_to_uic[cp["id"]] = no_code or first_code or ""
 
-    # RC-id -> RC
-    rc_map = {rc["id"]: rc for rc in fs["regionalConstraints"]}
+    price_map = {p["id"]: p["price"][0]["amount"] for p in fs.get("prices", [])}
 
-    # Bygg kolonnenøkler dynamisk basert på faktiske ID-er i filen
-    # Finn en fare og utled prefix (f.eks. "1076_7.0_")
-    sample_fare = fs["fares"][0] if fs.get("fares") else {}
-    sample_nr = sample_fare.get("nameRef", "")
-    prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else ""
+    # Finn prefix fra fare-id-er
+    sample_nr = fs["fares"][0].get("nameRef", "") if fs.get("fares") else ""
+    id_prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else f"1076_{delivery_id}_"
 
     col_keys = [
-        (prefix + nr_sfx, prefix + pc_sfx, col_name)
+        (id_prefix + nr_sfx, id_prefix + pc_sfx, col_name)
         for nr_sfx, pc_sfx, col_name in OSDM_CSV_COLUMNS
     ]
 
-    # Samle priser per RC
-    rc_prices: dict[str, dict] = {}
+    rc_map = {rc["id"]: rc for rc in fs["regionalConstraints"]}
+
+    # Samle priser per RC via priceRef i fares
+    rc_prices: dict = {}
     for fare in fs["fares"]:
         rc_ref = fare.get("regionalConstraintRef")
         nr = fare.get("nameRef")
@@ -493,7 +544,7 @@ def osdm_to_csv_bytes(data: dict) -> bytes:
         if amount is not None and rc_ref:
             rc_prices.setdefault(rc_ref, {})[(nr, pc)] = amount
 
-    # Bygg rader — én retning per stasjonspar
+    # Bygg rader
     seen_pairs: set = set()
     rows = []
 
@@ -503,7 +554,6 @@ def osdm_to_csv_bytes(data: dict) -> bytes:
             continue
         entry_uic = cp_to_uic.get(rc["entryConnectionPointId"], "")
         exit_uic = cp_to_uic.get(rc["exitConnectionPointId"], "")
-
         pair = tuple(sorted([entry_uic, exit_uic]))
         if pair in seen_pairs:
             continue
@@ -519,29 +569,82 @@ def osdm_to_csv_bytes(data: dict) -> bytes:
             "Til stasjon": exit_name,
             "Km": rc.get("distance", ""),
         }
-
         for nr_key, pc_key, col_name in col_keys:
             amount = prices.get((nr_key, pc_key))
-            row[col_name] = f"{amount / 100:.2f}" if amount is not None else ""
-
+            row[col_name] = round(amount / 100, 2) if amount is not None else None
         rows.append(row)
 
     rows.sort(key=lambda r: r["Fra stasjon"])
 
-    # Skriv CSV
+    # Bygg XLSX
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Priser {delivery_id}"
+
     fieldnames = [
         "Fra UIC", "Fra stasjon", "Til UIC", "Til stasjon", "Km",
     ] + [col_name for _, _, col_name in OSDM_CSV_COLUMNS]
 
-    buf = _io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=fieldnames, delimiter=";")
-    writer.writeheader()
-    writer.writerows(rows)
+    # Header-styling
+    header_font = Font(name="Arial", bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", start_color="0066CC")
+    header_align = Alignment(horizontal="center", vertical="center")
 
-    return buf.getvalue().encode("utf-8-sig")  # BOM for Excel
+    for col_idx, col_name in enumerate(fieldnames, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=col_name)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_align
 
+    # Dataformat
+    normal_font = Font(name="Arial", size=10)
+    alt_fill = PatternFill("solid", start_color="E8F1FB")
+    number_format = '#,##0.00'
 
-@app.post("/ui/osdm-to-csv")
+    price_col_start = 6  # kolonne F og utover er priser
+
+    for row_idx, row in enumerate(rows, start=2):
+        fill = alt_fill if row_idx % 2 == 0 else None
+        for col_idx, col_name in enumerate(fieldnames, start=1):
+            val = row.get(col_name, "")
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            cell.font = normal_font
+            if fill:
+                cell.fill = fill
+            # Tall-format for priskolonner og km
+            if col_idx == 5:  # Km
+                cell.number_format = '#,##0'
+                cell.alignment = Alignment(horizontal="right")
+            elif col_idx >= price_col_start:
+                cell.number_format = number_format
+                cell.alignment = Alignment(horizontal="right")
+
+    # Kolonnebredder
+    col_widths = {
+        1: 12,   # Fra UIC
+        2: 22,   # Fra stasjon
+        3: 12,   # Til UIC
+        4: 22,   # Til stasjon
+        5: 8,    # Km
+    }
+    default_price_width = 14
+
+    for col_idx in range(1, len(fieldnames) + 1):
+        width = col_widths.get(col_idx, default_price_width)
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    # Frys toppraden
+    ws.freeze_panes = "A2"
+
+    # Auto-filter
+    ws.auto_filter.ref = ws.dimensions
+
+    buf = _io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+@app.post("/frontend/osdm-to-csv")
 async def osdm_to_csv(
     request: Request,
     osdmFile: UploadFile = File(...),
@@ -557,12 +660,11 @@ async def osdm_to_csv(
     except Exception:
         raise HTTPException(status_code=400, detail="Ugyldig JSON-fil")
 
-    # Enkel struktursjekk
     if "fareDelivery" not in data or "fareStructure" not in data.get("fareDelivery", {}):
         raise HTTPException(status_code=400, detail="Filen ser ikke ut som en gyldig OSDM fareDelivery")
 
     try:
-        csv_bytes = osdm_to_csv_bytes(data)
+        xlsx_bytes = osdm_to_xlsx_bytes(data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Konvertering feilet: {str(e)}")
 
@@ -571,15 +673,16 @@ async def osdm_to_csv(
         .get("delivery", {})
         .get("deliveryId", "osdm")
     )
-    filename = f"1076_{delivery_id}_priser.csv"
+    filename = f"1076_{delivery_id}_priser.xlsx"
 
     return StreamingResponse(
-        _io.BytesIO(csv_bytes),
-        media_type="text/csv",
+        _io.BytesIO(xlsx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
 @app.get("/osdmtocsv", response_class=HTMLResponse)
-def osdmtocsv(request: Request):
+def osdmtocsv_page(request: Request):
     if "user_email" not in request.session:
         return HTMLResponse(
             Path("frontend/login.html").read_text(encoding="utf-8")

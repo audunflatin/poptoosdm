@@ -41,7 +41,7 @@ async function convert() {
   fd.append("osdmFile", fileInput.files[0]);
 
   try {
-    const r = await fetch("/ui/osdm-to-csv", { method: "POST", body: fd });
+    const r = await fetch("/frontend/osdm-to-csv", { method: "POST", body: fd });
 
     spinner.style.display = "none";
     resultBox.style.display = "block";
@@ -64,14 +64,10 @@ async function convert() {
     const match = cd.match(/filename=(.+)/);
     if (match) csvFilename = match[1].trim();
 
-    // Tell antall rader (trekk fra header)
-    const text = await csvBlob.text();
-    const rowCount = text.split("\n").filter(l => l.trim()).length - 1;
-
     resultStatus.className = "status-ok";
     resultStatus.innerHTML =
       `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0.75rem;">` +
-      `✅ Konvertering vellykket\nFil: ${csvFilename}\nAntall relasjoner: ${rowCount}</pre>`;
+      `✅ Konvertering vellykket\nFil: ${csvFilename}</pre>`;
 
     downloadBtn.style.display = "block";
 
