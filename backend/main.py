@@ -468,15 +468,6 @@ def delete_user(request: Request, email: str = Form(...)):
 # ---------------------------------------------------------------------
 # OSDM til CSV
 # ---------------------------------------------------------------------
-@app.get("/osdmtocsv", response_class=HTMLResponse)
-def osdmtocsv_page(request: Request):
-    if "user_email" not in request.session:
-        return HTMLResponse(
-            Path("frontend/login.html").read_text(encoding="utf-8")
-        )
-    return HTMLResponse(
-        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
-    )
 
 def suffix(id_str: str) -> str:
     """Hent suffix etter siste '__', f.eks '1076_7.0_P__7' -> 'P__7'"""
@@ -743,10 +734,11 @@ async def osdm_to_csv(
         try:
             xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
             delivery = data.get("fareDelivery", {}).get("delivery", {})
+            fare_provider = delivery.get("fareProvider", "")
             delivery_id = delivery.get("deliveryId", "osdm")
             usage = delivery.get("usage", "")
             env_suffix = "test" if usage == "TEST_ONLY" else "prod"
-            filename = f"{delivery_id}_{env_suffix}_prices.xlsx"
+            filename = f"{fare_provider}_{delivery_id}_{env_suffix}.xlsx"
             XLSX_JOBS[job_id]["result"] = xlsx_bytes
             XLSX_JOBS[job_id]["rows"] = row_count
             XLSX_JOBS[job_id]["filename"] = filename
@@ -755,9 +747,6 @@ async def osdm_to_csv(
         except Exception as e:
             XLSX_JOBS[job_id]["status"] = "error"
             XLSX_JOBS[job_id]["error"] = str(e)
-
-    threading.Thread(target=run, daemon=True).start()
-    return {"jobId": job_id}
 
 
 @app.get("/frontend/osdm-to-csv-status/{job_id}")
@@ -792,4 +781,13 @@ def osdm_to_csv_download(job_id: str, request: Request):
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
-
+@app.get("/osdmtocsv", response_class=HTMLResponse)
+@app.head("/osdmtocsv")
+def osdmtocsv_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(
+            Path("frontend/login.html").read_text(encoding="utf-8")
+        )
+    return HTMLResponse(
+        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
+    )

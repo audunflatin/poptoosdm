@@ -14,6 +14,7 @@ fileInput.addEventListener("change", () => {
   downloadBtn.style.display = "none";
   resultBox.style.display = "none";
   resultStatus.innerHTML = "";
+  currentJobId = null;
 
   if (!fileInput.files.length) {
     convertBtn.disabled = true;
@@ -23,10 +24,24 @@ fileInput.addEventListener("change", () => {
 
   const file = fileInput.files[0];
   const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+  const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+  const maxMb = isLocal ? 5000 : 100;
+
+  if (file.size > maxMb * 1024 * 1024) {
+    fileInfo.innerText = `⚠️ Filen er ${sizeMb} MB — maks er ${maxMb} MB på denne tjenesten. Last ned og kjør konverteringen lokalt for store filer.`;
+    fileInfo.style.display = "block";
+    fileInfo.style.color = "#c00";
+    convertBtn.disabled = true;
+    return;
+  }
+
   fileInfo.innerText = `📄 ${file.name} (${sizeMb} MB)`;
   fileInfo.style.display = "block";
+  fileInfo.style.color = "#555";
   convertBtn.disabled = false;
 });
+
+ 
 
 let currentJobId = null;
 
