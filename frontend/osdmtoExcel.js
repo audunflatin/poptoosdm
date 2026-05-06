@@ -28,48 +28,44 @@ fileInput.addEventListener("change", () => {
   convertBtn.disabled = false;
 });
 
+let currentJobId = null;
+
 async function convert() {
   csvBlob = null;
   downloadBtn.style.display = "none";
   resultBox.style.display = "none";
   resultStatus.innerHTML = "";
+  currentJobId = null;
 
   spinner.style.display = "block";
   convertBtn.disabled = true;
-
+  const bar = document.getElementById("progressBar");
+  if (bar) {
+      bar.style.display = "block";
+      bar.value = 0;
+      bar.max = 100;
+  }
   const fd = new FormData();
   fd.append("osdmFile", fileInput.files[0]);
 
   try {
     const r = await fetch("/frontend/osdm-to-csv", { method: "POST", body: fd });
 
-    spinner.style.display = "none";
-    resultBox.style.display = "block";
-
     if (!r.ok) {
       const err = await r.json().catch(() => ({ detail: "Ukjent feil" }));
+      spinner.style.display = "none";
+      resultBox.style.display = "block";
       resultStatus.className = "status-error";
       resultStatus.innerHTML =
         `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
-        `❌ Konvertering feilet\n${err.detail || "Ukjent feil"}</pre>`;
+        `❌ Feil: ${err.detail || "Ukjent feil"}</pre>`;
       convertBtn.disabled = false;
       return;
     }
 
-    // Hent CSV som blob
-    csvBlob = await r.blob();
-
-    // Hent filnavn fra Content-Disposition
-    const cd = r.headers.get("Content-Disposition") || "";
-    const match = cd.match(/filename=(.+)/);
-    if (match) csvFilename = match[1].trim();
-
-    resultStatus.className = "status-ok";
-    resultStatus.innerHTML =
-      `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0.75rem;">` +
-      `✅ Konvertering vellykket\nFil: ${csvFilename}</pre>`;
-
-    downloadBtn.style.display = "block";
+    const { jobId } = await r.json();
+    currentJobId = jobId;
+    pollStatus(jobId);
 
   } catch (err) {
     spinner.style.display = "none";
@@ -80,16 +76,65 @@ async function convert() {
       `❌ Nettverksfeil: ${err.message}</pre>`;
     convertBtn.disabled = false;
   }
+}
 
-  convertBtn.disabled = false;
+function pollStatus(jobId) {
+  const bar = document.getElementById("progressBar");
+  const pct = document.getElementById("progressPercent");
+  if (bar) {
+    bar.style.display = "block";
+    bar.value = 0;
+    bar.max = 100;
+  }
+  if (pct) {
+    pct.style.display = "inline";
+    pct.innerText = "0%";
+  }
+
+  const interval = setInterval(async () => {
+    try {
+      const r = await fetch(`/frontend/osdm-to-csv-status/${jobId}`);
+      const res = await r.json();
+
+      if (bar) bar.value = res.percent || 0;
+      if (pct) pct.innerText = (res.percent || 0) + "%";
+
+      if (res.status === "done") {
+        clearInterval(interval);
+        spinner.style.display = "none";
+        if (bar) bar.style.display = "none";
+        if (pct) pct.style.display = "none";
+        resultBox.style.display = "block";
+        resultStatus.className = "status-ok";
+        resultStatus.innerHTML =
+          `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0.75rem;">` +
+          `✅ Konvertering vellykket\nFil: ${res.filename}\nAntall relasjoner: ${res.rows}</pre>`;
+        downloadBtn.style.display = "block";
+        convertBtn.disabled = false;
+
+      } else if (res.status === "error") {
+        clearInterval(interval);
+        spinner.style.display = "none";
+        if (bar) bar.style.display = "none";
+        if (pct) pct.style.display = "none";
+        resultBox.style.display = "block";
+        resultStatus.className = "status-error";
+        resultStatus.innerHTML =
+          `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
+          `❌ Konvertering feilet: ${res.error || "Ukjent feil"}</pre>`;
+        convertBtn.disabled = false;
+      }
+
+    } catch (err) {
+      clearInterval(interval);
+      spinner.style.display = "none";
+      if (bar) bar.style.display = "none";
+      convertBtn.disabled = false;
+    }
+  }, 300);
 }
 
 function download() {
-  if (!csvBlob) return;
-  const url = URL.createObjectURL(csvBlob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = csvFilename;
-  a.click();
-  URL.revokeObjectURL(url);
+  if (!currentJobId) return;
+  window.location.href = `/frontend/osdm-to-csv-download/${currentJobId}`;
 }

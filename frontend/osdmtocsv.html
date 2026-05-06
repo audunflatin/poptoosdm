@@ -42,6 +42,11 @@
     </button>
 
     <div id="spinner" class="spinner"></div>
+    <progress id="progressBar" style="display:none; width:100%; margin-top:1rem;"></progress>
+    
+    <div style="text-align:right; margin-top:0.25rem;">
+      <span id="progressPercent" style="display:none; font-size:0.9rem; color:#0066cc; font-weight:600;"></span>
+    </div>
 
     <div id="resultBox" style="display:none; margin-top:1.5rem;">
       <div id="resultStatus"></div>
@@ -49,39 +54,6 @@
         Last ned Excel
       </button>
     </div>
-  </section>
-
-  <section class="panel">
-    <h2>Excel-innhold</h2>
-    <p style="color:#555; margin-top:0; margin-bottom:0;">
-      Excel-filen inneholder én rad per stasjonspar (én retning), sortert alfabetisk på fra-stasjon,
-      med følgende kolonner:
-    </p>
-    <table style="width:100%; border-collapse:collapse; margin-top:1rem; font-size:0.9rem;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px 10px; border-bottom:2px solid var(--entur-border); background:var(--entur-blue-light);">Kolonne</th>
-          <th style="text-align:left; padding:6px 10px; border-bottom:2px solid var(--entur-border); background:var(--entur-blue-light);">Beskrivelse</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Fra UIC</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">UIC-kode for avgangsstasjon</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Fra stasjon</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Navn på avgangsstasjon</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Til UIC</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">UIC-kode for ankomststasjon</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Til stasjon</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Navn på ankomststasjon</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Km</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Avstand i kilometer</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Voksen</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Voksen gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Senior</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Barn 6-17 år</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Barn 6-17 år gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Barn 0-5 år</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Barn 0-5 år gruppe</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">FIP leisure reduction voksen</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border);">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">FIP leisure reduction barn</td><td style="padding:6px 10px; border-bottom:1px solid var(--entur-border); background:#f9f9f9;">Pris i EUR</td></tr>
-        <tr><td style="padding:6px 10px;">Hund</td><td style="padding:6px 10px;">Pris i EUR</td></tr>
-      </tbody>
-    </table>
   </section>
 
 </div>

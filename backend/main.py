@@ -10,6 +10,9 @@ import io
 import json
 import math
 
+import threading
+import uuid
+
 from backend.auth_db import SessionLocal, User, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
@@ -49,6 +52,7 @@ TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
 OSDM_OUT = None
+XLSX_JOBS: dict = {}  # job_id -> {"status": "running"|"done"|"error", "result": bytes, "error": str}
 
 # ---------------------------------------------------------------------
 # Auth helpers
@@ -464,23 +468,15 @@ def delete_user(request: Request, email: str = Form(...)):
 # ---------------------------------------------------------------------
 # OSDM til CSV
 # ---------------------------------------------------------------------
-
-# Kolonnedefinisjoner — (nameRef-suffix, passengerConstraint-suffix, kolonnenavn)
-# Disse er relative til deliveryId og vil fungere uavhengig av versjon
-# siden vi matcher på suffix etter siste "__"
-OSDM_CSV_COLUMNS = [
-    ("P__7",  "G__1", "Voksen"),
-    ("P__34", "G__2", "Voksen gruppe"),
-    ("P__11", "G__8", "Senior"),
-    ("P__8",  "G__3", "Barn 6-17 år"),
-    ("P__35", "G__4", "Barn 6-17 år gruppe"),
-    ("P__9",  "G__6", "Barn 0-5 år"),
-    ("P__36", "G__7", "Barn 0-5 år gruppe"),
-    ("P__5",  "G__1", "FIP leisure reduction voksen"),
-    ("P__5",  "G__3", "FIP leisure reduction barn"),
-    ("P__10", "G__5", "Hund"),
-]
-
+@app.get("/osdmtocsv", response_class=HTMLResponse)
+def osdmtocsv_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(
+            Path("frontend/login.html").read_text(encoding="utf-8")
+        )
+    return HTMLResponse(
+        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
+    )
 
 def suffix(id_str: str) -> str:
     """Hent suffix etter siste '__', f.eks '1076_7.0_P__7' -> 'P__7'"""
@@ -492,57 +488,144 @@ def suffix(id_str: str) -> str:
     return id_str
 
 
-def osdm_to_xlsx_bytes(data: dict) -> bytes:
+def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> bytes:
     import io as _io
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, PatternFill
+    from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
+
+    def set_progress(percent: int):
+        if job_id and jobs and job_id in jobs:
+            jobs[job_id]["percent"] = percent
 
     fs = data["fareDelivery"]["fareStructure"]
     delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
 
+    text_map = {
+        t["id"]: t.get("textUtf8", t.get("text", ""))
+        for t in fs.get("texts", [])
+    }
+    price_map = {
+        p["id"]: p["price"][0]["amount"]
+        for p in fs.get("prices", [])
+    }
     station_map = {
         sn["code"]: sn.get("nameUtf8", sn.get("name", ""))
         for sn in fs.get("stationNames", [])
     }
+    service_class_map = {
+        sc["id"]: text_map.get(sc.get("textRef", ""), sc["id"])
+        for sc in fs.get("serviceClassDefinitions", [])
+    }
+    pc_map = {pc["id"]: pc for pc in fs.get("passengerConstraints", [])}
 
-    # CP-id -> foretrukken norsk UIC-kode
+    # Reduction-oppslag: id -> korteste representative kortnavn
+    reduction_map = {}
+    for rc in fs.get("reductionConstraints", []):
+        cards = rc.get("requiredCards", [])
+        if cards:
+            name = min(cards, key=lambda c: len(c.get("cardName", "")))
+            reduction_map[rc["id"]] = name.get("cardName", rc["id"])
+
+    set_progress(10)
+
+    PASSENGER_TYPE_LABELS = {
+        "ADULT": "Adult", "CHILD": "Child", "YOUNG_CHILD": "Young child",
+        "SENIOR": "Senior", "DOG": "Dog", "INFANT": "Infant",
+    }
+
+    # CP-id -> beste UIC-kode og stasjonsnavn
     cp_to_uic = {}
+    cp_to_name = {}
     for cp in fs["connectionPoints"]:
-        no_code = None
-        first_code = None
+        best_code = None
+        all_codes = []
         for ss in cp.get("stationSets", []):
             for s in ss:
                 if s.get("codeList") == "UIC":
-                    if first_code is None:
-                        first_code = s["code"]
-                    if s.get("country") == "NO":
-                        no_code = s["code"]
-        cp_to_uic[cp["id"]] = no_code or first_code or ""
-
-    price_map = {p["id"]: p["price"][0]["amount"] for p in fs.get("prices", [])}
-
-    # Finn prefix fra fare-id-er
-    sample_nr = fs["fares"][0].get("nameRef", "") if fs.get("fares") else ""
-    id_prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else f"1076_{delivery_id}_"
-
-    col_keys = [
-        (id_prefix + nr_sfx, id_prefix + pc_sfx, col_name)
-        for nr_sfx, pc_sfx, col_name in OSDM_CSV_COLUMNS
-    ]
+                    code = s["code"]
+                    all_codes.append(code)
+                    if best_code is None or s.get("country") == "NO":
+                        best_code = code
+        best_name = None
+        for code in all_codes:
+            name = station_map.get(code)
+            if name:
+                best_name = name
+                break
+        cp_to_uic[cp["id"]] = best_code or ""
+        cp_to_name[cp["id"]] = best_name or best_code or ""
 
     rc_map = {rc["id"]: rc for rc in fs["regionalConstraints"]}
 
-    # Samle priser per RC via priceRef i fares
-    rc_prices: dict = {}
+    set_progress(20)
+
+    # Pass 1: bygg kolonnenavn uten passasjertype
+    # Nøkkel: (nameRef, passengerConstraintRef, serviceClassRef, reductionConstraintRef)
+    seen_categories = {}
+    category_order = []
+
     for fare in fs["fares"]:
+        nr = fare.get("nameRef", "")
+        pc_ref = fare.get("passengerConstraintRef", "")
+        sc = fare.get("serviceClassRef", "")
+        red = fare.get("reductionConstraintRef", "")
+        key = (nr, pc_ref, sc, red)
+        if key not in seen_categories:
+            parts = [text_map.get(nr, nr)]
+            sc_name = service_class_map.get(sc, "")
+            if sc_name:
+                parts.append(sc_name)
+            red_name = reduction_map.get(red, "")
+            if red_name:
+                parts.append(red_name)
+            seen_categories[key] = " ".join(parts)
+            category_order.append(key)
+
+    set_progress(35)
+
+    # Pass 2: legg til passasjertype kun for duplikater
+    name_counts: dict = {}
+    for name in seen_categories.values():
+        name_counts[name] = name_counts.get(name, 0) + 1
+    duplicates = {name for name, count in name_counts.items() if count > 1}
+
+    for key in category_order:
+        if seen_categories[key] in duplicates:
+            nr, pc_ref, sc, red = key
+            pc = pc_map.get(pc_ref, {})
+            ptype = PASSENGER_TYPE_LABELS.get(pc.get("passengerType", ""), "")
+            fare_name = text_map.get(nr, nr)
+            sc_name = service_class_map.get(sc, "")
+            red_name = reduction_map.get(red, "")
+            parts = [fare_name]
+            if ptype:
+                parts.append(ptype)
+            if sc_name:
+                parts.append(sc_name)
+            if red_name:
+                parts.append(red_name)
+            seen_categories[key] = " ".join(parts)
+
+    set_progress(40)
+
+    # Samle priser per RC
+    rc_prices: dict = {}
+    total_fares = len(fs["fares"])
+    for i, fare in enumerate(fs["fares"]):
         rc_ref = fare.get("regionalConstraintRef")
-        nr = fare.get("nameRef")
-        pc = fare.get("passengerConstraintRef")
+        nr = fare.get("nameRef", "")
+        pc = fare.get("passengerConstraintRef", "")
+        sc = fare.get("serviceClassRef", "")
+        red = fare.get("reductionConstraintRef", "")
         price_ref = fare.get("priceRef")
         amount = price_map.get(price_ref)
         if amount is not None and rc_ref:
-            rc_prices.setdefault(rc_ref, {})[(nr, pc)] = amount
+            rc_prices.setdefault(rc_ref, {})[(nr, pc, sc, red)] = amount
+        if i % 50000 == 0:
+            set_progress(40 + int(i / total_fares * 30))
+
+    set_progress(70)
 
     # Bygg rader
     seen_pairs: set = set()
@@ -552,43 +635,45 @@ def osdm_to_xlsx_bytes(data: dict) -> bytes:
         rc = rc_map.get(rc_id)
         if not rc:
             continue
-        entry_uic = cp_to_uic.get(rc["entryConnectionPointId"], "")
-        exit_uic = cp_to_uic.get(rc["exitConnectionPointId"], "")
+        entry_cp = rc["entryConnectionPointId"]
+        exit_cp = rc["exitConnectionPointId"]
+        entry_uic = cp_to_uic.get(entry_cp, "")
+        exit_uic = cp_to_uic.get(exit_cp, "")
+
         pair = tuple(sorted([entry_uic, exit_uic]))
         if pair in seen_pairs:
             continue
         seen_pairs.add(pair)
 
-        entry_name = station_map.get(entry_uic, entry_uic)
-        exit_name = station_map.get(exit_uic, exit_uic)
-
         row = {
-            "Fra UIC": entry_uic,
-            "Fra stasjon": entry_name,
-            "Til UIC": exit_uic,
-            "Til stasjon": exit_name,
+            "From UIC": entry_uic,
+            "From station": cp_to_name.get(entry_cp, entry_uic),
+            "To UIC": exit_uic,
+            "To station": cp_to_name.get(exit_cp, exit_uic),
             "Km": rc.get("distance", ""),
         }
-        for nr_key, pc_key, col_name in col_keys:
-            amount = prices.get((nr_key, pc_key))
-            row[col_name] = round(amount / 100, 2) if amount is not None else None
+        for key in category_order:
+            amount = prices.get(key)
+            row[seen_categories[key]] = round(amount / 100, 2) if amount is not None else None
         rows.append(row)
 
-    rows.sort(key=lambda r: r["Fra stasjon"])
+    rows.sort(key=lambda r: r["From station"])
+
+    set_progress(80)
 
     # Bygg XLSX
     wb = Workbook()
     ws = wb.active
     ws.title = f"Priser {delivery_id}"
 
-    fieldnames = [
-        "Fra UIC", "Fra stasjon", "Til UIC", "Til stasjon", "Km",
-    ] + [col_name for _, _, col_name in OSDM_CSV_COLUMNS]
+    fieldnames = (
+        ["From UIC", "From station", "To UIC", "To station", "Km"]
+        + [seen_categories[key] for key in category_order]
+    )
 
-    # Header-styling
     header_font = Font(name="Arial", bold=True, color="FFFFFF")
     header_fill = PatternFill("solid", start_color="0066CC")
-    header_align = Alignment(horizontal="center", vertical="center")
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     for col_idx, col_name in enumerate(fieldnames, start=1):
         cell = ws.cell(row=1, column=col_idx, value=col_name)
@@ -596,12 +681,9 @@ def osdm_to_xlsx_bytes(data: dict) -> bytes:
         cell.fill = header_fill
         cell.alignment = header_align
 
-    # Dataformat
     normal_font = Font(name="Arial", size=10)
     alt_fill = PatternFill("solid", start_color="E8F1FB")
-    number_format = '#,##0.00'
-
-    price_col_start = 6  # kolonne F og utover er priser
+    price_col_start = 6
 
     for row_idx, row in enumerate(rows, start=2):
         fill = alt_fill if row_idx % 2 == 0 else None
@@ -611,47 +693,38 @@ def osdm_to_xlsx_bytes(data: dict) -> bytes:
             cell.font = normal_font
             if fill:
                 cell.fill = fill
-            # Tall-format for priskolonner og km
-            if col_idx == 5:  # Km
-                cell.number_format = '#,##0'
+            if col_idx == 5:
+                cell.number_format = "#,##0"
                 cell.alignment = Alignment(horizontal="right")
             elif col_idx >= price_col_start:
-                cell.number_format = number_format
+                cell.number_format = "#,##0.00"
                 cell.alignment = Alignment(horizontal="right")
 
-    # Kolonnebredder
-    col_widths = {
-        1: 12,   # Fra UIC
-        2: 22,   # Fra stasjon
-        3: 12,   # Til UIC
-        4: 22,   # Til stasjon
-        5: 8,    # Km
-    }
-    default_price_width = 14
+    ws.column_dimensions["A"].width = 12
+    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["C"].width = 12
+    ws.column_dimensions["D"].width = 22
+    ws.column_dimensions["E"].width = 8
+    for col_idx in range(price_col_start, len(fieldnames) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = 20
 
-    for col_idx in range(1, len(fieldnames) + 1):
-        width = col_widths.get(col_idx, default_price_width)
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    # Frys toppraden
     ws.freeze_panes = "A2"
-
-    # Auto-filter
     ws.auto_filter.ref = ws.dimensions
+    ws.row_dimensions[1].height = 30
 
+    set_progress(95)
+    row_count = len(rows)
     buf = _io.BytesIO()
     wb.save(buf)
     buf.seek(0)
-    return buf.read()
+    return buf.read(), row_count
+
 
 @app.post("/frontend/osdm-to-csv")
 async def osdm_to_csv(
     request: Request,
     osdmFile: UploadFile = File(...),
 ):
-    from fastapi.responses import StreamingResponse
-    import io as _io
-
     require_login(request)
 
     content = await osdmFile.read()
@@ -663,30 +736,60 @@ async def osdm_to_csv(
     if "fareDelivery" not in data or "fareStructure" not in data.get("fareDelivery", {}):
         raise HTTPException(status_code=400, detail="Filen ser ikke ut som en gyldig OSDM fareDelivery")
 
-    try:
-        xlsx_bytes = osdm_to_xlsx_bytes(data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Konvertering feilet: {str(e)}")
+    job_id = str(uuid.uuid4())
+    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
 
-    delivery_id = (
-        data.get("fareDelivery", {})
-        .get("delivery", {})
-        .get("deliveryId", "osdm")
-    )
-    filename = f"1076_{delivery_id}_priser.xlsx"
+    def run():
+        try:
+            xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
+            delivery = data.get("fareDelivery", {}).get("delivery", {})
+            delivery_id = delivery.get("deliveryId", "osdm")
+            usage = delivery.get("usage", "")
+            env_suffix = "test" if usage == "TEST_ONLY" else "prod"
+            filename = f"{delivery_id}_{env_suffix}_prices.xlsx"
+            XLSX_JOBS[job_id]["result"] = xlsx_bytes
+            XLSX_JOBS[job_id]["rows"] = row_count
+            XLSX_JOBS[job_id]["filename"] = filename
+            XLSX_JOBS[job_id]["status"] = "done"
+            XLSX_JOBS[job_id]["percent"] = 100
+        except Exception as e:
+            XLSX_JOBS[job_id]["status"] = "error"
+            XLSX_JOBS[job_id]["error"] = str(e)
 
+    threading.Thread(target=run, daemon=True).start()
+    return {"jobId": job_id}
+
+
+@app.get("/frontend/osdm-to-csv-status/{job_id}")
+def osdm_to_csv_status(job_id: str, request: Request):
+    require_login(request)
+    job = XLSX_JOBS.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Jobb ikke funnet")
+    return {
+        "status": job["status"],
+        "percent": job.get("percent", 0),
+        "error": job.get("error"),
+        "filename": job.get("filename"),
+        "rows": job.get("rows", 0),
+}
+
+@app.get("/frontend/osdm-to-csv-download/{job_id}")
+def osdm_to_csv_download(job_id: str, request: Request):
+    from fastapi.responses import StreamingResponse
+    import io as _io
+    require_login(request)
+    job = XLSX_JOBS.get(job_id)
+    if not job or job["status"] != "done":
+        raise HTTPException(status_code=404, detail="Fil ikke klar")
+    xlsx_bytes = job["result"]
+    filename = job["filename"]
+    # Rydd opp etter nedlasting
+    del XLSX_JOBS[job_id]
     return StreamingResponse(
         _io.BytesIO(xlsx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
-@app.get("/osdmtocsv", response_class=HTMLResponse)
-def osdmtocsv_page(request: Request):
-    if "user_email" not in request.session:
-        return HTMLResponse(
-            Path("frontend/login.html").read_text(encoding="utf-8")
-        )
-    return HTMLResponse(
-        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
-    )
+
