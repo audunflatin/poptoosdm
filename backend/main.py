@@ -719,19 +719,26 @@ async def osdm_to_csv(
     require_login(request)
 
     content = await osdmFile.read()
+    print(f"Mottok fil: {osdmFile.filename}, størrelse: {len(content)} bytes")
+    
     try:
         data = json.loads(content.decode("utf-8"))
-    except Exception:
+        print("JSON parset OK")
+    except Exception as e:
+        print(f"JSON-feil: {e}")
         raise HTTPException(status_code=400, detail="Ugyldig JSON-fil")
 
     if "fareDelivery" not in data or "fareStructure" not in data.get("fareDelivery", {}):
+        print("Struktursjekk feilet")
         raise HTTPException(status_code=400, detail="Filen ser ikke ut som en gyldig OSDM fareDelivery")
 
     job_id = str(uuid.uuid4())
+    print(f"Starter jobb: {job_id}")
     XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
 
     def run():
         try:
+            print(f"run() starter for jobb {job_id}")
             xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
             delivery = data.get("fareDelivery", {}).get("delivery", {})
             fare_provider = delivery.get("fareProvider", "")
@@ -745,9 +752,15 @@ async def osdm_to_csv(
             XLSX_JOBS[job_id]["status"] = "done"
             XLSX_JOBS[job_id]["percent"] = 100
         except Exception as e:
+            print(f"run() feilet: {e}")
+            import traceback
+            traceback.print_exc()
             XLSX_JOBS[job_id]["status"] = "error"
             XLSX_JOBS[job_id]["error"] = str(e)
-
+            
+    threading.Thread(target=run, daemon=True).start()
+    print(f"Returnerer jobId: {job_id}")
+    return {"jobId": job_id}
 
 @app.get("/frontend/osdm-to-csv-status/{job_id}")
 def osdm_to_csv_status(job_id: str, request: Request):
