@@ -3,6 +3,8 @@
     "allow": [
       "Edit(frontend/**)",
       "Write(frontend/**)",
+      "Edit(.claude/**)",
+      "Write(.claude/**)",
       "Bash"
     ]
   }
