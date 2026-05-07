@@ -28,7 +28,7 @@ fileInput.addEventListener("change", () => {
   const maxMb = isLocal ? 5000 : 100;
 
   if (file.size > maxMb * 1024 * 1024) {
-    fileInfo.innerText = `⚠️ Filen er ${sizeMb} MB — maks er ${maxMb} MB på denne tjenesten. Last ned og kjør konverteringen lokalt for store filer.`;
+    fileInfo.innerText = t("file_too_large").replace("{size}", sizeMb).replace("{max}", maxMb);
     fileInfo.style.display = "block";
     fileInfo.style.color = "#c00";
     convertBtn.disabled = true;
@@ -40,8 +40,6 @@ fileInput.addEventListener("change", () => {
   fileInfo.style.color = "#555";
   convertBtn.disabled = false;
 });
-
- 
 
 let currentJobId = null;
 
@@ -67,13 +65,13 @@ async function convert() {
     const r = await fetch("/frontend/osdm-to-csv", { method: "POST", body: fd });
 
     if (!r.ok) {
-      const err = await r.json().catch(() => ({ detail: "Ukjent feil" }));
+      const err = await r.json().catch(() => ({ detail: t("unknown_error") }));
       spinner.style.display = "none";
       resultBox.style.display = "block";
       resultStatus.className = "status-error";
       resultStatus.innerHTML =
         `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
-        `❌ Feil: ${err.detail || "Ukjent feil"}</pre>`;
+        `❌ ${err.detail || t("unknown_error")}</pre>`;
       convertBtn.disabled = false;
       return;
     }
@@ -88,7 +86,7 @@ async function convert() {
     resultStatus.className = "status-error";
     resultStatus.innerHTML =
       `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
-      `❌ Nettverksfeil: ${err.message}</pre>`;
+      `${t("err_network")}: ${err.message}</pre>`;
     convertBtn.disabled = false;
   }
 }
@@ -123,7 +121,7 @@ function pollStatus(jobId) {
         resultStatus.className = "status-ok";
         resultStatus.innerHTML =
           `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0.75rem;">` +
-          `✅ Konvertering vellykket\nFil: ${res.filename}\nAntall relasjoner: ${res.rows}</pre>`;
+          `${t("convert_success")}\n${t("label_file")}: ${res.filename}\n${t("label_rows")}: ${res.rows}</pre>`;
         downloadBtn.style.display = "block";
         convertBtn.disabled = false;
 
@@ -136,7 +134,7 @@ function pollStatus(jobId) {
         resultStatus.className = "status-error";
         resultStatus.innerHTML =
           `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
-          `❌ Konvertering feilet: ${res.error || "Ukjent feil"}</pre>`;
+          `${t("err_convert_failed")}: ${res.error || t("unknown_error")}</pre>`;
         convertBtn.disabled = false;
       }
 

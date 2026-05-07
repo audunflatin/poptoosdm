@@ -6,7 +6,6 @@ function hide(id){document.getElementById(id).style.display="none";}
 function validateGenerateInputs() {
   const errorEl = document.getElementById("validationError");
 
-  // reset
   errorEl.style.display = "none";
   errorEl.innerText = "";
 
@@ -16,13 +15,13 @@ function validateGenerateInputs() {
   const validTo = document.getElementById("validTo").value;
 
   if (!datasetId) {
-    errorEl.innerText = "❌ DeliveryId må fylles ut før generering.";
+    errorEl.innerText = t("err_delivery_id");
   } else if (!exchangeRate || exchangeRate <= 0) {
-    errorEl.innerText = "❌ Valutakurs må være større enn 0.";
+    errorEl.innerText = t("err_exchange_rate");
   } else if (!validFrom || !validTo) {
-    errorEl.innerText = "❌ Gyldig fra og til må settes.";
+    errorEl.innerText = t("err_valid_dates");
   } else if (validFrom > validTo) {
-    errorEl.innerText = "❌ Gyldig fra kan ikke være etter gyldig til.";
+    errorEl.innerText = t("err_date_order");
   }
 
   if (errorEl.innerText) {
@@ -37,12 +36,11 @@ async function validateTen() {
   const statusEl = document.getElementById("tenStatus");
   const generateBtn = document.getElementById("generateBtn");
 
-  // reset
   statusEl.className = "";
   generateBtn.disabled = true;
 
   if (!tenFile.files.length) {
-    statusEl.innerText = "❌ Ingen TEN‑CSV valgt";
+    statusEl.innerText = t("err_no_ten");
     statusEl.classList.add("status-error");
     return;
   }
@@ -61,15 +59,12 @@ async function validateTen() {
   hide("spinnerTen");
 
   if (res.ok === true) {
-    statusEl.innerText =
-      `TEN‑tabell validert\n` +
-      `Status: OK`;
+    statusEl.innerText = t("ten_validated");
     statusEl.classList.add("status-ok");
     generateBtn.disabled = false;
   } else {
     statusEl.innerText =
-      `❌ TEN‑validering feilet\n` +
-      `${res.error || "Ukjent feil"}`;
+      `${t("err_ten_failed")}\n${res.error || t("unknown_error")}`;
     statusEl.classList.add("status-error");
     generateBtn.disabled = true;
   }
@@ -92,19 +87,19 @@ async function generateOsdm(){
 
   if(res.ok && res.outputFile){
     lastGeneratedFile=res.outputFile;
-    
-const optionalText =
-  document.getElementById("optionalDelivery").value === "true" ? "Ja" : "Nei";
-  const sommertid = res.summary.utcOffset === 120 ? "Ja" : "Nei";
 
-  finalStatus.innerText =
-    `OSDM generert\n` +
-    `Fil: ${res.outputFile}\n` +
-    `Miljø: ${res.summary.environment}\n` +
-    `Optional delivery: ${optionalText}\n` +
-    `Gyldig periode: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
-    `Sommertid: ${sommertid}\n` +
-    `Antall priser: ${res.summary.pricesUpdated}`;
+    const optionalText =
+      document.getElementById("optionalDelivery").value === "true" ? t("yes") : t("no_text");
+    const sommertid = res.summary.utcOffset === 120 ? t("yes") : t("no_text");
+
+    finalStatus.innerText =
+      `${t("osdm_generated")}\n` +
+      `${t("label_file")}: ${res.outputFile}\n` +
+      `${t("label_env")}: ${res.summary.environment}\n` +
+      `${t("label_optional_del")}: ${optionalText}\n` +
+      `${t("label_valid_period")}: ${document.getElementById("validFrom").value} → ${document.getElementById("validTo").value}\n` +
+      `${t("label_summer_time")}: ${sommertid}\n` +
+      `${t("label_price_count")}: ${res.summary.pricesUpdated}`;
 
     finalStatus.className = "";
     document.getElementById("resultBox").style.display = "block";
@@ -112,7 +107,7 @@ const optionalText =
     renderExampleTable(res.summary.exampleFares);
 
   } else {
-    finalStatus.innerText="❌ OSDM kunne ikke genereres";
+    finalStatus.innerText = t("err_osdm_failed");
     document.getElementById("resultBox").style.display = "block";
   }
 }
@@ -124,10 +119,10 @@ function downloadOsdm(){
 function startProgress(){
   const bar=progressBar;
   bar.style.display="block";
-  const t=setInterval(async()=>{
+  const t_=setInterval(async()=>{
     const p=(await (await fetch("/ui/progress")).json());
     bar.value=p.percent;
-    if(p.status==="done"){clearInterval(t);bar.style.display="none";}
+    if(p.status==="done"){clearInterval(t_);bar.style.display="none";}
   },500);
 }
 
@@ -143,13 +138,13 @@ function renderExampleTable(data){
 
   let html =
     "<div class='example-panel'>" +
-    "<div class='example-panel-title'>Eksempelpriser</div>" +
+    `<div class='example-panel-title'>${t("example_prices")}</div>` +
     "<table>" +
     "<tr>" +
-    "<th align='left'>Strekning</th>" +
-    "<th align='right'>Pris EUR</th>" +
-    "<th align='right'>Pris NOK</th>" +
-    "<th align='right'>Km</th>" +
+    `<th align='left'>${t("col_route")}</th>` +
+    `<th align='right'>${t("col_price_eur")}</th>` +
+    `<th align='right'>${t("col_price_nok")}</th>` +
+    `<th align='right'>${t("col_km")}</th>` +
     "</tr>";
 
   let row = 0;
@@ -196,13 +191,13 @@ async function loadUserList() {
 
   const r = await fetch("/admin/list-users");
   if (!r.ok) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:red;">Kunne ikke hente brukere.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="color:red;">${t("err_load_users")}</td></tr>`;
     return;
   }
   const users = await r.json();
 
   if (users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:#888;">Ingen brukere funnet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:#888;">${t("no_users")}</td></tr>`;
     return;
   }
 
@@ -214,8 +209,8 @@ async function loadUserList() {
         <td style="text-align:center; padding:6px 8px;">${u.is_admin ? "✅" : "—"}</td>
         <td style="text-align:center; padding:6px 8px;">${u.is_active ? "✅" : "❌"}</td>
         <td style="text-align:center; padding:6px 8px;">
-          <button onclick="resetPassword('${u.email}')">🔑 Nytt passord</button>
-          <button onclick="deleteUser('${u.email}')" style="margin-left:6px; color:#c00;">🗑 Slett</button>
+          <button onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
+          <button onclick="deleteUser('${u.email}')" style="margin-left:6px; color:#c00;">${t("btn_delete")}</button>
         </td>
       </tr>`;
   }).join("");
@@ -228,24 +223,24 @@ async function resetPassword(email) {
   const r = await fetch("/admin/reset-password", { method: "POST", body: fd });
   const res = await r.json();
   if (res.ok) {
-    resultEl.innerText = `✅ Nytt passord for ${res.email}:\n${res.password}`;
+    resultEl.innerText = `${t("password_reset_ok")} ${res.email}:\n${res.password}`;
   } else {
-    resultEl.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+    resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
   }
 }
 
 async function deleteUser(email) {
-  if (!confirm(`Sikker på at du vil slette ${email}?`)) return;
+  if (!confirm(`${t("confirm_delete")} ${email}?`)) return;
   const resultEl = document.getElementById("userActionResult");
   const fd = new FormData();
   fd.append("email", email);
   const r = await fetch("/admin/delete-user", { method: "POST", body: fd });
   const res = await r.json();
   if (res.ok) {
-    resultEl.innerText = `✅ ${res.deleted} er slettet.`;
+    resultEl.innerText = `✅ ${res.deleted} ${t("user_deleted")}`;
     loadUserList();
   } else {
-    resultEl.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+    resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
   }
 }
 
@@ -258,11 +253,12 @@ addUserForm.onsubmit = async e => {
   const r = await fetch("/admin/add-user", { method: "POST", body: fd });
   const res = await r.json();
   if (res.ok) {
-    addUserResult.innerText = `✅ Bruker opprettet\nE-post: ${res.email}\nPassord: ${res.password}`;
+    addUserResult.innerText =
+      `${t("user_created")}\n${t("email_label")}: ${res.email}\n${t("password_label")}: ${res.password}`;
     newUserEmail.value = "";
     loadUserList();
   } else {
-    addUserResult.innerText = `❌ Feil: ${res.detail || "Ukjent feil"}`;
+    addUserResult.innerText = `❌ ${res.detail || t("unknown_error")}`;
   }
 };
 
