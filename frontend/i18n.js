@@ -14,6 +14,7 @@ const translations = {
     // Felles
     logout:              "Logg ut",
     nav_osdm_excel:      "OSDM → Excel",
+    nav_admin:           "Admin",
     link_back:           "← PopToOSDM",
     yes:                 "Ja",
     no_text:             "Nei",
@@ -133,6 +134,7 @@ const translations = {
     // Felles
     logout:              "Log out",
     nav_osdm_excel:      "OSDM → Excel",
+    nav_admin:           "Admin",
     link_back:           "← PopToOSDM",
     yes:                 "Yes",
     no_text:             "No",
@@ -252,6 +254,7 @@ const translations = {
     // Felles
     logout:              "Abmelden",
     nav_osdm_excel:      "OSDM → Excel",
+    nav_admin:           "Admin",
     link_back:           "← PopToOSDM",
     yes:                 "Ja",
     no_text:             "Nein",

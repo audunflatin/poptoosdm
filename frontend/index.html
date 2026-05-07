@@ -27,8 +27,9 @@
   </div>
   <h1>PopToOSDM</h1>
   <div class="header-controls">
-    <a href="/osdmtocsv" class="header-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
+    <a href="/osdmtoexcel" class="header-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
     <div class="header-right">
+      <a id="adminLink" href="/admin" class="header-link" data-i18n="nav_admin" style="display:none;">Admin</a>
       <a href="/logout" class="logout-button" data-i18n="logout">Logg ut</a>
     </div>
   </div>
@@ -99,41 +100,8 @@
     </button>
   </section>
 
-<!-- ADMIN -->
-<section class="panel admin-only">
-  <h2 data-i18n="section_admin">3. Admin</h2>
-  <div>
 
-    <!-- Brukerliste -->
-    <h2 data-i18n="heading_users">Brukere</h2>
-    <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
-          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_admin">Admin</th>
-          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_active">Aktiv</th>
-          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_logged_in">Innlogget</th>
-          <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_actions">Handlinger</th>
-        </tr>
-      </thead>
-      <tbody id="userTableBody">
-        <tr><td colspan="5" style="padding:8px; color:#888;" data-i18n="loading_users">Laster brukere…</td></tr>
-      </tbody>
-    </table>
-    <pre id="userActionResult"></pre>
-
-    <!-- Legg til bruker -->
-    <h2 data-i18n="heading_add_user">Legg til bruker</h2>
-    <form id="addUserForm">
-      <input id="newUserEmail" type="email" data-i18n-placeholder="placeholder_email" placeholder="E‑post" required />
-      <button type="submit" data-i18n="btn_add_user">Legg til bruker</button>
-    </form>
-    <pre id="addUserResult"></pre>
-
-  </div>
-</section>
-
-<script src="/static/i18n.js?v=4"></script>
-<script src="/static/app.js?v=5"></script>
+<script src="/static/i18n.js?v=5"></script>
+<script src="/static/app.js?v=6"></script>
 </body>
 </html>

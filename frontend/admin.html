@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>PopToOSDM – Admin</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/styles.css?v=4">
+</head>
+<body>
+
+<header class="app-header">
+  <span class="lang-selector">
+    <button class="lang-btn" data-lang="no" onclick="setLanguage('no')" title="Norsk">🇳🇴</button>
+    <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" title="English">🇬🇧</button>
+    <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">🇩🇪</button>
+  </span>
+  <div class="logo-bar">
+    <img src="/static/Enturlogo_Blue_RGB.svg" alt="Entur logo" class="logo" />
+    <img src="/static/logo-uic-osdm.svg" alt="UIC logo" class="logo" />
+  </div>
+  <h1>PopToOSDM</h1>
+  <div class="header-controls">
+    <a href="/" class="header-link" data-i18n="link_back">← PopToOSDM</a>
+    <div class="header-right">
+      <a href="/logout" class="logout-button" data-i18n="logout">Logg ut</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <section class="panel">
+    <h2 data-i18n="section_admin">Admin</h2>
+    <div>
+
+      <!-- Brukerliste -->
+      <h2 data-i18n="heading_users">Brukere</h2>
+      <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
+            <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_admin">Admin</th>
+            <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_active">Aktiv</th>
+            <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_actions">Handlinger</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          <tr><td colspan="4" style="padding:8px; color:#888;" data-i18n="loading_users">Laster brukere…</td></tr>
+        </tbody>
+      </table>
+      <pre id="userActionResult"></pre>
+
+      <!-- Legg til bruker -->
+      <h2 data-i18n="heading_add_user">Legg til bruker</h2>
+      <form id="addUserForm">
+        <input id="newUserEmail" type="email" data-i18n-placeholder="placeholder_email" placeholder="E‑post" required />
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; margin-top:0.75rem; cursor:pointer;">
+          <input id="newUserIsAdmin" type="checkbox" style="width:auto; margin:0;" />
+          <span data-i18n="col_admin">Admin</span>
+        </label>
+        <button type="submit" data-i18n="btn_add_user">Legg til bruker</button>
+      </form>
+      <pre id="addUserResult"></pre>
+
+    </div>
+  </section>
+
+</div>
+
+<script src="/static/i18n.js?v=5"></script>
+<script src="/static/admin.js?v=1"></script>
+</body>
+</html>

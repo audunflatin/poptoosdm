@@ -176,104 +176,10 @@ function renderExampleTable(data){
 
 
 
-if (!window.IS_ADMIN) {
-  document.querySelectorAll(".admin-only").forEach(e => e.style.display = "none");
-} else {
-  loadUserList();
+if (window.IS_ADMIN) {
+  const adminLink = document.getElementById("adminLink");
+  if (adminLink) adminLink.style.display = "";
 }
-
-// --- Brukerliste ---
-
-async function loadUserList() {
-  const tbody = document.getElementById("userTableBody");
-  const resultEl = document.getElementById("userActionResult");
-  resultEl.innerText = "";
-
-  const r = await fetch("/admin/list-users");
-  if (!r.ok) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:red;">${t("err_load_users")}</td></tr>`;
-    return;
-  }
-  const users = await r.json();
-
-  if (users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:8px; color:#888;">${t("no_users")}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = users.map((u, i) => {
-    const rowBg = i % 2 === 0 ? "#f9f9f9" : "#fff";
-    let loginCell;
-    if (u.has_logged_in && u.first_login_at) {
-      const d = new Date(u.first_login_at);
-      const dato = d.toLocaleDateString("no-NO", { day: "2-digit", month: "2-digit", year: "numeric" });
-      loginCell = u.must_change_password ? `⚠️ ${dato}` : `✅ ${dato}`;
-    } else {
-      loginCell = u.must_change_password ? `⏳ ${t("col_awaiting")}` : "—";
-    }
-    return `
-      <tr style="background:${rowBg}">
-        <td style="padding:6px 8px;">${u.email}</td>
-        <td style="text-align:center; padding:6px 8px;">${u.is_admin ? "✅" : "—"}</td>
-        <td style="text-align:center; padding:6px 8px;">${u.is_active ? "✅" : "❌"}</td>
-        <td style="text-align:center; padding:6px 8px;">${loginCell}</td>
-        <td style="text-align:center; padding:6px 8px;">
-          <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
-          <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
-        </td>
-      </tr>`;
-  }).join("");
-}
-
-async function resetPassword(email) {
-  const resultEl = document.getElementById("userActionResult");
-  const fd = new FormData();
-  fd.append("email", email);
-  const r = await fetch("/admin/reset-password", { method: "POST", body: fd });
-  const res = await r.json();
-  if (res.ok) {
-    resultEl.innerText = res.email_sent
-      ? `✅ ${t("password_reset_ok")} ${res.email} — ${t("email_sent_ok")}`
-      : `✅ ${t("password_reset_ok")} ${res.email} — ${t("email_sent_fail")}`;
-    loadUserList();
-  } else {
-    resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
-  }
-}
-
-async function deleteUser(email) {
-  if (!confirm(`${t("confirm_delete")} ${email}?`)) return;
-  const resultEl = document.getElementById("userActionResult");
-  const fd = new FormData();
-  fd.append("email", email);
-  const r = await fetch("/admin/delete-user", { method: "POST", body: fd });
-  const res = await r.json();
-  if (res.ok) {
-    resultEl.innerText = `✅ ${res.deleted} ${t("user_deleted")}`;
-    loadUserList();
-  } else {
-    resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
-  }
-}
-
-// --- Legg til bruker ---
-
-addUserForm.onsubmit = async e => {
-  e.preventDefault();
-  const fd = new FormData();
-  fd.append("email", newUserEmail.value);
-  const r = await fetch("/admin/add-user", { method: "POST", body: fd });
-  const res = await r.json();
-  if (res.ok) {
-    addUserResult.innerText = res.email_sent
-      ? `✅ ${t("user_created")} — ${t("email_sent_ok")} (${res.email})`
-      : `✅ ${t("user_created")} — ${t("email_sent_fail")} (${res.email})`;
-    newUserEmail.value = "";
-    loadUserList();
-  } else {
-    addUserResult.innerText = `❌ ${res.detail || t("unknown_error")}`;
-  }
-};
 
 ["datasetId", "exchangeRate", "validFrom", "validTo"].forEach(id => {
   document.getElementById(id).addEventListener("input", () => {

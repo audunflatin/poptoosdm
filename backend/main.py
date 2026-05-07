@@ -474,7 +474,7 @@ def list_users(request: Request):
         db.close()
 
 @app.post("/admin/add-user")
-def admin_add_user(request: Request, email: str = Form(...)):
+def admin_add_user(request: Request, email: str = Form(...), is_admin: str = Form("false")):
     require_admin(request)
     db = SessionLocal()
     try:
@@ -484,7 +484,7 @@ def admin_add_user(request: Request, email: str = Form(...)):
         db.add(User(
             email=email,
             password_hash=hash_password(password),
-            is_admin=False,
+            is_admin=(is_admin.lower() == "true"),
             is_active=True,
             must_change_password=True,
         ))
@@ -864,13 +864,21 @@ def osdm_to_csv_download(job_id: str, request: Request):
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
-@app.get("/osdmtocsv", response_class=HTMLResponse)
-@app.head("/osdmtocsv")
-def osdmtocsv_page(request: Request):
+@app.get("/admin", response_class=HTMLResponse)
+def admin_page(request: Request):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        return RedirectResponse("/", status_code=302)
+    return HTMLResponse(Path("frontend/admin.html").read_text(encoding="utf-8"))
+
+@app.get("/osdmtoexcel", response_class=HTMLResponse)
+@app.head("/osdmtoexcel")
+def osdmtoexcel_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(
-            Path("frontend/login.html").read_text(encoding="utf-8")
-        )
-    return HTMLResponse(
-        Path("frontend/osdmtocsv.html").read_text(encoding="utf-8")
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/osdmtoexcel.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
     )
+    return HTMLResponse(html)
