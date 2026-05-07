@@ -123,7 +123,7 @@ const translations = {
     // osdmtoExcel.js
     file_too_large:      "⚠️ Filen er {size} MB — maks er {max} MB på denne tjenesten. Last ned og kjør konverteringen lokalt for store filer.",
     err_network:         "❌ Nettverksfeil",
-    convert_success:     "✅ Konvertering vellykket",
+    convert_success:     "Konvertering vellykket",
     label_rows:          "Antall relasjoner",
     err_convert_failed:  "❌ Konvertering feilet",
   },
@@ -244,7 +244,7 @@ const translations = {
     // osdmtoExcel.js
     file_too_large:      "⚠️ The file is {size} MB — max is {max} MB on this service. Download and run the conversion locally for large files.",
     err_network:         "❌ Network error",
-    convert_success:     "✅ Conversion successful",
+    convert_success:     "Conversion successful",
     label_rows:          "Number of relations",
     err_convert_failed:  "❌ Conversion failed",
   },
@@ -365,7 +365,7 @@ const translations = {
     // osdmtoExcel.js
     file_too_large:      "⚠️ Die Datei ist {size} MB — Maximum ist {max} MB auf diesem Dienst. Laden Sie sie herunter und führen Sie die Konvertierung lokal für große Dateien durch.",
     err_network:         "❌ Netzwerkfehler",
-    convert_success:     "✅ Konvertierung erfolgreich",
+    convert_success:     "Konvertierung erfolgreich",
     label_rows:          "Anzahl Relationen",
     err_convert_failed:  "❌ Konvertierung fehlgeschlagen",
   },
@@ -486,7 +486,7 @@ const translations = {
     // osdmtoExcel.js
     file_too_large:      "⚠️ Filen är {size} MB — max är {max} MB på den här tjänsten. Ladda ner och kör konverteringen lokalt för stora filer.",
     err_network:         "❌ Nätverksfel",
-    convert_success:     "✅ Konvertering lyckades",
+    convert_success:     "Konvertering lyckades",
     label_rows:          "Antal relationer",
     err_convert_failed:  "❌ Konvertering misslyckades",
   },
