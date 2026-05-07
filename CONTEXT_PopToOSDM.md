@@ -44,6 +44,7 @@ frontend/
   osdmtocsv.html   — OSDM til Excel-konvertering
   app.js           — JavaScript for index.html
   osdmtoExcel.js   — JavaScript for osdmtocsv.html (liten t i "to")
+  i18n.js          — flerspråklig støtte (oversettelser + språkvelger)
   styles.css       — felles styling
   login.html       — innloggingsside
 data/
@@ -236,6 +237,37 @@ Validerer at:
 - Statusfelt med grønn/rød markering
 - Progress-bar under generering
 - Admin-panel skjules for ikke-admin-brukere
+- Flaggknapper (🇳🇴 🇬🇧 🇩🇪) øverst til høyre for språkvalg
+
+---
+
+## Flerspråklig støtte (i18n)
+
+- Støtter **norsk, engelsk og tysk**
+- Språk detekteres automatisk fra nettleseren (`navigator.languages`)
+- Valgt språk lagres i `localStorage` (nøkkel: `poptoosdm_lang`)
+- Alle synlige tekster i HTML bruker `data-i18n="nøkkel"`-attributter
+- All dynamisk tekst i JS bruker `t("nøkkel")`-funksjonen
+- `i18n.js` må lastes **før** `app.js` / `osdmtoExcel.js`
+
+### Legge til ny tekst
+
+1. Bruk `data-i18n="min_nøkkel"` i HTML (eller `t("min_nøkkel")` i JS)
+2. Legg til nøkkelen under riktig seksjon i **alle tre språk** i `i18n.js`
+
+### Seksjonsoversikt i i18n.js
+
+| Seksjon (kommentar i filen) | Innhold |
+|---|---|
+| Felles | logout, navigasjonslenker, ja/nei |
+| Login-side | labels og knapp på login-siden |
+| Seksjon 1–3 | alle labels og knapper i index.html |
+| OSDM til Excel-side | labels og knapper i osdmtocsv.html |
+| Valideringsfeil – app.js | feilmeldinger ved inputvalidering |
+| Resultat – app.js | tekst i resultatboksen etter generering |
+| Eksempelpriser – app.js | kolonneoverskrifter i eksempelpristabellen |
+| Brukeradmin – app.js | tekster i admin-panelet |
+| osdmtoExcel.js | statustekster i Excel-konverteringen |
 
 ---
 
@@ -255,7 +287,7 @@ Validerer at:
 - Kornsjø grense: `7600551` (ikke 7600552 — dette var en feil som er rettet i template)
 
 ### app.js cache-busting
-`index.html` laster `app.js?v=2` — ved endringer i `app.js` må versjonsnummeret bumpes manuelt.
+`index.html` laster `app.js?v=3` og `i18n.js` (ingen versjon) — ved endringer i JS-filer bør versjonsnummeret bumpes manuelt.
 
 ### Database og Render
 - PostgreSQL settes via `DATABASE_URL`-miljøvariabel på Render
@@ -282,6 +314,7 @@ Validerer at:
 - ✅ Korrekt prisberegning per kategori med oppdaterte priceRef i fares
 - ✅ Dynamisk tidssone-håndtering (sommertid/vintertid)
 - ✅ Dockerfile klar for fremtidig containerisering
+- ✅ Flerspråklig støtte (norsk, engelsk, tysk) med automatisk språkdeteksjon
 
 ---
 
