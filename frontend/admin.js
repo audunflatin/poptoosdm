@@ -46,8 +46,8 @@ async function resetPassword(email) {
   const res = await r.json();
   if (res.ok) {
     resultEl.innerText = res.email_sent
-      ? `✅ ${t("password_reset_ok")} ${res.email} — ${t("email_sent_ok")}`
-      : `✅ ${t("password_reset_ok")} ${res.email} — ${t("email_sent_fail")}`;
+      ? `${t("password_reset_ok")} ${res.email} — ${t("email_sent_ok")}`
+      : `${t("password_reset_ok")} ${res.email} — ${t("email_sent_fail")}`;
     loadUserList();
   } else {
     resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
@@ -62,7 +62,7 @@ async function deleteUser(email) {
   const r = await fetch("/admin/delete-user", { method: "POST", body: fd });
   const res = await r.json();
   if (res.ok) {
-    resultEl.innerText = `✅ ${res.deleted} ${t("user_deleted")}`;
+    resultEl.innerText = `${res.deleted} ${t("user_deleted")}`;
     loadUserList();
   } else {
     resultEl.innerText = `❌ ${res.detail || t("unknown_error")}`;
@@ -78,8 +78,8 @@ document.getElementById("addUserForm").onsubmit = async e => {
   const res = await r.json();
   if (res.ok) {
     document.getElementById("addUserResult").innerText = res.email_sent
-      ? `✅ ${t("user_created")} — ${t("email_sent_ok")} (${res.email})`
-      : `✅ ${t("user_created")} — ${t("email_sent_fail")} (${res.email})`;
+      ? `${t("user_created")} — ${t("email_sent_ok")} (${res.email})`
+      : `${t("user_created")} — ${t("email_sent_fail")} (${res.email})`;
     document.getElementById("newUserEmail").value = "";
     document.getElementById("newUserIsAdmin").checked = false;
     loadUserList();
