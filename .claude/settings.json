@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Edit(frontend/**)",
-      "Write(frontend/**)"
+      "Write(frontend/**)",
+      "Bash"
     ]
   }
 }
