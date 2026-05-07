@@ -54,11 +54,23 @@ const translations = {
     col_email:           "E-post",
     col_admin:           "Admin",
     col_active:          "Aktiv",
+    col_logged_in:       "Innlogget",
+    col_awaiting:        "Avventer",
     col_actions:         "Handlinger",
     loading_users:       "Laster brukere…",
     heading_add_user:    "Legg til bruker",
     placeholder_email:   "E‑post",
     btn_add_user:        "Legg til bruker",
+    email_sent_ok:       "invitasjon sendt på e-post",
+    email_sent_fail:     "e-post kunne ikke sendes – sjekk serverlogg",
+
+    // Bytt passord
+    change_pw_title:     "Velg nytt passord",
+    change_pw_notice:    "Du må velge et nytt passord før du kan fortsette.",
+    change_pw_label:     "Nytt passord",
+    change_pw_confirm:   "Bekreft passord",
+    change_pw_btn:       "Lagre passord",
+    change_pw_mismatch:  "Passordene er ikke like.",
 
     // OSDM til Excel-side
     heading_osdm_excel:  "OSDM til Excel",
@@ -161,11 +173,23 @@ const translations = {
     col_email:           "Email",
     col_admin:           "Admin",
     col_active:          "Active",
+    col_logged_in:       "Logged in",
+    col_awaiting:        "Pending",
     col_actions:         "Actions",
     loading_users:       "Loading users…",
     heading_add_user:    "Add user",
     placeholder_email:   "Email",
     btn_add_user:        "Add user",
+    email_sent_ok:       "invitation sent by email",
+    email_sent_fail:     "email could not be sent – check server log",
+
+    // Change password
+    change_pw_title:     "Choose new password",
+    change_pw_notice:    "You must choose a new password before continuing.",
+    change_pw_label:     "New password",
+    change_pw_confirm:   "Confirm password",
+    change_pw_btn:       "Save password",
+    change_pw_mismatch:  "Passwords do not match.",
 
     // OSDM to Excel-side
     heading_osdm_excel:  "OSDM to Excel",
@@ -268,11 +292,23 @@ const translations = {
     col_email:           "E-Mail",
     col_admin:           "Admin",
     col_active:          "Aktiv",
+    col_logged_in:       "Eingeloggt",
+    col_awaiting:        "Ausstehend",
     col_actions:         "Aktionen",
     loading_users:       "Benutzer laden…",
     heading_add_user:    "Benutzer hinzufügen",
     placeholder_email:   "E-Mail",
     btn_add_user:        "Benutzer hinzufügen",
+    email_sent_ok:       "Einladung per E-Mail gesendet",
+    email_sent_fail:     "E-Mail konnte nicht gesendet werden – Serverprotokoll prüfen",
+
+    // Passwort ändern
+    change_pw_title:     "Neues Passwort wählen",
+    change_pw_notice:    "Sie müssen ein neues Passwort wählen, bevor Sie fortfahren können.",
+    change_pw_label:     "Neues Passwort",
+    change_pw_confirm:   "Passwort bestätigen",
+    change_pw_btn:       "Passwort speichern",
+    change_pw_mismatch:  "Die Passwörter stimmen nicht überein.",
 
     // OSDM zu Excel-side
     heading_osdm_excel:  "OSDM zu Excel",

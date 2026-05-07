@@ -13,12 +13,16 @@ import math
 import threading
 import uuid
 
-from backend.auth_db import SessionLocal, User, init_db
+from backend.auth_db import SessionLocal, User, LoginLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
+from backend.email_utils import send_welcome_email, send_reset_email
+
+import logging
+logger = logging.getLogger(__name__)
 
 from zoneinfo import ZoneInfo
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------
 # App
@@ -108,6 +112,16 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
             raise HTTPException(status_code=401, detail="Ugyldig innlogging")
         request.session["user_email"] = user.email
         request.session["is_admin"] = user.is_admin
+        db.add(LoginLog(
+            email=user.email,
+            ip_address=request.client.host if request.client else None,
+        ))
+        if user.must_change_password:
+            db.commit()
+            return RedirectResponse("/change-password", status_code=302)
+        if user.first_login_at is None:
+            user.first_login_at = datetime.now(timezone.utc)
+        db.commit()
     finally:
         db.close()
     return RedirectResponse("/", status_code=302)
@@ -116,6 +130,43 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/", status_code=302)
+
+# ---------------------------------------------------------------------
+# Bytt passord (tvinges ved første innlogging)
+# ---------------------------------------------------------------------
+
+@app.get("/change-password", response_class=HTMLResponse)
+def change_password_page(request: Request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/", status_code=302)
+    return HTMLResponse(Path("frontend/change_password.html").read_text(encoding="utf-8"))
+
+@app.post("/change-password")
+def change_password(
+    request: Request,
+    password: str = Form(...),
+    confirm: str = Form(...),
+):
+    if "user_email" not in request.session:
+        raise HTTPException(status_code=401, detail="Ikke innlogget")
+    if password != confirm:
+        raise HTTPException(status_code=400, detail="Passordene er ikke like")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Passordet må være minst 8 tegn")
+    email = request.session["user_email"]
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+        user.password_hash = hash_password(password)
+        user.must_change_password = False
+        if user.first_login_at is None:
+            user.first_login_at = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
 
 # ---------------------------------------------------------------------
 # TEN validation
@@ -409,7 +460,14 @@ def list_users(request: Request):
     try:
         users = db.query(User).all()
         return [
-            {"email": u.email, "is_admin": u.is_admin, "is_active": u.is_active}
+            {
+                "email": u.email,
+                "is_admin": u.is_admin,
+                "is_active": u.is_active,
+                "has_logged_in": u.first_login_at is not None,
+                "first_login_at": u.first_login_at.isoformat() if u.first_login_at else None,
+                "must_change_password": bool(u.must_change_password),
+            }
             for u in users
         ]
     finally:
@@ -428,11 +486,17 @@ def admin_add_user(request: Request, email: str = Form(...)):
             password_hash=hash_password(password),
             is_admin=False,
             is_active=True,
+            must_change_password=True,
         ))
         db.commit()
-        return {"ok": True, "email": email, "password": password}
     finally:
         db.close()
+    try:
+        send_welcome_email(email, password)
+        return {"ok": True, "email": email, "email_sent": True}
+    except Exception as exc:
+        logger.error("Kunne ikke sende velkomst-e-post til %s: %s", email, exc)
+        return {"ok": True, "email": email, "email_sent": False}
 
 @app.post("/admin/reset-password")
 def admin_reset_password(request: Request, email: str = Form(...)):
@@ -444,10 +508,16 @@ def admin_reset_password(request: Request, email: str = Form(...)):
             raise HTTPException(status_code=404, detail="Bruker ikke funnet")
         new_password = generate_password()
         user.password_hash = hash_password(new_password)
+        user.must_change_password = True
         db.commit()
-        return {"ok": True, "email": email, "password": new_password}
     finally:
         db.close()
+    try:
+        send_reset_email(email, new_password)
+        return {"ok": True, "email": email, "email_sent": True}
+    except Exception as exc:
+        logger.error("Kunne ikke sende reset-e-post til %s: %s", email, exc)
+        return {"ok": True, "email": email, "email_sent": False}
 
 @app.post("/admin/delete-user")
 def delete_user(request: Request, email: str = Form(...)):
