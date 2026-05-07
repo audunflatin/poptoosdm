@@ -35,18 +35,22 @@ Genererte OSDM-filer er validert mot **UIC DRTF** og laster grønt i DRTF.
 ```
 backend/
   main.py          — all applikasjonslogikk (FastAPI)
-  auth_db.py       — SQLAlchemy-modell og databaseoppsett
+  auth_db.py       — SQLAlchemy-modeller: User, LoginLog + migrering
   auth_utils.py    — passord-hashing og generering
+  email_utils.py   — e-postutsending via Resend API
   core/
-    settings.py    — SESSION_SECRET fra miljøvariabel
+    settings.py    — SESSION_SECRET, RESEND_API_KEY, SENDER_EMAIL, APP_URL
 frontend/
   index.html       — hoved-GUI (PopToOSDM)
-  osdmtocsv.html   — OSDM til Excel-konvertering
+  admin.html       — admin-panel (brukerhåndtering, kun for admins)
+  osdmtoexcel.html — OSDM til Excel-konvertering
+  change_password.html — tvungen passordbytte ved første innlogging
+  login.html       — innloggingsside
   app.js           — JavaScript for index.html
-  osdmtoExcel.js   — JavaScript for osdmtocsv.html (liten t i "to")
+  admin.js         — JavaScript for admin.html
+  osdmtoExcel.js   — JavaScript for osdmtoexcel.html
   i18n.js          — flerspråklig støtte (oversettelser + språkvelger)
   styles.css       — felles styling
-  login.html       — innloggingsside
 data/
   input/
     1076-OSDM-template.json  — OSDM-template med farestruktur
@@ -131,7 +135,7 @@ Følgende styres fra GUI og settes i `fareDelivery.delivery`:
 
 ## OSDM til Excel-konvertering
 
-Egen side (`/osdmtocsv`) for å konvertere en hvilken som helst OSDM fareDelivery JSON-fil til Excel.
+Egen side (`/osdmtoexcel`) for å konvertere en hvilken som helst OSDM fareDelivery JSON-fil til Excel.
 
 ### Funksjonalitet
 - Laster opp OSDM JSON → returnerer `.xlsx`
@@ -170,11 +174,39 @@ til når det er nødvendig for å skille duplikate kolonnenavn.
 - Brukere lagres i PostgreSQL (produksjon) eller SQLite (lokalt)
 - Passord: UUID-basert, hashes med pbkdf2_sha256 via passlib
 - Sesjon: server-side via Starlette SessionMiddleware
-- Admin-GUI:
-  - Liste over alle brukere med admin- og aktivstatus
-  - Legg til ny bruker (passord vises én gang i GUI)
-  - Generer nytt passord for eksisterende bruker
-  - Slett bruker (kan ikke slette seg selv)
+
+### Databasemodell – User
+| Kolonne | Type | Beskrivelse |
+|---|---|---|
+| `email` | String | Unik, brukes som innlogging |
+| `password_hash` | String | pbkdf2_sha256-hash |
+| `is_admin` | Boolean | Admin-tilgang |
+| `is_active` | Boolean | Aktiv/deaktivert |
+| `must_change_password` | Boolean | True inntil bruker bytter passord |
+| `first_login_at` | DateTime | Tidspunkt for første vellykkede innlogging |
+
+### Databasemodell – LoginLog
+Logger alle vellykkede innlogginger med `email`, `logged_at` og `ip_address`.
+
+### Innloggingsflyt
+1. Bruker logger inn → lagres i LoginLog
+2. Hvis `must_change_password = True` → redirect til `/change-password`
+3. Bruker velger nytt passord → `must_change_password = False`, `first_login_at` settes
+4. Redirect til `/`
+
+### Admin-panel (`/admin`)
+- Kun tilgjengelig for brukere med `is_admin = True`
+- Liste over alle brukere — ✅ har logget inn, — avventer, ❌ inaktiv
+- Legg til ny bruker → invitasjon sendes automatisk på e-post via Resend
+- Nytt passord → sendes på e-post, `must_change_password` settes til True
+- Slett bruker (kan ikke slette seg selv)
+- Admin-link i header på alle sider, synlig kun for admins
+
+### E-post (Resend)
+- Avsender: `SENDER_EMAIL` (default: `noreply@livetsmiler.no`)
+- Krever verifisert domene i Resend med DNS-records i Cloudflare
+- Miljøvariabler: `RESEND_API_KEY`, `SENDER_EMAIL`, `APP_URL`
+- Hvis `RESEND_API_KEY` ikke er satt logges en advarsel — appen fungerer ellers normalt
 
 ---
 
@@ -261,22 +293,27 @@ Validerer at:
 |---|---|
 | Felles | logout, navigasjonslenker, ja/nei |
 | Login-side | labels og knapp på login-siden |
-| Seksjon 1–3 | alle labels og knapper i index.html |
-| OSDM til Excel-side | labels og knapper i osdmtocsv.html |
+| Advarsel – kun for Norge | norway_warning_* |
+| Seksjon 1–2 | labels og knapper i index.html |
+| Bytt passord | change_pw_* (change_password.html) |
+| Seksjon 3 – Admin | brukertabell, legg til bruker, handlinger (admin.html/admin.js) |
+| OSDM til Excel-side | labels og knapper i osdmtoexcel.html |
 | Valideringsfeil – app.js | feilmeldinger ved inputvalidering |
 | Resultat – app.js | tekst i resultatboksen etter generering |
 | Eksempelpriser – app.js | kolonneoverskrifter i eksempelpristabellen |
-| Brukeradmin – app.js | tekster i admin-panelet |
 | osdmtoExcel.js | statustekster i Excel-konverteringen |
 
 ---
 
 ## Miljøvariabler
 
-| Variabel         | Beskrivelse                      | Standard                |
-|------------------|----------------------------------|-------------------------|
-| `SESSION_SECRET` | Hemmelig nøkkel for sessions     | `CHANGE_ME_BEFORE_PROD` |
-| `DATABASE_URL`   | PostgreSQL-tilkobling (valgfri)  | SQLite lokalt           |
+| Variabel         | Beskrivelse                          | Standard                    |
+|------------------|--------------------------------------|-----------------------------|
+| `SESSION_SECRET` | Hemmelig nøkkel for sessions         | `CHANGE_ME_BEFORE_PROD`     |
+| `DATABASE_URL`   | PostgreSQL-tilkobling (valgfri)      | SQLite lokalt               |
+| `RESEND_API_KEY` | API-nøkkel for Resend (e-post)       | _(tom – e-post deaktivert)_ |
+| `SENDER_EMAIL`   | Avsenderadresse for e-poster         | `noreply@livetsmiler.no`    |
+| `APP_URL`        | Basis-URL i e-postlenker             | `https://livetsmiler.no`    |
 
 ---
 
@@ -286,8 +323,17 @@ Validerer at:
 - Oslo S: `7600100`
 - Kornsjø grense: `7600551` (ikke 7600552 — dette var en feil som er rettet i template)
 
-### app.js cache-busting
-`index.html` laster `app.js?v=3` og `i18n.js` (ingen versjon) — ved endringer i JS-filer bør versjonsnummeret bumpes manuelt.
+### Cache-busting
+Ved endringer i statiske filer må versjonsnummeret bumpes i **alle** HTML-filer som laster dem:
+
+| Fil | Gjeldende versjon |
+|---|---|
+| `styles.css` | v=4 |
+| `i18n.js` | v=5 |
+| `app.js` | v=6 |
+| `admin.js` | v=1 |
+
+HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`, `change_password.html`
 
 ### Database og Render
 - PostgreSQL settes via `DATABASE_URL`-miljøvariabel på Render
@@ -308,9 +354,12 @@ Validerer at:
 - ✅ Validert mot UIC DRTF
 - ✅ GUI ferdig polert
 - ✅ PostgreSQL i produksjon
-- ✅ Admin-GUI for brukerhåndtering
+- ✅ Admin-panel på egen side (`/admin`)
+- ✅ E-postinvitasjon via Resend
+- ✅ Tvungen passordbytte ved første innlogging
+- ✅ Innloggingslogg (LoginLog)
 - ✅ Deployet på Render (livetsmiler.no)
-- ✅ OSDM til Excel-konvertering (støtter alle land/operatører)
+- ✅ OSDM til Excel-konvertering (`/osdmtoexcel`, støtter alle land/operatører)
 - ✅ Korrekt prisberegning per kategori med oppdaterte priceRef i fares
 - ✅ Dynamisk tidssone-håndtering (sommertid/vintertid)
 - ✅ Dockerfile klar for fremtidig containerisering
