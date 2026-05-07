@@ -13,10 +13,10 @@ import math
 import threading
 import uuid
 
-from backend.auth_db import SessionLocal, User, LoginLog, init_db
+from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
-from backend.email_utils import send_welcome_email, send_reset_email
+from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email
 
 import logging
 logger = logging.getLogger(__name__)
@@ -163,6 +163,75 @@ def change_password(
         user.must_change_password = False
         if user.first_login_at is None:
             user.first_login_at = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True}
+
+# ---------------------------------------------------------------------
+# Glemt passord
+# ---------------------------------------------------------------------
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page():
+    return HTMLResponse(Path("frontend/forgot_password.html").read_text(encoding="utf-8"))
+
+@app.post("/forgot-password")
+def forgot_password(email: str = Form(...)):
+    from backend.core.settings import APP_URL as _APP_URL
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email, User.is_active == True).first()
+        if user:
+            token = str(uuid.uuid4())
+            expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + __import__("datetime").timedelta(hours=1)
+            db.add(PasswordResetToken(token=token, email=email, expires_at=expires_at))
+            db.commit()
+            try:
+                send_reset_link_email(email, f"{_APP_URL}/reset-password/{token}")
+            except Exception as exc:
+                logger.error("Kunne ikke sende reset-lenke til %s: %s", email, exc)
+    finally:
+        db.close()
+    return {"ok": True}
+
+@app.get("/reset-password/{token}", response_class=HTMLResponse)
+def reset_password_page(token: str):
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        rt = db.query(PasswordResetToken).filter(
+            PasswordResetToken.token == token,
+            PasswordResetToken.expires_at > now,
+        ).first()
+        if not rt:
+            return HTMLResponse("<h2>Lenken er ugyldig eller utløpt.</h2>", status_code=400)
+    finally:
+        db.close()
+    html = Path("frontend/reset_password.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__TOKEN__", token))
+
+@app.post("/reset-password/{token}")
+def reset_password(token: str, password: str = Form(...), confirm: str = Form(...)):
+    if password != confirm:
+        raise HTTPException(status_code=400, detail="Passordene er ikke like")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Passordet må være minst 8 tegn")
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        rt = db.query(PasswordResetToken).filter(
+            PasswordResetToken.token == token,
+            PasswordResetToken.expires_at > now,
+        ).first()
+        if not rt:
+            raise HTTPException(status_code=400, detail="Lenken er ugyldig eller utløpt")
+        user = db.query(User).filter(User.email == rt.email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+        user.password_hash = hash_password(password)
+        user.must_change_password = False
+        db.delete(rt)
         db.commit()
     finally:
         db.close()

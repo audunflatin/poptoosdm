@@ -66,6 +66,15 @@ const translations = {
     email_sent_ok:       "invitasjon sendt på e-post",
     email_sent_fail:     "e-post kunne ikke sendes – sjekk serverlogg",
 
+    // Glemt / tilbakestill passord
+    forgot_pw_title:     "Glemt passord",
+    forgot_pw_desc:      "Skriv inn e-postadressen din, så sender vi en lenke for å tilbakestille passordet.",
+    forgot_pw_btn:       "Send tilbakestillingslenke",
+    forgot_pw_sent:      "Hvis e-postadressen finnes, har du fått en e-post med en lenke. Sjekk innboksen din.",
+    forgot_pw_back:      "← Tilbake til innlogging",
+    forgot_pw_link:      "Glemt passord?",
+    reset_pw_title:      "Velg nytt passord",
+
     // Bytt passord
     change_pw_title:     "Velg nytt passord",
     change_pw_notice:    "Du må velge et nytt passord før du kan fortsette.",
@@ -186,6 +195,15 @@ const translations = {
     btn_add_user:        "Add user",
     email_sent_ok:       "invitation sent by email",
     email_sent_fail:     "email could not be sent – check server log",
+
+    // Forgot / reset password
+    forgot_pw_title:     "Forgot password",
+    forgot_pw_desc:      "Enter your email address and we'll send you a link to reset your password.",
+    forgot_pw_btn:       "Send reset link",
+    forgot_pw_sent:      "If the email address exists, you will receive an email with a link. Check your inbox.",
+    forgot_pw_back:      "← Back to login",
+    forgot_pw_link:      "Forgot password?",
+    reset_pw_title:      "Choose new password",
 
     // Change password
     change_pw_title:     "Choose new password",
@@ -308,6 +326,15 @@ const translations = {
     email_sent_ok:       "Einladung per E-Mail gesendet",
     email_sent_fail:     "E-Mail konnte nicht gesendet werden – Serverprotokoll prüfen",
 
+    // Passwort vergessen / zurücksetzen
+    forgot_pw_title:     "Passwort vergessen",
+    forgot_pw_desc:      "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen.",
+    forgot_pw_btn:       "Link senden",
+    forgot_pw_sent:      "Falls die E-Mail-Adresse existiert, erhalten Sie eine E-Mail mit einem Link.",
+    forgot_pw_back:      "← Zurück zur Anmeldung",
+    forgot_pw_link:      "Passwort vergessen?",
+    reset_pw_title:      "Neues Passwort wählen",
+
     // Passwort ändern
     change_pw_title:     "Neues Passwort wählen",
     change_pw_notice:    "Sie müssen ein neues Passwort wählen, bevor Sie fortfahren können.",
@@ -428,6 +455,15 @@ const translations = {
     btn_add_user:        "Lägg till användare",
     email_sent_ok:       "inbjudan skickad via e-post",
     email_sent_fail:     "e-post kunde inte skickas – kontrollera serverloggen",
+
+    // Glömt / återställ lösenord
+    forgot_pw_title:     "Glömt lösenord",
+    forgot_pw_desc:      "Ange din e-postadress så skickar vi en länk för att återställa lösenordet.",
+    forgot_pw_btn:       "Skicka återställningslänk",
+    forgot_pw_sent:      "Om e-postadressen finns har du fått ett e-postmeddelande med en länk.",
+    forgot_pw_back:      "← Tillbaka till inloggning",
+    forgot_pw_link:      "Glömt lösenord?",
+    reset_pw_title:      "Välj nytt lösenord",
 
     // Bytt passord
     change_pw_title:     "Välj nytt lösenord",

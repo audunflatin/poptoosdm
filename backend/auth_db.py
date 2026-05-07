@@ -41,6 +41,15 @@ class LoginLog(Base):
     ip_address = Column(String, nullable=True)
 
 
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+
 def _migrate():
     from sqlalchemy import text, inspect as sa_inspect
     insp = sa_inspect(engine)
