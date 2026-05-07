@@ -109,8 +109,8 @@ const translations = {
     // Brukeradmin – app.js
     err_load_users:      "Kunne ikke hente brukere.",
     no_users:            "Ingen brukere funnet.",
-    btn_new_password:    "🔑 Nytt passord",
-    btn_delete:          "🗑 Slett",
+    btn_new_password:    "Nytt passord",
+    btn_delete:          "Slett",
     confirm_delete:      "Sikker på at du vil slette",
     password_reset_ok:   "✅ Nytt passord for",
     user_deleted:        "er slettet.",
@@ -228,8 +228,8 @@ const translations = {
     // User admin – app.js
     err_load_users:      "Could not load users.",
     no_users:            "No users found.",
-    btn_new_password:    "🔑 New password",
-    btn_delete:          "🗑 Delete",
+    btn_new_password:    "New password",
+    btn_delete:          "Delete",
     confirm_delete:      "Are you sure you want to delete",
     password_reset_ok:   "✅ New password for",
     user_deleted:        "has been deleted.",
@@ -347,8 +347,8 @@ const translations = {
     // Brukeradmin – app.js
     err_load_users:      "Benutzer konnten nicht geladen werden.",
     no_users:            "Keine Benutzer gefunden.",
-    btn_new_password:    "🔑 Neues Passwort",
-    btn_delete:          "🗑 Löschen",
+    btn_new_password:    "Neues Passwort",
+    btn_delete:          "Löschen",
     confirm_delete:      "Sind Sie sicher, dass Sie löschen möchten",
     password_reset_ok:   "✅ Neues Passwort für",
     user_deleted:        "wurde gelöscht.",

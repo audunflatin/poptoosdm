@@ -91,6 +91,21 @@ button:hover {
   background: var(--entur-blue-dark);
 }
 
+.btn-table {
+  margin-top: 0;
+  padding: 0.25rem 0.7rem;
+  font-size: 1rem;
+}
+
+.btn-danger {
+  background: #cc2200;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #a81c00;
+}
+
 pre {
   background: var(--entur-blue-light);
   padding: 1rem;

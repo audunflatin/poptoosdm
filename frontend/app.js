@@ -218,8 +218,8 @@ async function loadUserList() {
         <td style="text-align:center; padding:6px 8px;">${u.is_active ? "✅" : "❌"}</td>
         <td style="text-align:center; padding:6px 8px;">${loginCell}</td>
         <td style="text-align:center; padding:6px 8px;">
-          <button onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
-          <button onclick="deleteUser('${u.email}')" style="margin-left:6px; color:#c00;">${t("btn_delete")}</button>
+          <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
+          <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
         </td>
       </tr>`;
   }).join("");
