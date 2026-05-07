@@ -41,6 +41,18 @@
     <h2 data-i18n="heading_admin">Admin</h2>
     <div>
 
+      <!-- Legg til bruker -->
+      <h2 data-i18n="heading_add_user">Legg til bruker</h2>
+      <form id="addUserForm">
+        <input id="newUserEmail" type="email" data-i18n-placeholder="placeholder_email" placeholder="E‑post" required />
+        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; margin-top:0.75rem; cursor:pointer;">
+          <input id="newUserIsAdmin" type="checkbox" style="width:auto; margin:0;" />
+          <span data-i18n="col_admin">Admin</span>
+        </label>
+        <button type="submit" data-i18n="btn_add_user">Legg til bruker</button>
+      </form>
+      <pre id="addUserResult"></pre>
+
       <!-- Brukerliste -->
       <h2 data-i18n="heading_users">Brukere</h2>
       <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
@@ -57,18 +69,6 @@
         </tbody>
       </table>
       <pre id="userActionResult"></pre>
-
-      <!-- Legg til bruker -->
-      <h2 data-i18n="heading_add_user">Legg til bruker</h2>
-      <form id="addUserForm">
-        <input id="newUserEmail" type="email" data-i18n-placeholder="placeholder_email" placeholder="E‑post" required />
-        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal; margin-top:0.75rem; cursor:pointer;">
-          <input id="newUserIsAdmin" type="checkbox" style="width:auto; margin:0;" />
-          <span data-i18n="col_admin">Admin</span>
-        </label>
-        <button type="submit" data-i18n="btn_add_user">Legg til bruker</button>
-      </form>
-      <pre id="addUserResult"></pre>
 
     </div>
   </section>
