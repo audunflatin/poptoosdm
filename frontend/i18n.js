@@ -369,6 +369,127 @@ const translations = {
     label_rows:          "Anzahl Relationen",
     err_convert_failed:  "❌ Konvertierung fehlgeschlagen",
   },
+
+  // ---------------------------------------------------------------------------
+  // SVENSK
+  // ---------------------------------------------------------------------------
+  sv: {
+    // Felles
+    logout:              "Logga ut",
+    nav_osdm_excel:      "OSDM → Excel",
+    nav_admin:           "Admin",
+    heading_admin:       "Admin",
+    link_back:           "← PopToOSDM",
+    yes:                 "Ja",
+    no_text:             "Nej",
+    unknown_error:       "Okänt fel",
+
+    // Login-side
+    login_title:         "Logga in",
+    label_email:         "E-post",
+    label_password:      "Lösenord",
+    btn_login:           "Logga in",
+
+    // Advarsel – kun for Norge
+    norway_warning_title: "Endast för Norge",
+    norway_warning_text:  "Det här verktyget är uteslutande avsett för norska järnvägsoperatörer och hanterar endast norska priser och data.",
+
+    // Seksjon 1 – Indata
+    section_input:       "1. Indata",
+    label_ten_csv:       "TEN‑CSV",
+
+    // Seksjon 2 – Generera OSDM
+    section_generate:    "2. Generera OSDM",
+    label_delivery_id:   "DeliveryId",
+    label_environment:   "Miljö",
+    opt_production:      "Produktion",
+    opt_test:            "Test",
+    label_optional_delivery: "Valfri leverans",
+    opt_no:              "Nej",
+    opt_yes:             "Ja",
+    label_exchange_rate: "Växelkurs NOK → EUR",
+    label_valid_from:    "Giltig från",
+    label_valid_to:      "Giltig till",
+    btn_generate:        "Generera OSDM JSON",
+    btn_download:        "Ladda ner OSDM JSON",
+
+    // Seksjon 3 – Admin
+    section_admin:       "3. Admin",
+    heading_users:       "Användare",
+    col_email:           "E-post",
+    col_admin:           "Admin",
+    col_active:          "Aktiv",
+    col_logged_in:       "Inloggad",
+    col_awaiting:        "Inväntar",
+    col_actions:         "Åtgärder",
+    loading_users:       "Laddar användare…",
+    heading_add_user:    "Lägg till användare",
+    placeholder_email:   "E-post",
+    btn_add_user:        "Lägg till användare",
+    email_sent_ok:       "inbjudan skickad via e-post",
+    email_sent_fail:     "e-post kunde inte skickas – kontrollera serverloggen",
+
+    // Bytt passord
+    change_pw_title:     "Välj nytt lösenord",
+    change_pw_notice:    "Du måste välja ett nytt lösenord innan du kan fortsätta.",
+    change_pw_label:     "Nytt lösenord",
+    change_pw_confirm:   "Bekräfta lösenord",
+    change_pw_btn:       "Spara lösenord",
+    change_pw_mismatch:  "Lösenorden stämmer inte överens.",
+
+    // OSDM till Excel-side
+    heading_osdm_excel:  "OSDM till Excel",
+    section_upload:      "Ladda upp OSDM-fil",
+    upload_description:  "Ladda upp en genererad OSDM fareDelivery JSON-fil. Filen konverteras till en Excel-fil med alla stationsrelationer och priser per biljettkategori.",
+    label_osdm_file:     "OSDM JSON-fil",
+    btn_convert:         "Konvertera till Excel",
+    btn_download_excel:  "Ladda ner Excel",
+
+    // Valideringsfeil – app.js
+    err_delivery_id:     "❌ DeliveryId måste fyllas i innan generering.",
+    err_exchange_rate:   "❌ Växelkurs måste vara större än 0.",
+    err_valid_dates:     "❌ Giltig från och till måste anges.",
+    err_date_order:      "❌ Giltig från kan inte vara efter giltig till.",
+    err_no_ten:          "❌ Ingen TEN‑CSV vald",
+    ten_validated:       "TEN-tabell validerad\nStatus: OK",
+    err_ten_failed:      "❌ TEN-validering misslyckades",
+
+    // Resultat – app.js
+    osdm_generated:      "OSDM genererad",
+    label_file:          "Fil",
+    label_env:           "Miljö",
+    label_optional_del:  "Valfri leverans",
+    label_valid_period:  "Giltig period",
+    label_summer_time:   "Sommartid",
+    label_price_count:   "Antal priser",
+    err_osdm_failed:     "❌ OSDM kunde inte genereras",
+
+    // Eksempelpriser – app.js
+    example_prices:      "Exempelpriser",
+    col_route:           "Sträcka",
+    col_price_eur:       "Pris EUR",
+    col_price_nok:       "Pris NOK",
+    col_km:              "Km",
+
+    // Brukeradmin – app.js
+    err_load_users:      "Kunde inte hämta användare.",
+    no_users:            "Inga användare hittades.",
+    btn_new_password:    "Nytt lösenord",
+    btn_delete:          "Ta bort",
+    confirm_delete:      "Är du säker på att du vill ta bort",
+    password_reset_ok:   "✅ Nytt lösenord för",
+    user_deleted:        "har tagits bort.",
+    user_created:        "✅ Användare skapad",
+    email_label:         "E-post",
+    password_label:      "Lösenord",
+
+    // osdmtoExcel.js
+    file_too_large:      "⚠️ Filen är {size} MB — max är {max} MB på den här tjänsten. Ladda ner och kör konverteringen lokalt för stora filer.",
+    err_network:         "❌ Nätverksfel",
+    convert_success:     "✅ Konvertering lyckades",
+    label_rows:          "Antal relationer",
+    err_convert_failed:  "❌ Konvertering misslyckades",
+  },
 };
 
 // =============================================================================
