@@ -121,7 +121,9 @@ function pollStatus(jobId) {
         resultStatus.className = "status-ok";
         resultStatus.innerHTML =
           `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0.75rem;">` +
-          `${t("convert_success")}\n${t("label_file")}: ${res.filename}\n${t("label_rows")}: ${res.rows}</pre>`;
+          `<span data-i18n="convert_success">${t("convert_success")}</span>\n` +
+          `<span data-i18n="label_file">${t("label_file")}</span>: ${res.filename}\n` +
+          `<span data-i18n="label_rows">${t("label_rows")}</span>: ${res.rows}</pre>`;
         downloadBtn.style.display = "block";
         convertBtn.disabled = false;
 
