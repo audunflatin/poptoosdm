@@ -24,15 +24,15 @@ def _send(to: str, subject: str, html: str) -> None:
 def send_welcome_email(to: str, password: str) -> None:
     _send(
         to=to,
-        subject="Velkommen til PopToOSDM",
+        subject="Welcome to PopToOSDM",
         html=f"""
-        <p>Du har fått tilgang til <strong>PopToOSDM</strong>.</p>
+        <p>You have been granted access to <strong>PopToOSDM</strong>.</p>
         <p>
-          <strong>E-post:</strong> {to}<br>
-          <strong>Midlertidig passord:</strong> <code>{password}</code>
+          <strong>Email:</strong> {to}<br>
+          <strong>Temporary password:</strong> <code>{password}</code>
         </p>
-        <p>Du vil bli bedt om å velge et nytt passord ved første innlogging.</p>
-        <p><a href="{APP_URL}">Logg inn her</a></p>
+        <p>You will be asked to choose a new password on your first login.</p>
+        <p><a href="{APP_URL}">Log in here</a></p>
         """,
     )
 
@@ -40,14 +40,14 @@ def send_welcome_email(to: str, password: str) -> None:
 def send_reset_email(to: str, password: str) -> None:
     _send(
         to=to,
-        subject="Nytt passord – PopToOSDM",
+        subject="New password – PopToOSDM",
         html=f"""
-        <p>Passordet ditt for <strong>PopToOSDM</strong> er blitt tilbakestilt.</p>
+        <p>Your password for <strong>PopToOSDM</strong> has been reset.</p>
         <p>
-          <strong>E-post:</strong> {to}<br>
-          <strong>Midlertidig passord:</strong> <code>{password}</code>
+          <strong>Email:</strong> {to}<br>
+          <strong>Temporary password:</strong> <code>{password}</code>
         </p>
-        <p>Du vil bli bedt om å velge et nytt passord ved neste innlogging.</p>
-        <p><a href="{APP_URL}">Logg inn her</a></p>
+        <p>You will be asked to choose a new password on your next login.</p>
+        <p><a href="{APP_URL}">Log in here</a></p>
         """,
     )
