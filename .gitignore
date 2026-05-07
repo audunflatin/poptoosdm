@@ -4,7 +4,6 @@ __pycache__/
 users.db
 # macOS
 .DS_Store
-__pycache__/
 *.pyc
 users.db
 data/output/

@@ -25,6 +25,10 @@ const translations = {
     label_password:      "Passord",
     btn_login:           "Logg inn",
 
+    // Advarsel – kun for Norge
+    norway_warning_title: "Kun for Norge",
+    norway_warning_text:  "Dette verktøyet er utelukkende beregnet for norske jernbaneoperatører og håndterer kun norske priser og data.",
+
     // Seksjon 1 – Input
     section_input:       "1. Input",
     label_ten_csv:       "TEN‑CSV",
@@ -128,6 +132,10 @@ const translations = {
     label_password:      "Password",
     btn_login:           "Log in",
 
+    // Warning – Norway only
+    norway_warning_title: "Norway only",
+    norway_warning_text:  "This tool is exclusively intended for Norwegian railway operators and handles Norwegian prices and data only.",
+
     // Seksjon 1 – Input
     section_input:       "1. Input",
     label_ten_csv:       "TEN‑CSV",
@@ -230,6 +238,10 @@ const translations = {
     label_email:         "E-Mail",
     label_password:      "Passwort",
     btn_login:           "Anmelden",
+
+    // Warnung – nur für Norwegen
+    norway_warning_title: "Nur für Norwegen",
+    norway_warning_text:  "Dieses Tool ist ausschließlich für norwegische Eisenbahnbetreiber gedacht und verarbeitet ausschließlich norwegische Preise und Daten.",
 
     // Seksjon 1 – Eingabe
     section_input:       "1. Eingabe",

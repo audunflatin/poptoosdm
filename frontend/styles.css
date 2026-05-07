@@ -157,6 +157,37 @@ button:disabled {
 .example-table tr:nth-child(even) {
   background: #f8fbff;
 }
+.norway-warning {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  background: #fff8e1;
+  border: 2px solid #f5a623;
+  color: #7a4f00;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.norway-warning .norway-warning-icon {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.norway-warning .norway-warning-body strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.norway-warning .norway-warning-body p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .validation-error {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
