@@ -1,287 +1,132 @@
+/* =============================================================================
+   Entur mørkt tema – inspirert av linje.entur.no
+   Farger: --colors-brand-blue: #181c56, --colors-brand-coral: #ff5959
+   ============================================================================= */
 :root {
-  --entur-blue-light: #e8f1fb;
-  --entur-blue: #0066cc;
-  --entur-blue-dark: #004fa3;
-  --entur-border: #d6e4f5;
-  --background: #f5f7fa;
-  --panel-bg: #ffffff;
+  --bg:            #181c56;   /* Entur brand blue – sidebakgrunn */
+  --surface:       #1e2468;   /* kortbakgrunn */
+  --surface-hover: #232876;
+  --border:        rgba(255, 255, 255, 0.12);
+  --border-focus:  rgba(255, 255, 255, 0.5);
+
+  --text:          #ffffff;
+  --text-muted:    rgba(255, 255, 255, 0.6);
+
+  --coral:         #ff5959;   /* Entur coral – accent */
+  --coral-hover:   #e03e3e;
+  --coral-light:   rgba(255, 89, 89, 0.15);
+
+  --success:       #5ac39a;
+  --success-bg:    rgba(90, 195, 154, 0.12);
+  --error-bg:      rgba(255, 89, 89, 0.15);
+  --warning-bg:    rgba(255, 202, 40, 0.12);
+  --warning-text:  #ffe082;
+
+  --radius-sm:     4px;
+  --radius-md:     8px;
 }
 
+/* =============================================================================
+   Base
+   ============================================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: "National", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
-button {
-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-}
-.container {
-  max-width: 900px;
-  margin: 0 auto;
+
+/* =============================================================================
+   Header
+   ============================================================================= */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem 0;
 }
 
 .logo-bar {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
+  gap: 2.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.logo {
-  max-height: 56px;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--entur-blue-dark);
-}
-
-.panel {
-  background: var(--panel-bg);
-  border-radius: 8px;
-  padding: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--entur-border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.panel h2 {
-  margin-top: 0;
-  border-bottom: 1px solid var(--entur-border);
-  padding-bottom: 0.5rem;
-  color: var(--entur-blue-dark);
-}
-
-label {
-  display: block;
-  margin-top: 1rem;
-  font-weight: 600;
-  color: #333;
-}
-
-input,
-select {
-  width: 100%;
-  padding: 0.45rem;
-  margin-top: 0.25rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-}
-
-input:focus,
-select:focus {
-  outline: none;
-  border-color: var(--entur-blue);
-  box-shadow: 0 0 0 2px var(--entur-blue-light);
-}
-
-button {
-  margin-top: 1.5rem;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: none;
-  background: var(--entur-blue);
-  color: white;
-  cursor: pointer;
-}
-
-button:hover {
-  background: var(--entur-blue-dark);
-}
-
-.btn-table {
-  margin-top: 0;
-  padding: 0.25rem 0.7rem;
-  font-size: 1rem;
-}
-
-.btn-danger {
-  background: #cc2200;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #a81c00;
-}
-
-pre {
-  background: var(--entur-blue-light);
-  padding: 1rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  white-space: pre-wrap;
-  margin-top: 1rem;
-  border: 1px solid var(--entur-border);
-}
-
-progress {
-  width: 100%;
-  height: 1.2rem;
-  margin-top: 1rem;
-}
-
-.spinner {
-  display: none;
-  margin: 12px auto;
-  width: 32px;
-  height: 32px;
-  border: 4px solid #ddd;
-  border-top: 4px solid var(--entur-blue);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.status-ok {
-  border-left: 6px solid #2ecc71;
-  background: #ecf9f1;
-}
-
-.status-error {
-  border-left: 6px solid #e74c3c;
-  background: #fdecea;
-}
-button:disabled {
-  background: #9fb7d9;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-.example-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  font-size: 0.95rem;
-}
-
-.example-table th,
-.example-table td {
-  border: 1px solid #d6e4f5;
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-}
-
-.example-table th {
-  background: #e8f1fb;
-  font-weight: 600;
-}
-
-.example-table tr:nth-child(even) {
-  background: #f8fbff;
-}
-.norway-warning {
-  margin-bottom: 1.5rem;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
-  background: #fff8e1;
-  border: 2px solid #f5a623;
-  color: #7a4f00;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.norway-warning .norway-warning-icon {
-  font-size: 1.5rem;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
-.norway-warning .norway-warning-body strong {
-  display: block;
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.norway-warning .norway-warning-body p {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.validation-error {
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  background: #fdecea;
-  border: 1px solid #e74c3c;
-  color: #a32626;
-  font-weight: 600;
-}
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-
-  background: #f5f7fa;
-  padding: 1rem 0 0.5rem 0;
-  margin-bottom: 1.5rem;
-
-  border-bottom: 1px solid #d6e4f5;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
-}
-
+.logo { max-height: 44px; filter: brightness(0) invert(1); }
 
 .app-header h1 {
-  margin: 0.5rem 0 0 0;
+  text-align: center;
+  margin: 0 0 0.6rem 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--coral);
+  letter-spacing: -0.02em;
 }
 
-.container {
-  padding-top: 1rem;
-}
-
-.logout-button {
-  background: transparent;
-  border: none;
-  color: #0066cc;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.logout-button:hover {
-  text-decoration: underline;
-}
-
-/* Navigasjonsrad under tittelen */
+/* =============================================================================
+   Header nav
+   ============================================================================= */
 .header-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 0.25rem;
-}
-
-.header-link {
-  color: var(--entur-blue);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.header-link:hover {
-  text-decoration: underline;
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0;
 }
 
 .header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   margin-left: auto;
 }
 
-/* Flaggvelger – øverst til høyre i headeren */
+.header-link {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.header-link:hover { color: var(--coral); }
+
+.logout-button {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.logout-button:hover { color: var(--coral); }
+
+/* =============================================================================
+   Språkvelger
+   ============================================================================= */
 .lang-selector {
   position: absolute;
   top: 0.75rem;
-  right: 1rem;
+  right: 1.5rem;
   display: flex;
   gap: 2px;
 }
 
-/* Flaggvelger fast posisjon (login-siden uten header) */
 .lang-selector-fixed {
   position: fixed;
   top: 0.75rem;
-  right: 1rem;
+  right: 1.5rem;
   z-index: 2000;
   display: flex;
   gap: 2px;
@@ -292,166 +137,333 @@ button:disabled {
   border: none;
   padding: 2px 4px;
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   line-height: 1;
   margin-top: 0;
-  opacity: 0.35;
+  opacity: 0.3;
   transition: opacity 0.15s;
 }
 
-.lang-btn:hover {
-  opacity: 0.75;
-  background: none;
+.lang-btn:hover       { opacity: 0.7;  background: none; }
+.lang-btn.lang-active { opacity: 1; }
+
+/* =============================================================================
+   Layout
+   ============================================================================= */
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
-.lang-btn.lang-active {
-  opacity: 1;
-}
-/* Eksempelpriser – resultatpanel */
-
-.example-panel {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #b7e1c1;
-
-  background: none;        /* VIKTIG */
-  border-radius: 0;        /* VIKTIG */
-  font-family: inherit;
+/* =============================================================================
+   Panel / kort
+   ============================================================================= */
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--coral);
 }
 
-
-.example-panel-title {
-  font-weight: 600;
+.panel h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
-.example-panel table {
+/* =============================================================================
+   Generell tekst
+   ============================================================================= */
+p, li, td, th, span, div {
+  color: var(--text);
+}
+
+/* =============================================================================
+   Skjema
+   ============================================================================= */
+label {
+  display: block;
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+input:not([type="checkbox"]),
+select {
   width: 100%;
-  margin-top: 8px;
-  border-collapse: collapse;
+  padding: 0.65rem 0.875rem;
+  margin-top: 0.375rem;
+  font-size: 1rem;
   font-family: inherit;
-  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.example-panel th {
-  padding: 6px 10px;
-  border-bottom: 1px solid #b7e1c1;
-  font-weight: 600;
+input:not([type="checkbox"]):focus,
+select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.example-panel td {
-  padding: 6px 10px;
+input[type="checkbox"] {
+  width: auto;
+  margin-top: 0;
+  cursor: pointer;
+  accent-color: var(--coral);
 }
 
-.example-row-even {
-  background: #f2fbf5;
-}
+select option { background: var(--surface); color: var(--text); }
 
-.example-row-odd {
-  background: #e6f4ea;
-}
-/* Statusboks – tekst */
-#resultBox pre {
+/* =============================================================================
+   Knapper
+   ============================================================================= */
+button {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  font-family: inherit;
-  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
 }
-/* Resultattekst (erstatter <pre>) */
+
+button:hover {
+  border-color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+button:active { opacity: 0.85; }
+
+button:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Primærknapp (generer, logg inn osv.) */
+#generateBtn:not(:disabled),
+button[type="submit"] {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+}
+
+#generateBtn:not(:disabled):hover,
+button[type="submit"]:hover {
+  background: var(--coral-hover);
+  border-color: var(--coral-hover);
+}
+
+.btn-table {
+  margin-top: 0;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-danger {
+  border-color: var(--coral);
+  color: var(--coral);
+  background: transparent;
+}
+
+.btn-danger:hover {
+  background: var(--coral);
+  color: #ffffff;
+  border-color: var(--coral);
+}
+
+/* =============================================================================
+   Pre / resultatbokser
+   ============================================================================= */
+pre:empty { display: none; }
+
+pre {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  white-space: pre-wrap;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+#resultBox pre { background: transparent; border: none; padding: 0; margin: 0; }
+
+#resultBox { margin-top: 1.25rem; padding: 1.25rem 1.5rem; border-radius: var(--radius-sm); }
+
 .result-text {
   white-space: pre-wrap;
-  font-size: 0.95rem;
-  margin: 0;
-  padding: 0;
-  padding-left: 10px;
+  font-size: 0.9rem;
   font-family: inherit;
+  font-weight: 500;
+  margin: 0;
 }
-/* Eksempelpriser – forbedret lesbarhet */
+
+/* =============================================================================
+   Status
+   ============================================================================= */
+.status-ok    { border-left: 4px solid var(--success); background: var(--success-bg); }
+.status-error { border-left: 4px solid var(--coral);   background: var(--error-bg); }
+
+.validation-error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--error-bg);
+  border-left: 4px solid var(--coral);
+  color: var(--coral);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* =============================================================================
+   Progress / spinner
+   ============================================================================= */
+progress {
+  width: 100%;
+  height: 3px;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+progress::-webkit-progress-bar   { background: rgba(255,255,255,0.1); }
+progress::-webkit-progress-value { background: var(--coral); }
+progress::-moz-progress-bar      { background: var(--coral); }
+
+.spinner {
+  display: none;
+  margin: 1rem auto;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--coral);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* =============================================================================
+   Norge-advarsel
+   ============================================================================= */
+.norway-warning {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--warning-bg);
+  border-left: 4px solid var(--warning-text);
+  color: var(--warning-text);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.norway-warning .norway-warning-icon { font-size: 1.2rem; line-height: 1.4; flex-shrink: 0; }
+
+.norway-warning .norway-warning-body strong {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.norway-warning .norway-warning-body p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
+
+/* =============================================================================
+   Eksempelpriser
+   ============================================================================= */
+.example-panel {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: var(--success-bg);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--success);
+}
+
+.example-panel-title {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.75rem;
+}
+
 .example-panel table {
   width: 100%;
-  margin-top: 0.75rem;
-  border-collapse: separate;   /* VIKTIG */
-  border-spacing: 0 4px;       /* luft mellom rader */
-  font-size: 0.95rem;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  font-size: 0.875rem;
 }
 
 .example-panel th {
   text-align: left;
-  padding: 6px 10px;
-  font-weight: 600;
-  color: #2c3e50;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.example-panel th:nth-child(2),
-.example-panel th:nth-child(3),
-.example-panel th:nth-child(4),
-.example-panel td:nth-child(2),
-.example-panel td:nth-child(3),
-.example-panel td:nth-child(4) {
-  text-align: right;
-  white-space: nowrap;
+.example-panel th:nth-child(n+2),
+.example-panel td:nth-child(n+2) { text-align: right; white-space: nowrap; }
+
+.example-panel td { padding: 5px 8px; }
+
+.example-row-even { background: rgba(255,255,255,0.05); }
+.example-row-odd  { background: transparent; }
+
+/* =============================================================================
+   Tabeller (admin / osdmtoexcel)
+   ============================================================================= */
+.example-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.9rem;
 }
 
-.example-panel td {
-  padding: 8px 10px;           /* MER LUFT */
+.example-table th,
+.example-table td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; }
+
+.example-table th {
+  background: rgba(255,255,255,0.07);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.example-row-even,
-.example-row-odd {
-  border-radius: 4px;
-}
-/* Tving samme font som status-tekst (TEN / OSDM) */
-.example-panel,
-.example-panel table,
-.example-panel th,
-.example-panel td {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.95rem;
-}
-.example-panel {
-margin-top: 12px;
-padding: 12px 14px;
-background: #dff2e5;        /* mørkere enn status-ok */
-border-radius: 6px;
-font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-.example-panel-title {
-font-weight: 600;
-margin-bottom: 6px;
-}
-.example-panel table {
-width: 100%;
-border-collapse: separate;
-border-spacing: 0 4px;
-font-size: 0.95rem;
-}
-.example-panel th,
-.example-panel td {
-padding: 6px 10px;
-}
-.example-panel th {
-font-weight: 600;
-}
-.example-row-even {
-background: #eef8f2;
-}
-.example-row-odd {
-background: #e4f3ea;
-}
-#resultBox {
-margin-top: 20px;   /* avstand fra knappen */
-padding: 14px 16px;
-}
-.result-text {
-margin: 0;
-padding: 0;
-white-space: pre-wrap;
-}
-.example-panel,
-.example-panel *,
-.example-panel table,
-.example-panel th,
-.example-panel td {
-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-}
+.example-table tr:nth-child(even) { background: rgba(255,255,255,0.03); }

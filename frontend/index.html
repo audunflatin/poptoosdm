@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="/static/styles.css?v=4">
+  <link rel="stylesheet" href="/static/styles.css?v=5">
 </head>
 <body>
 
@@ -22,11 +22,14 @@
     <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">🇩🇪</button>
     <button class="lang-btn" data-lang="sv" onclick="setLanguage('sv')" title="Svenska">🇸🇪</button>
   </span>
-  <div class="logo-bar">
-    <img src="/static/Enturlogo_Blue_RGB.svg" alt="Entur logo" class="logo" />
-    <img src="/static/logo-uic-osdm.svg" alt="UIC logo" class="logo" />
+  <div style="display:flex; justify-content:center; align-items:center; padding:1rem 0 0.5rem 0;">
+    <svg width="440" height="88" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="22" r="9" fill="#ff5959"/>
+      <line x1="23" y1="22" x2="35" y2="22" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-dasharray="3 2"/>
+      <circle cx="44" cy="22" r="7" fill="none" stroke="white" stroke-width="2.5"/>
+      <text x="60" y="29" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="21" fill="white">Pop<tspan fill="#ff5959">To</tspan>OSDM</text>
+    </svg>
   </div>
-  <h1>PopToOSDM</h1>
   <div class="header-controls">
     <a href="/osdmtoexcel" class="header-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
     <div class="header-right">

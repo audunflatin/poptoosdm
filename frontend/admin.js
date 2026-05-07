@@ -16,7 +16,7 @@ async function loadUserList() {
   }
 
   tbody.innerHTML = users.map((u, i) => {
-    const rowBg = i % 2 === 0 ? "#f9f9f9" : "#fff";
+    const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
     let activeCell;
     if (!u.is_active) {
       activeCell = "❌";
@@ -27,9 +27,9 @@ async function loadUserList() {
     }
     return `
       <tr style="background:${rowBg}">
-        <td style="padding:6px 8px;">${u.email}</td>
-        <td style="text-align:center; padding:6px 8px;">${u.is_admin ? "✅" : "—"}</td>
-        <td style="text-align:center; padding:6px 8px;">${activeCell}</td>
+        <td style="padding:6px 8px; color:white;">${u.email}</td>
+        <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? "✅" : "—"}</td>
+        <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
         <td style="text-align:center; padding:6px 8px;">
           <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
           <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
