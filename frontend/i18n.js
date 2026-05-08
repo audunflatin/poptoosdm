@@ -86,7 +86,7 @@ const translations = {
     // OSDM til Excel-side
     heading_osdm_excel:  "OSDM til Excel",
     section_upload:      "Last opp OSDM-fil",
-    upload_description:  "Last opp en OSDM fareDelivery JSON-fil for å konvertere den til Excel. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Ingen problem - Bruk kontaktskjemaet nedenfor, så tar jeg meg av konverteringen for deg!",
+    upload_description:  "Last opp en OSDM fareDelivery JSON-fil for å konvertere den til Excel. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Ingen problem - bruk kontaktskjemaet nedenfor, så tar jeg meg av konverteringen for deg!",
     contact_heading:     "Kontakt",
     contact_name:        "Navn",
     contact_email:       "E-post",
