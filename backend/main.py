@@ -588,6 +588,22 @@ def admin_reset_password(request: Request, email: str = Form(...)):
         logger.error("Kunne ikke sende reset-e-post til %s: %s", email, exc)
         return {"ok": True, "email": email, "email_sent": False}
 
+@app.post("/admin/set-admin")
+def admin_set_admin(request: Request, email: str = Form(...), is_admin: str = Form(...)):
+    require_admin(request)
+    if email == request.session.get("user_email"):
+        raise HTTPException(status_code=400, detail="Kan ikke endre din egen admin-status")
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
+        user.is_admin = (is_admin.lower() == "true")
+        db.commit()
+        return {"ok": True, "email": email, "is_admin": user.is_admin}
+    finally:
+        db.close()
+
 @app.post("/admin/delete-user")
 def delete_user(request: Request, email: str = Form(...)):
     require_admin(request)

@@ -37,6 +37,7 @@ async function loadUserList() {
         <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
         <td style="text-align:center; padding:6px 8px;">
           <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
+          <button class="btn-table" onclick="setAdmin('${u.email}', ${!u.is_admin})" style="margin-left:6px;">${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}</button>
           <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
         </td>
       </tr>`;
@@ -53,6 +54,21 @@ async function resetPassword(email) {
     setResult(resultEl, res.email_sent
       ? `${t("password_reset_ok")} ${res.email} - ${t("email_sent_ok")}`
       : `${t("password_reset_ok")} ${res.email} - ${t("email_sent_fail")}`, true);
+    loadUserList();
+  } else {
+    setResult(resultEl, res.detail || t("unknown_error"), false);
+  }
+}
+
+async function setAdmin(email, makeAdmin) {
+  const resultEl = document.getElementById("userActionResult");
+  const fd = new FormData();
+  fd.append("email", email);
+  fd.append("is_admin", makeAdmin ? "true" : "false");
+  const r = await fetch("/admin/set-admin", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    setResult(resultEl, `${res.email} ${makeAdmin ? t("admin_granted") : t("admin_removed")}`, true);
     loadUserList();
   } else {
     setResult(resultEl, res.detail || t("unknown_error"), false);
