@@ -1,6 +1,6 @@
 import logging
 import requests
-from backend.core.settings import RESEND_API_KEY, SENDER_EMAIL, APP_URL
+from backend.core.settings import RESEND_API_KEY, SENDER_EMAIL, APP_URL, CONTACT_EMAIL
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,22 @@ def send_welcome_email(to: str, password: str) -> None:
       <a href="{APP_URL}" style="{s['btn']}">Log in</a>
     </td></tr></table>"""
     _send(to=to, subject="Welcome to PopToOSDM", html=_email_html('<span style="color:#ff5959;">Welcome to</span> Pop<span style="color:#ff5959;">To</span>OSDM', body))
+
+
+def send_contact_email(name: str, from_email: str, message: str) -> None:
+    s = _STYLE
+    body = f"""
+    <p style="{s['p']}">New message from the contact form on poptoosdm.livetsmiler.no.</p>
+    {_cred_row("Name", name)}
+    {_cred_row("Email", from_email)}
+    <table cellpadding="0" cellspacing="0" width="100%" style="{s['cred']}">
+      <tr><td><p style="{s['label']}">Message</p><p style="font-size:15px;color:#ffffff;white-space:pre-wrap;">{message}</p></td></tr>
+    </table>"""
+    _send(
+        to=CONTACT_EMAIL,
+        subject=f"PopToOSDM - melding fra {name}",
+        html=_email_html('Ny melding fra <span style="color:#ff5959;">kontaktskjema</span>', body),
+    )
 
 
 def send_reset_link_email(to: str, reset_url: str) -> None:

@@ -16,7 +16,7 @@ import uuid
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
-from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email
+from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email
 
 import logging
 logger = logging.getLogger(__name__)
@@ -938,6 +938,19 @@ def admin_page(request: Request):
     if "user_email" not in request.session or not request.session.get("is_admin"):
         return RedirectResponse("/", status_code=302)
     return HTMLResponse(Path("frontend/admin.html").read_text(encoding="utf-8"))
+
+@app.post("/contact")
+def contact(
+    name: str = Form(...),
+    email: str = Form(...),
+    message: str = Form(...),
+):
+    try:
+        send_contact_email(name, email, message)
+        return {"ok": True}
+    except Exception as exc:
+        logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
+        return {"ok": False}
 
 @app.get("/osdmtoexcel", response_class=HTMLResponse)
 @app.head("/osdmtoexcel")

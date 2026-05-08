@@ -26,7 +26,7 @@ Genererte OSDM-filer er validert mot **UIC DRTF** og laster grønt i DRTF.
 - **Autentisering:** Session-basert med passlib/pbkdf2_sha256
 - **Drift:** Render (automatisk deploy fra `main`)
 - **DNS:** Cloudflare
-- **Domene:** https://www.livetsmiler.no
+- **Domene:** https://poptoosdm.livetsmiler.no
 
 ---
 
@@ -313,7 +313,7 @@ Validerer at:
 | `DATABASE_URL`   | PostgreSQL-tilkobling (valgfri)      | SQLite lokalt               |
 | `RESEND_API_KEY` | API-nøkkel for Resend (e-post)       | _(tom – e-post deaktivert)_ |
 | `SENDER_EMAIL`   | Avsenderadresse for e-poster         | `noreply@livetsmiler.no`    |
-| `APP_URL`        | Basis-URL i e-postlenker             | `https://livetsmiler.no`    |
+| `APP_URL`        | Basis-URL i e-postlenker             | `https://poptoosdm.livetsmiler.no` |
 
 ---
 
@@ -358,7 +358,7 @@ HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`, `
 - ✅ E-postinvitasjon via Resend
 - ✅ Tvungen passordbytte ved første innlogging
 - ✅ Innloggingslogg (LoginLog)
-- ✅ Deployet på Render (livetsmiler.no)
+- ✅ Deployet på Render (poptoosdm.livetsmiler.no)
 - ✅ OSDM til Excel-konvertering (`/osdmtoexcel`, støtter alle land/operatører)
 - ✅ Korrekt prisberegning per kategori med oppdaterte priceRef i fares
 - ✅ Dynamisk tidssone-håndtering (sommertid/vintertid)
