@@ -103,6 +103,7 @@ def health():
 
 @app.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    email = email.lower()
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == email).first()
@@ -178,6 +179,7 @@ def forgot_password_page():
 
 @app.post("/forgot-password")
 def forgot_password(email: str = Form(...)):
+    email = email.lower()
     from backend.core.settings import APP_URL as _APP_URL
     db = SessionLocal()
     try:
@@ -545,6 +547,7 @@ def list_users(request: Request):
 @app.post("/admin/add-user")
 def admin_add_user(request: Request, email: str = Form(...), is_admin: str = Form("false")):
     require_admin(request)
+    email = email.lower()
     db = SessionLocal()
     try:
         if db.query(User).filter(User.email == email).first():
@@ -570,6 +573,7 @@ def admin_add_user(request: Request, email: str = Form(...), is_admin: str = For
 @app.post("/admin/reset-password")
 def admin_reset_password(request: Request, email: str = Form(...)):
     require_admin(request)
+    email = email.lower()
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == email).first()
@@ -591,6 +595,7 @@ def admin_reset_password(request: Request, email: str = Form(...)):
 @app.post("/admin/set-admin")
 def admin_set_admin(request: Request, email: str = Form(...), is_admin: str = Form(...)):
     require_admin(request)
+    email = email.lower()
     if email == request.session.get("user_email"):
         raise HTTPException(status_code=400, detail="Kan ikke endre din egen admin-status")
     db = SessionLocal()
@@ -607,6 +612,7 @@ def admin_set_admin(request: Request, email: str = Form(...), is_admin: str = Fo
 @app.post("/admin/delete-user")
 def delete_user(request: Request, email: str = Form(...)):
     require_admin(request)
+    email = email.lower()
     if email == request.session.get("user_email"):
         raise HTTPException(status_code=400, detail="Kan ikke slette deg selv")
     db = SessionLocal()

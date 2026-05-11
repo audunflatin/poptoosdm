@@ -22,7 +22,7 @@ Genererte OSDM-filer er validert mot **UIC DRTF** og laster grønt i DRTF.
 
 - **Backend:** FastAPI (Python)
 - **Frontend:** HTML / CSS / Vanilla JavaScript (servert via FastAPI)
-- **Database:** PostgreSQL (produksjon via Render) / SQLite (lokalt fallback)
+- **Database:** SQLite (både lokalt og i produksjon på Render)
 - **Autentisering:** Session-basert med passlib/pbkdf2_sha256
 - **Drift:** Render (automatisk deploy fra `main`)
 - **DNS:** Cloudflare
@@ -171,7 +171,7 @@ til når det er nødvendig for å skille duplikate kolonnenavn.
 
 ## Brukerhåndtering
 
-- Brukere lagres i PostgreSQL (produksjon) eller SQLite (lokalt)
+- Brukere lagres i SQLite (både lokalt og i produksjon)
 - Passord: UUID-basert, hashes med pbkdf2_sha256 via passlib
 - Sesjon: server-side via Starlette SessionMiddleware
 
@@ -336,10 +336,9 @@ Ved endringer i statiske filer må versjonsnummeret bumpes i **alle** HTML-filer
 HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`, `change_password.html`
 
 ### Database og Render
-- PostgreSQL settes via `DATABASE_URL`-miljøvariabel på Render
-- SQLite brukes lokalt som fallback
+- SQLite brukes både lokalt og i produksjon på Render
 - `init_db()` kalles ved oppstart via `@app.on_event("startup")`
-- Gratis Render-plan har ikke persistent disk — PostgreSQL er derfor kritisk for produksjon
+- `users.db` ligger på en persistent disk på Render — overlever redeploy
 
 ### DB-filer og store filer
 - Deutsche Bahn (1080): 1,2 GB JSON, 1 210 300 fares, 48 412 RC-er
