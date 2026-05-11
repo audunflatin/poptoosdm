@@ -22,7 +22,12 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
   - Gyldighetsperiode
 - Visning av eksempelpriser
 - Nedlasting av ferdig OSDM‑fil
-- Admin‑GUI for brukerhåndtering
+- Konvertering av OSDM JSON → Excel (`/osdmtoexcel`)
+- Admin‑panel for brukerhåndtering (`/admin`)
+  - Invitasjon av nye brukere via e-post (Resend)
+  - Tvungen passordbytte ved første innlogging
+  - Logging av innlogginger
+  - Oversikt over hvilke brukere som har logget inn
 
 ---
 
@@ -39,10 +44,13 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 Browser
   ↓
 FastAPI (backend/main.py)
-  ├─ /            → GUI (index.html)
-  ├─ /ui/*        → API (TEN / OSDM)
-  ├─ /admin/*     → Brukeradministrasjon
-  └─ /static/*    → CSS, JS, favicon
+  ├─ /                 → Hoved-GUI (index.html)
+  ├─ /admin            → Admin-panel (admin.html, kun for admins)
+  ├─ /osdmtoexcel      → OSDM til Excel (osdmtoexcel.html)
+  ├─ /change-password  → Passordbytte (change_password.html)
+  ├─ /ui/*             → API (TEN / OSDM)
+  ├─ /admin/*          → Brukeradministrasjon API
+  └─ /static/*         → CSS, JS, favicon
 
 Database: PostgreSQL (Render) / SQLite (lokalt)
 ```
@@ -91,13 +99,17 @@ pip install -r requirements.txt
 
 ### Miljøvariabler
 
-| Variabel         | Beskrivelse                      | Standard                |
-|------------------|----------------------------------|-------------------------|
-| `SESSION_SECRET` | Hemmelig nøkkel for sessions     | `CHANGE_ME_BEFORE_PROD` |
-| `DATABASE_URL`   | PostgreSQL‑tilkobling (valgfri)  | SQLite lokalt           |
+| Variabel         | Beskrivelse                          | Standard                |
+|------------------|--------------------------------------|-------------------------|
+| `SESSION_SECRET` | Hemmelig nøkkel for sessions         | `CHANGE_ME_BEFORE_PROD` |
+| `DATABASE_URL`   | PostgreSQL‑tilkobling (valgfri)      | SQLite lokalt           |
+| `RESEND_API_KEY` | API‑nøkkel for Resend (e-post)       | _(tom – e-post deaktivert)_ |
+| `SENDER_EMAIL`   | Avsenderadresse for e-poster         | `noreply@livetsmiler.no` |
+| `APP_URL`        | Basis-URL i e-postlenker             | `https://poptoosdm.livetsmiler.no` |
 
-Lokalt trenger du ikke sette disse — applikasjonen bruker fornuftige standardverdier.
-I produksjon (Render) settes de som miljøvariabler i dashboardet.
+Lokalt trenger du ikke sette `DATABASE_URL` — SQLite brukes automatisk.
+`RESEND_API_KEY` må settes for at e-postinvitasjoner skal fungere.
+I produksjon (Render) settes alle som miljøvariabler i dashboardet.
 
 ---
 
@@ -146,13 +158,14 @@ Klikk **Generer OSDM JSON**.
 - Eksempelpriser listes (Oslo S til Bergen, Trondheim, Stavanger, Halden)
 - Ferdig OSDM‑fil kan lastes ned
 
-### 4. Admin
+### 4. Admin (`/admin`)
 
 Kun tilgjengelig for admin‑brukere:
 
-- Liste over alle brukere med status
-- Legg til ny bruker (passord genereres automatisk)
-- Generer nytt passord for eksisterende bruker
+- Liste over alle brukere med admin- og innloggingsstatus
+- Legg til ny bruker — invitasjon sendes automatisk på e-post
+- Nye brukere tvinges til å bytte passord ved første innlogging
+- Generer nytt passord — sendes på e-post til brukeren
 - Slett bruker
 
 ---
@@ -179,10 +192,9 @@ OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
 
 - Produksjonsdomene:
   ```text
-  https://www.livetsmiler.no
+  https://poptoosdm.livetsmiler.no
   ```
-- Root‑domene (`livetsmiler.no`) 301‑videresendes til `www`
-- HTTPS og redirect håndteres av Cloudflare
+- HTTPS håndteres av Cloudflare
 - Automatisk deploy ved push til `main`
 
 ---
@@ -192,5 +204,10 @@ OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
 ✅ Produksjonsklar
 ✅ Validert mot UIC DRTF
 ✅ PostgreSQL i produksjon
-✅ Admin‑GUI for brukerhåndtering
-✅ Deployet på Render (livetsmiler.no)
+✅ Admin‑panel for brukerhåndtering (egen side)
+✅ E-postinvitasjon via Resend
+✅ Tvungen passordbytte ved første innlogging
+✅ Innloggingslogg
+✅ OSDM til Excel-konvertering
+✅ Flerspråklig (norsk, engelsk, tysk)
+✅ Deployet på Render (poptoosdm.livetsmiler.no)
