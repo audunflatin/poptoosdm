@@ -25,7 +25,7 @@ def _email_html(heading: str, body_rows: str) -> str:
     s = _STYLE
     return f"""<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no"></head>
 <body style="{s['body']}">
 <table width="100%" cellpadding="0" cellspacing="0" style="{s['wrap']}">
   <tr><td align="center">
@@ -54,7 +54,7 @@ def _cred_row(label: str, value: str) -> str:
     s = _STYLE
     return f"""
     <table cellpadding="0" cellspacing="0" width="100%" style="{s['cred']}">
-      <tr><td><p style="{s['label']}">{label}</p><p style="{s['cred_val']}">{value}</p></td></tr>
+      <tr><td><p style="{s['label']}">{label}</p><p style="{s['cred_val']}"><span style="color:#ffffff;text-decoration:none;">{value}</span></p></td></tr>
     </table>"""
 
 
