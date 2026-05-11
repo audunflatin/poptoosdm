@@ -76,9 +76,10 @@ def _send(to: str, subject: str, html: str) -> None:
 
 def send_welcome_email(to: str, password: str) -> None:
     s = _STYLE
+    email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'
     body = f"""
     <p style="{s['p']}">You have been granted access to PopToOSDM.</p>
-    {_cred_row("Email", to)}
+    {_cred_row("Email", email_link)}
     {_cred_row("Temporary password", password)}
     <p style="{s['p']}">You will be asked to choose a new password on your first login.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
@@ -117,9 +118,10 @@ def send_reset_link_email(to: str, reset_url: str) -> None:
 
 def send_reset_email(to: str, password: str) -> None:
     s = _STYLE
+    email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'
     body = f"""
     <p style="{s['p']}">Your password for PopToOSDM has been reset.</p>
-    {_cred_row("Email", to)}
+    {_cred_row("Email", email_link)}
     {_cred_row("Temporary password", password)}
     <p style="{s['p']}">You will be asked to choose a new password on your next login.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
