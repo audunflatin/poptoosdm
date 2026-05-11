@@ -181,10 +181,28 @@ if (window.IS_ADMIN) {
   if (adminLink) adminLink.style.display = "";
 }
 
-["datasetId", "exchangeRate", "validFrom", "validTo"].forEach(id => {
+["datasetId", "exchangeRate"].forEach(id => {
   document.getElementById(id).addEventListener("input", () => {
     const errorEl = document.getElementById("validationError");
     errorEl.style.display = "none";
     errorEl.innerText = "";
   });
+});
+
+const fpOnChange = () => {
+  const errorEl = document.getElementById("validationError");
+  errorEl.style.display = "none";
+  errorEl.innerText = "";
+};
+
+flatpickr("#validFrom", {
+  dateFormat: "Y-m-d",
+  locale: "no",
+  onChange: fpOnChange,
+});
+
+flatpickr("#validTo", {
+  dateFormat: "Y-m-d",
+  locale: "no",
+  onChange: fpOnChange,
 });
