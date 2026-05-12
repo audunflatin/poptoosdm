@@ -2,10 +2,7 @@
 __pycache__/
 *.pyc
 users.db
-# macOS
 .DS_Store
-*.pyc
-users.db
 data/output/
 tools/
 *.pptx
