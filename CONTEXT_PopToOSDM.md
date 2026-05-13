@@ -38,6 +38,7 @@ backend/
   auth_db.py       — SQLAlchemy-modeller: User, LoginLog + migrering
   auth_utils.py    — passord-hashing og generering
   email_utils.py   — e-postutsending via Resend API
+  rics_codes.py    — ERA RICS-koder: 2388 europeiske transportørnavn (kode → navn)
   core/
     settings.py    — SESSION_SECRET, RESEND_API_KEY, SENDER_EMAIL, APP_URL
 frontend/
@@ -47,14 +48,15 @@ frontend/
   change_password.html — tvungen passordbytte ved første innlogging
   login.html       — innloggingsside
   app.js           — JavaScript for index.html
-  admin.js         — JavaScript for admin.html
+  admin.js         — JavaScript for admin.html (paginering, søk)
   osdmtoExcel.js   — JavaScript for osdmtoexcel.html
-  i18n.js          — flerspråklig støtte (oversettelser + språkvelger)
+  i18n.js          — flerspråklig støtte (no, en, de, sv)
   styles.css       — felles styling
 data/
   input/
-    1076-OSDM-template.json  — OSDM-template med farestruktur
-  output/          — genererte OSDM-filer (ikke i git)
+    1076-OSDM-template.json          — OSDM-template med farestruktur (ryddet mai 2026)
+    connectionpoint_to_stopplace.csv — kobling CP-id → stopplace
+    uic_to_stopplace.csv             — kobling UIC → stopplace
 schemas/           — JSON-skjemaer for OSDM-validering
 ```
 
@@ -133,6 +135,13 @@ Følgende styres fra GUI og settes i `fareDelivery.delivery`:
 
 ---
 
+### Generert fil
+
+Ferdig OSDM JSON lagres **i minnet** (`OSDM_OUT`-dict i `main.py`) og serveres
+direkte via `/ui/download-osdm/{filename}`. Ingen skriving til disk.
+
+---
+
 ## OSDM til Excel-konvertering
 
 Egen side (`/osdmtoexcel`) for å konvertere en hvilken som helst OSDM fareDelivery JSON-fil til Excel.
@@ -143,6 +152,21 @@ Egen side (`/osdmtoexcel`) for å konvertere en hvilken som helst OSDM fareDeliv
 - Kolonner bygges **dynamisk** fra filens farestruktur — ingen hardkoding
 - Én rad per stasjonspar (én retning), sortert alfabetisk på fra-stasjon
 - Filnavn: `{deliveryId}_{test|prod}_prices.xlsx`
+- Stasjonspar med **flere operatører** (ulike serviceConstraints) gir separate kolonner
+
+### Metadata-boks
+
+Øverst i Excel-filen (rader 1–7) vises en stilisert metadata-boks med:
+- Mørk blå header-rad med tittel
+- Leverandør, leveranse-ID, gyldighetsperiode, bruks-type, transportør(er)
+- Transportørkoder vises med ERA RICS-navn, f.eks. `Vygruppen AS (1076)`
+- Bruk-celle farges grønt (PRODUCTION) eller oransje (TEST_ONLY)
+- Tabellens kolonneoverskrifter starter på rad 8, data fra rad 9
+- Frys-pane og auto-filter satt på tabellhodet
+
+### Transportørnavn (RICS)
+- `backend/rics_codes.py` inneholder 2388 ERA RICS-koder hentet fra `teleref.era.europa.eu` (mai 2026)
+- Format: `RICS_CODES = { '0076': 'Bane NOR', '1076': 'Vygruppen AS', ... }`
 
 ### Kolonner
 Alltid: `From UIC`, `From station`, `To UIC`, `To station`, `Km`
@@ -152,6 +176,7 @@ Deretter én kolonne per unik kombinasjon av:
 - `passengerConstraintRef` (passasjertype)
 - `serviceClassRef` (klasse, f.eks. "2. Klasse", "1. Klasse")
 - `reductionConstraintRef` (rabattkort, f.eks. "BahnCard 50")
+- `serviceConstraintRef` (operatør, f.eks. "Västtrafik", "SJ Regional")
 
 Kolonnenavn bygges automatisk fra tekster i filen. Passasjertype legges kun
 til når det er nødvendig for å skille duplikate kolonnenavn.
@@ -196,11 +221,19 @@ Logger alle vellykkede innlogginger med `email`, `logged_at` og `ip_address`.
 
 ### Admin-panel (`/admin`)
 - Kun tilgjengelig for brukere med `is_admin = True`
-- Liste over alle brukere — ✅ har logget inn, — avventer, ❌ inaktiv
+- Søkefelt filtrerer på e-post — viser treff uavhengig av gjeldende side
+- Paginering: 15 brukere per side med ←/→-navigasjon (skjules ved søk)
+- Brukerstatus: ✅ har logget inn, — avventer, ❌ inaktiv
 - Legg til ny bruker → invitasjon sendes automatisk på e-post via Resend
 - Nytt passord → sendes på e-post, `must_change_password` settes til True
+- Gi/fjern admin-tilgang per bruker (★/☆-knapp)
 - Slett bruker (kan ikke slette seg selv)
 - Admin-link i header på alle sider, synlig kun for admins
+
+### Lokal testdata
+`frontend/admin_mock.js` (gitignored) inneholder 32 mock-brukere for lokal testing.
+`admin.html` laster filen kun på `localhost`/`127.0.0.1` via et inline-script —
+ingen 404-requests i produksjon. `admin.js` bruker `window.MOCK_USERS` hvis tilgjengelig.
 
 ### E-post (Resend)
 - Avsender: `SENDER_EMAIL` (default: `noreply@livetsmiler.no`)
@@ -269,23 +302,24 @@ Validerer at:
 - Statusfelt med grønn/rød markering
 - Progress-bar under generering
 - Admin-panel skjules for ikke-admin-brukere
-- Flaggknapper (🇳🇴 🇬🇧 🇩🇪) øverst til høyre for språkvalg
+- Flaggknapper (🇳🇴 🇬🇧 🇩🇪 🇸🇪) øverst til høyre for språkvalg
 
 ---
 
 ## Flerspråklig støtte (i18n)
 
-- Støtter **norsk, engelsk og tysk**
+- Støtter **norsk, engelsk, tysk og svensk**
 - Språk detekteres automatisk fra nettleseren (`navigator.languages`)
 - Valgt språk lagres i `localStorage` (nøkkel: `poptoosdm_lang`)
 - Alle synlige tekster i HTML bruker `data-i18n="nøkkel"`-attributter
 - All dynamisk tekst i JS bruker `t("nøkkel")`-funksjonen
 - `i18n.js` må lastes **før** `app.js` / `osdmtoExcel.js`
+- Språkbytte kaller `loadUserList()` på admin-siden for å oppdatere knapptekster
 
 ### Legge til ny tekst
 
 1. Bruk `data-i18n="min_nøkkel"` i HTML (eller `t("min_nøkkel")` i JS)
-2. Legg til nøkkelen under riktig seksjon i **alle tre språk** i `i18n.js`
+2. Legg til nøkkelen under riktig seksjon i **alle fire språk** i `i18n.js`
 
 ### Seksjonsoversikt i i18n.js
 
@@ -296,7 +330,7 @@ Validerer at:
 | Advarsel – kun for Norge | norway_warning_* |
 | Seksjon 1–2 | labels og knapper i index.html |
 | Bytt passord | change_pw_* (change_password.html) |
-| Seksjon 3 – Admin | brukertabell, legg til bruker, handlinger (admin.html/admin.js) |
+| Seksjon 3 – Admin | brukertabell, legg til bruker, handlinger, søk, paginering |
 | OSDM til Excel-side | labels og knapper i osdmtoexcel.html |
 | Valideringsfeil – app.js | feilmeldinger ved inputvalidering |
 | Resultat – app.js | tekst i resultatboksen etter generering |
@@ -328,21 +362,22 @@ Ved endringer i statiske filer må versjonsnummeret bumpes i **alle** HTML-filer
 
 | Fil | Gjeldende versjon |
 |---|---|
-| `styles.css` | v=4 |
-| `i18n.js` | v=5 |
-| `app.js` | v=6 |
-| `admin.js` | v=1 |
+| `styles.css` | v=6 (v=7 i index.html) |
+| `i18n.js` | v=12 |
+| `app.js` | v=7 |
+| `admin.js` | v=7 |
+| `osdmtoExcel.js` | v=3 |
 
-HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`, `change_password.html`
+HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`,
+`change_password.html`, `forgot_password.html`, `reset_password.html`, `login.html`
 
 ### Database og Render
 - SQLite brukes både lokalt og i produksjon på Render
 - `init_db()` kalles ved oppstart via `@app.on_event("startup")`
 - `users.db` ligger på en persistent disk på Render — overlever redeploy
 
-### DB-filer og store filer
+### Store OSDM-filer
 - Deutsche Bahn (1080): 1,2 GB JSON, 1 210 300 fares, 48 412 RC-er
-- Sti lokalt: `data/output/1080_2025.03.gtm_TEST.json`
 - For store filer tar Excel-konverteringen 30-60 sekunder — progressbar viser fremdrift
 
 ---
@@ -352,17 +387,17 @@ HTML-filer som laster i18n.js: `index.html`, `admin.html`, `osdmtoexcel.html`, `
 - ✅ Funksjonelt ferdig
 - ✅ Validert mot UIC DRTF
 - ✅ GUI ferdig polert
-- ✅ PostgreSQL i produksjon
-- ✅ Admin-panel på egen side (`/admin`)
+- ✅ SQLite i produksjon (Render persistent disk)
+- ✅ Admin-panel med paginering, søk og admin-tildeling
 - ✅ E-postinvitasjon via Resend
 - ✅ Tvungen passordbytte ved første innlogging
 - ✅ Innloggingslogg (LoginLog)
 - ✅ Deployet på Render (poptoosdm.livetsmiler.no)
-- ✅ OSDM til Excel-konvertering (`/osdmtoexcel`, støtter alle land/operatører)
+- ✅ OSDM til Excel-konvertering (alle land/operatører, metadata-boks, RICS-navn)
 - ✅ Korrekt prisberegning per kategori med oppdaterte priceRef i fares
 - ✅ Dynamisk tidssone-håndtering (sommertid/vintertid)
-- ✅ Dockerfile klar for fremtidig containerisering
-- ✅ Flerspråklig støtte (norsk, engelsk, tysk) med automatisk språkdeteksjon
+- ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk) med automatisk språkdeteksjon
+- ✅ OSDM-output lagres i minnet — ingen disk-skriving
 
 ---
 
