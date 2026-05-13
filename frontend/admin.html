@@ -98,8 +98,12 @@
     </div>
   </section>
 
-  <!-- Innloggingslogg -->
-  <section class="panel" id="logSection" style="margin-top: 2rem; display:none;">
+
+</div>
+
+<!-- Innloggingslogg – egen bredere container -->
+<div id="logSection" style="max-width:1100px; margin:2rem auto; padding:0 1.5rem; display:none;">
+  <section class="panel">
     <h2 data-i18n="heading_login_log">Innloggingslogg</h2>
 
     <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.9rem;">
@@ -111,18 +115,20 @@
       <button class="btn-table" onclick="resetLogFilter()" data-i18n="log_reset_filter">Nullstill filter</button>
     </div>
 
-    <table style="width:100%; border-collapse:collapse; margin-bottom:0.75rem;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_time">Tidspunkt</th>
-          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
-          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_ip">IP-adresse</th>
-        </tr>
-      </thead>
-      <tbody id="logTableBody">
-        <tr><td colspan="3" style="padding:8px; color:#888;" data-i18n="loading_log">Laster logg…</td></tr>
-      </tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; margin-bottom:0.75rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc; white-space:nowrap;" data-i18n="col_time">Tidspunkt</th>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_ip">IP-adresse</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr><td colspan="3" style="padding:8px; color:#888;" data-i18n="loading_log">Laster logg…</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
       <div id="logPagination" style="display:none; align-items:center; gap:0.75rem;">
@@ -134,11 +140,10 @@
     </div>
 
   </section>
-
 </div>
 
 <script src="/static/i18n.js?v=14"></script>
 <script>if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){document.write('<scr'+'ipt src="/static/admin_mock.js"><\/scr'+'ipt>');}</script>
-<script src="/static/admin.js?v=10"></script>
+<script src="/static/admin.js?v=11"></script>
 </body>
 </html>

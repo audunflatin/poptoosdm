@@ -237,7 +237,7 @@ async function loadLoginLog() {
       return `<tr style="background:${rowBg}">
         <td style="padding:6px 8px; color:${failed ? "#ff9999" : "rgba(255,255,255,0.85)"}; white-space:nowrap;">${timeCell}</td>
         <td style="padding:6px 8px; color:${failed ? "#ffbbbb" : "white"};">${e.email}</td>
-        <td style="padding:6px 8px; color:rgba(255,255,255,0.6); font-family:monospace;">${e.ip_address}</td>
+        <td style="padding:6px 8px; color:rgba(255,255,255,0.6); font-family:monospace; word-break:break-all;">${e.ip_address}</td>
       </tr>`;
     }).join("");
   }
