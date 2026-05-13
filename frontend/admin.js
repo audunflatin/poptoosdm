@@ -229,10 +229,14 @@ async function loadLoginLog() {
     tbody.innerHTML = `<tr><td colspan="3" style="padding:8px; color:rgba(255,255,255,0.5);">${t("no_log_results")}</td></tr>`;
   } else {
     tbody.innerHTML = data.entries.map((e, i) => {
-      const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
+      const failed = e.success === false;
+      const rowBg = failed
+        ? (i % 2 === 0 ? "rgba(255,89,89,0.13)" : "rgba(255,89,89,0.07)")
+        : (i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent");
+      const timeCell = `${failed ? "❌ " : ""}${formatLogDate(e.logged_at)}`;
       return `<tr style="background:${rowBg}">
-        <td style="padding:6px 8px; color:rgba(255,255,255,0.85); white-space:nowrap;">${formatLogDate(e.logged_at)}</td>
-        <td style="padding:6px 8px; color:white;">${e.email}</td>
+        <td style="padding:6px 8px; color:${failed ? "#ff9999" : "rgba(255,255,255,0.85)"}; white-space:nowrap;">${timeCell}</td>
+        <td style="padding:6px 8px; color:${failed ? "#ffbbbb" : "white"};">${e.email}</td>
         <td style="padding:6px 8px; color:rgba(255,255,255,0.6); font-family:monospace;">${e.ip_address}</td>
       </tr>`;
     }).join("");

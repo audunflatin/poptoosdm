@@ -21,6 +21,9 @@ from backend.email_utils import send_welcome_email, send_reset_email, send_reset
 import logging
 logger = logging.getLogger(__name__)
 
+from collections import defaultdict
+import time
+
 from zoneinfo import ZoneInfo
 from datetime import datetime, timezone, timedelta
 
@@ -32,7 +35,7 @@ app = FastAPI(title="PopToOSDM")
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="strict")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,6 +50,31 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db()
+
+# ---------------------------------------------------------------------
+# Rate limiting (innlogging)
+# ---------------------------------------------------------------------
+
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+_LOGIN_WINDOW = 60   # sekunder
+_LOGIN_MAX    = 10   # maks forsøk per vindu
+
+def _get_client_ip(request: Request) -> str:
+    """Hent reell klient-IP — foretrekker Cloudflare-header."""
+    return (
+        request.headers.get("CF-Connecting-IP")
+        or (request.client.host if request.client else "unknown")
+    )
+
+def _rate_limit_check(ip: str):
+    now = time.time()
+    _login_attempts[ip] = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW]
+    if len(_login_attempts[ip]) >= _LOGIN_MAX:
+        raise HTTPException(status_code=429, detail="For mange innloggingsforsøk. Prøv igjen om litt.")
+    _login_attempts[ip].append(now)
+
+def _rate_limit_reset(ip: str):
+    _login_attempts.pop(ip, None)
 
 # ---------------------------------------------------------------------
 # State
@@ -103,20 +131,20 @@ def health():
 
 @app.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    ip = _get_client_ip(request)
+    _rate_limit_check(ip)
     email = email.lower()
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == email).first()
-        if not user or not user.is_active:
+        if not user or not user.is_active or not verify_password(password, user.password_hash):
+            db.add(LoginLog(email=email, ip_address=ip, success=False))
+            db.commit()
             raise HTTPException(status_code=401, detail="Ugyldig innlogging")
-        if not verify_password(password, user.password_hash):
-            raise HTTPException(status_code=401, detail="Ugyldig innlogging")
+        _rate_limit_reset(ip)
         request.session["user_email"] = user.email
         request.session["is_admin"] = user.is_admin
-        db.add(LoginLog(
-            email=user.email,
-            ip_address=request.client.host if request.client else None,
-        ))
+        db.add(LoginLog(email=user.email, ip_address=ip, success=True))
         if user.must_change_password:
             db.commit()
             return RedirectResponse("/change-password", status_code=302)
@@ -664,6 +692,7 @@ def admin_login_log(
                     "email": e.email,
                     "logged_at": e.logged_at.isoformat() if e.logged_at else None,
                     "ip_address": e.ip_address or "—",
+                    "success": bool(e.success) if e.success is not None else True,
                 }
                 for e in entries
             ],
