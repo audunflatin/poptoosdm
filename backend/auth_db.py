@@ -69,6 +69,10 @@ def _migrate():
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login_at TIMESTAMP"))
             conn.execute(text("ALTER TABLE login_log ADD COLUMN IF NOT EXISTS success BOOLEAN DEFAULT TRUE"))
 
+        # Normaliser eksisterende e-poster til lowercase (idempotent)
+        conn.execute(text("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)"))
+        conn.execute(text("UPDATE login_log SET email = LOWER(email) WHERE email != LOWER(email)"))
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)
