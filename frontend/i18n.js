@@ -60,6 +60,10 @@ const translations = {
     col_awaiting:        "Avventer",
     col_actions:         "Handlinger",
     loading_users:       "Laster brukere…",
+    search_users:        "Søk e-post…",
+    no_search_results:   "Ingen treff.",
+    page_label:          "Side",
+    of_label:            "av",
     heading_add_user:    "Legg til bruker",
     placeholder_email:   "E‑post",
     btn_add_user:        "Legg til bruker",
@@ -202,6 +206,10 @@ const translations = {
     col_awaiting:        "Pending",
     col_actions:         "Actions",
     loading_users:       "Loading users…",
+    search_users:        "Search email…",
+    no_search_results:   "No results.",
+    page_label:          "Page",
+    of_label:            "of",
     heading_add_user:    "Add user",
     placeholder_email:   "Email",
     btn_add_user:        "Add user",
@@ -344,6 +352,10 @@ const translations = {
     col_awaiting:        "Ausstehend",
     col_actions:         "Aktionen",
     loading_users:       "Benutzer laden…",
+    search_users:        "E-Mail suchen…",
+    no_search_results:   "Keine Treffer.",
+    page_label:          "Seite",
+    of_label:            "von",
     heading_add_user:    "Benutzer hinzufügen",
     placeholder_email:   "E-Mail",
     btn_add_user:        "Benutzer hinzufügen",
@@ -486,6 +498,10 @@ const translations = {
     col_awaiting:        "Inväntar",
     col_actions:         "Åtgärder",
     loading_users:       "Laddar användare…",
+    search_users:        "Sök e-post…",
+    no_search_results:   "Inga träffar.",
+    page_label:          "Sida",
+    of_label:            "av",
     heading_add_user:    "Lägg till användare",
     placeholder_email:   "E-post",
     btn_add_user:        "Lägg till användare",
@@ -621,7 +637,7 @@ function setLanguage(lang) {
   localStorage.setItem("poptoosdm_lang", lang);
   applyTranslations();
   // Last brukerliste på nytt om admin er innlogget (for å oppdatere knapper)
-  if (typeof loadUserList === "function" && window.IS_ADMIN) {
+  if (typeof loadUserList === "function") {
     loadUserList();
   }
 }

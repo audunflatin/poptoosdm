@@ -58,7 +58,10 @@
 
       <!-- Brukerliste -->
       <h2 style="margin-top: 3.5rem;" data-i18n="heading_users">Brukere</h2>
-      <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
+      <input id="userSearch" type="search" data-i18n-placeholder="search_users"
+        placeholder="Søk e-post…" oninput="onUserSearch()"
+        style="width:100%; box-sizing:border-box; margin-bottom:0.75rem; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:0.95rem;" />
+      <table id="userTable" style="width:100%; border-collapse:collapse; margin-bottom:0.75rem;">
         <thead>
           <tr>
             <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
@@ -71,6 +74,11 @@
           <tr><td colspan="4" style="padding:8px; color:#888;" data-i18n="loading_users">Laster brukere…</td></tr>
         </tbody>
       </table>
+      <div id="userPagination" style="display:none; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+        <button class="btn-table" id="pagePrev" onclick="changePage(-1)">&#8592;</button>
+        <span id="pageInfo" style="color:rgba(255,255,255,0.75); font-size:0.9rem;"></span>
+        <button class="btn-table" id="pageNext" onclick="changePage(1)">&#8594;</button>
+      </div>
       <pre id="userActionResult"></pre>
 
     </div>
@@ -78,7 +86,8 @@
 
 </div>
 
-<script src="/static/i18n.js?v=11"></script>
-<script src="/static/admin.js?v=6"></script>
+<script src="/static/i18n.js?v=12"></script>
+<script>if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){document.write('<scr'+'ipt src="/static/admin_mock.js"><\/scr'+'ipt>');}</script>
+<script src="/static/admin.js?v=7"></script>
 </body>
 </html>

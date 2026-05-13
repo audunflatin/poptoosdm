@@ -6,3 +6,4 @@ users.db
 data/output/
 tools/
 *.pptx
+frontend/admin_mock.js

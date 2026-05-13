@@ -1,6 +1,86 @@
+let allUsers = [];
+let currentPage = 1;
+const PAGE_SIZE = 15;
+
 function setResult(el, text, ok) {
   el.innerText = text;
   el.className = text ? (ok ? "status-ok" : "status-error") : "";
+}
+
+function getSearchQuery() {
+  return (document.getElementById("userSearch")?.value || "").trim().toLowerCase();
+}
+
+function getFilteredUsers() {
+  const q = getSearchQuery();
+  if (!q) return allUsers;
+  return allUsers.filter(u => u.email.toLowerCase().includes(q));
+}
+
+function renderUserList() {
+  const tbody = document.getElementById("userTableBody");
+  const paginationEl = document.getElementById("userPagination");
+  const pageInfoEl = document.getElementById("pageInfo");
+  const prevBtn = document.getElementById("pagePrev");
+  const nextBtn = document.getElementById("pageNext");
+
+  const q = getSearchQuery();
+  const filtered = getFilteredUsers();
+  const isSearching = q.length > 0;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = isSearching ? 0 : (currentPage - 1) * PAGE_SIZE;
+  const end = isSearching ? filtered.length : start + PAGE_SIZE;
+  const visible = filtered.slice(start, end);
+
+  if (visible.length === 0) {
+    const msg = isSearching ? t("no_search_results") : t("no_users");
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:rgba(255,255,255,0.5);">${msg}</td></tr>`;
+  } else {
+    tbody.innerHTML = visible.map((u, i) => {
+      const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
+      let activeCell;
+      if (!u.is_active) {
+        activeCell = "❌";
+      } else if (u.has_logged_in) {
+        activeCell = "✅";
+      } else {
+        activeCell = "-";
+      }
+      return `
+        <tr style="background:${rowBg}">
+          <td style="padding:6px 8px; color:white;">${u.email}</td>
+          <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? "✅" : "-"}</td>
+          <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
+          <td style="text-align:center; padding:6px 8px;">
+            <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
+            <button class="btn-icon" onclick="setAdmin('${u.email}', ${!u.is_admin})" title="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" aria-label="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" style="margin-left:6px;">${u.is_admin ? "★" : "☆"}</button>
+            <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
+          </td>
+        </tr>`;
+    }).join("");
+  }
+
+  if (!isSearching && allUsers.length > PAGE_SIZE) {
+    paginationEl.style.display = "flex";
+    pageInfoEl.innerText = `${t("page_label")} ${currentPage} ${t("of_label")} ${totalPages}`;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+  } else {
+    paginationEl.style.display = "none";
+  }
+}
+
+function onUserSearch() {
+  currentPage = 1;
+  renderUserList();
+}
+
+function changePage(delta) {
+  const totalPages = Math.max(1, Math.ceil(getFilteredUsers().length / PAGE_SIZE));
+  currentPage = Math.max(1, Math.min(totalPages, currentPage + delta));
+  renderUserList();
 }
 
 async function loadUserList() {
@@ -8,40 +88,21 @@ async function loadUserList() {
   const resultEl = document.getElementById("userActionResult");
   setResult(resultEl, "", true);
 
+  if (window.MOCK_USERS) {
+    allUsers = window.MOCK_USERS;
+    currentPage = 1;
+    renderUserList();
+    return;
+  }
+
   const r = await fetch("/admin/list-users");
   if (!r.ok) {
     tbody.innerHTML = `<tr><td colspan="4" style="color:#ff5959;">${t("err_load_users")}</td></tr>`;
     return;
   }
-  const users = await r.json();
-
-  if (users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:rgba(255,255,255,0.5);">${t("no_users")}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = users.map((u, i) => {
-    const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
-    let activeCell;
-    if (!u.is_active) {
-      activeCell = "❌";
-    } else if (u.has_logged_in) {
-      activeCell = "✅";
-    } else {
-      activeCell = "-";
-    }
-    return `
-      <tr style="background:${rowBg}">
-        <td style="padding:6px 8px; color:white;">${u.email}</td>
-        <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? "✅" : "-"}</td>
-        <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
-        <td style="text-align:center; padding:6px 8px;">
-          <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
-          <button class="btn-icon" onclick="setAdmin('${u.email}', ${!u.is_admin})" title="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" aria-label="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" style="margin-left:6px;">${u.is_admin ? "★" : "☆"}</button>
-          <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
-        </td>
-      </tr>`;
-  }).join("");
+  allUsers = await r.json();
+  currentPage = 1;
+  renderUserList();
 }
 
 async function resetPassword(email) {
