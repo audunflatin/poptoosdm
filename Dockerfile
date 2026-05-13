@@ -36,9 +36,6 @@ COPY frontend/ ./frontend/
 COPY data/input/ ./data/input/
 COPY schemas/ ./schemas/
 
-# Lag output-mappe
-RUN mkdir -p data/output
-
 # Ikke kjør som root
 RUN useradd --no-create-home --shell /bin/false appuser
 RUN chown -R appuser:appuser /app

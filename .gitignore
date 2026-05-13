@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 users.db
 .DS_Store
-data/output/
 tools/
 *.pptx
 frontend/admin_mock.js

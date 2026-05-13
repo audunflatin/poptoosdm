@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -55,7 +55,7 @@ def startup():
 TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
-OSDM_OUT = None
+OSDM_OUT: dict | None = None  # {"filename": str, "content": str}
 XLSX_JOBS: dict = {}  # job_id -> {"status": "running"|"done"|"error", "result": bytes, "error": str}
 
 # ---------------------------------------------------------------------
@@ -484,17 +484,16 @@ def generate_osdm(
     GENERATION_PROGRESS["status"] = "done"
     GENERATION_PROGRESS["percent"] = 100
 
-    out = Path(f"data/output/1076_{datasetId}_{environment}.json")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    filename = f"1076_{datasetId}_{environment}.json"
+    content = json.dumps(data, indent=2, ensure_ascii=False)
 
     global OSDM_OUT
-    OSDM_OUT = out
+    OSDM_OUT = {"filename": filename, "content": content}
 
     return {
         "step": "OSDM generation",
         "ok": True,
-        "outputFile": out.name,
+        "outputFile": filename,
         "summary": {
             "pricesUpdated": len(fs["prices"]),
             "exchangeRate": exchangeRate,
@@ -515,10 +514,13 @@ def get_progress():
 
 @app.get("/ui/download-osdm/{filename}")
 def download_osdm(filename: str):
-    path = Path("data/output") / filename
-    if not path.exists():
+    if not OSDM_OUT or OSDM_OUT["filename"] != filename:
         raise HTTPException(status_code=404, detail="OSDM-fil finnes ikke")
-    return FileResponse(path=path, media_type="application/json", filename=path.name)
+    return Response(
+        content=OSDM_OUT["content"],
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 # ---------------------------------------------------------------------
 # Admin
