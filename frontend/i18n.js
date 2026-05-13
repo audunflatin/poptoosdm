@@ -146,6 +146,8 @@ const translations = {
     password_label:      "Passord",
 
     // Innloggingslogg – admin.js
+    btn_show_log:        "Vis innloggingslogg",
+    btn_hide_log:        "Skjul innloggingslogg",
     heading_login_log:   "Innloggingslogg",
     log_search_ph:       "Søk e-post…",
     log_date_from:       "Fra dato",
@@ -304,6 +306,8 @@ const translations = {
     password_label:      "Password",
 
     // Login log – admin.js
+    btn_show_log:        "Show login log",
+    btn_hide_log:        "Hide login log",
     heading_login_log:   "Login log",
     log_search_ph:       "Search email…",
     log_date_from:       "From date",
@@ -462,6 +466,8 @@ const translations = {
     password_label:      "Passwort",
 
     // Anmeldungsprotokoll – admin.js
+    btn_show_log:        "Anmeldungsprotokoll anzeigen",
+    btn_hide_log:        "Anmeldungsprotokoll verbergen",
     heading_login_log:   "Anmeldungsprotokoll",
     log_search_ph:       "E-Mail suchen…",
     log_date_from:       "Von Datum",
@@ -620,6 +626,8 @@ const translations = {
     password_label:      "Lösenord",
 
     // Inloggningslogg – admin.js
+    btn_show_log:        "Visa inloggningslogg",
+    btn_hide_log:        "Dölj inloggningslogg",
     heading_login_log:   "Inloggningslogg",
     log_search_ph:       "Sök e-post…",
     log_date_from:       "Från datum",

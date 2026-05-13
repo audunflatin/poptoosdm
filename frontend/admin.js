@@ -180,6 +180,19 @@ loadUserList();
 const LOG_PAGE_SIZE = 25;
 let logPage = 1;
 let logTotal = 0;
+let logLoaded = false;
+
+function toggleLog() {
+  const section = document.getElementById("logSection");
+  const btn = document.getElementById("toggleLogBtn");
+  const visible = section.style.display !== "none";
+  section.style.display = visible ? "none" : "block";
+  btn.textContent = visible ? t("btn_show_log") : t("btn_hide_log");
+  if (!visible && !logLoaded) {
+    logLoaded = true;
+    loadLoginLog();
+  }
+}
 
 function formatLogDate(iso) {
   if (!iso) return "—";
@@ -261,5 +274,3 @@ function resetLogFilter() {
   logPage = 1;
   loadLoginLog();
 }
-
-loadLoginLog();
