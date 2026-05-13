@@ -22,7 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from zoneinfo import ZoneInfo
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # ---------------------------------------------------------------------
 # App
@@ -625,6 +625,49 @@ def delete_user(request: Request, email: str = Form(...)):
         db.delete(user)
         db.commit()
         return {"ok": True, "deleted": email}
+    finally:
+        db.close()
+
+@app.get("/admin/login-log")
+def admin_login_log(
+    request: Request,
+    search: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    page: int = 1,
+    page_size: int = 25,
+):
+    require_admin(request)
+    db = SessionLocal()
+    try:
+        q = db.query(LoginLog)
+        if search:
+            q = q.filter(LoginLog.email.ilike(f"%{search}%"))
+        if date_from:
+            q = q.filter(LoginLog.logged_at >= date_from)
+        if date_to:
+            dt_to = datetime.fromisoformat(date_to) + timedelta(days=1)
+            q = q.filter(LoginLog.logged_at < dt_to)
+        total = q.count()
+        entries = (
+            q.order_by(LoginLog.logged_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "entries": [
+                {
+                    "email": e.email,
+                    "logged_at": e.logged_at.isoformat() if e.logged_at else None,
+                    "ip_address": e.ip_address or "—",
+                }
+                for e in entries
+            ],
+        }
     finally:
         db.close()
 

@@ -12,6 +12,18 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="/static/styles.css?v=6">
+  <style>
+    input[type="date"].log-date {
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 0.95rem;
+      color-scheme: dark;
+    }
+    input[type="date"].log-date::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
+  </style>
 </head>
 <body>
 
@@ -84,10 +96,47 @@
     </div>
   </section>
 
+  <!-- Innloggingslogg -->
+  <section class="panel" style="margin-top: 2rem;">
+    <h2 data-i18n="heading_login_log">Innloggingslogg</h2>
+
+    <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.9rem;">
+      <input id="logSearch" type="search" data-i18n-placeholder="log_search_ph"
+        placeholder="Søk e-post…" oninput="onLogSearch()"
+        style="flex:1; min-width:180px; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:0.95rem;" />
+      <input id="logDateFrom" type="date" class="log-date" onchange="loadLoginLog()" />
+      <input id="logDateTo"   type="date" class="log-date" onchange="loadLoginLog()" />
+      <button class="btn-table" onclick="resetLogFilter()" data-i18n="log_reset_filter">Nullstill filter</button>
+    </div>
+
+    <table style="width:100%; border-collapse:collapse; margin-bottom:0.75rem;">
+      <thead>
+        <tr>
+          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_time">Tidspunkt</th>
+          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_email">E-post</th>
+          <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;" data-i18n="col_ip">IP-adresse</th>
+        </tr>
+      </thead>
+      <tbody id="logTableBody">
+        <tr><td colspan="3" style="padding:8px; color:#888;" data-i18n="loading_log">Laster logg…</td></tr>
+      </tbody>
+    </table>
+
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+      <div id="logPagination" style="display:none; align-items:center; gap:0.75rem;">
+        <button class="btn-table" id="logPrev" onclick="changeLogPage(-1)">&#8592;</button>
+        <span id="logPageInfo" style="color:rgba(255,255,255,0.75); font-size:0.9rem;"></span>
+        <button class="btn-table" id="logNext" onclick="changeLogPage(1)">&#8594;</button>
+      </div>
+      <span id="logTotal" style="color:rgba(255,255,255,0.45); font-size:0.85rem;"></span>
+    </div>
+
+  </section>
+
 </div>
 
-<script src="/static/i18n.js?v=12"></script>
+<script src="/static/i18n.js?v=13"></script>
 <script>if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){document.write('<scr'+'ipt src="/static/admin_mock.js"><\/scr'+'ipt>');}</script>
-<script src="/static/admin.js?v=7"></script>
+<script src="/static/admin.js?v=8"></script>
 </body>
 </html>

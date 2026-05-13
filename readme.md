@@ -13,7 +13,7 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 ## Funksjonalitet
 
 - Validering av TEN‑CSV
-- Generering av OSDM JSON
+- Generering av OSDM JSON (lagres i minnet, ikke på disk)
 - Støtte for:
   - DeliveryId
   - Miljø (test / prod)
@@ -23,11 +23,15 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 - Visning av eksempelpriser
 - Nedlasting av ferdig OSDM‑fil
 - Konvertering av OSDM JSON → Excel (`/osdmtoexcel`)
+  - Stilisert metadata-boks øverst i Excel med leveranseinformasjon
+  - ERA RICS-navn på transportørkoder (f.eks. `1076` → `Vygruppen AS (1076)`)
+  - Støtter stasjonspar med flere operatører
 - Admin‑panel for brukerhåndtering (`/admin`)
   - Invitasjon av nye brukere via e-post (Resend)
   - Tvungen passordbytte ved første innlogging
   - Logging av innlogginger
-  - Oversikt over hvilke brukere som har logget inn
+  - Paginering (15 per side) og søk i brukerlisten
+  - Admin-tilgang kan tildeles/fjernes per bruker
 
 ---
 
@@ -35,7 +39,7 @@ Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 
 - **Backend:** FastAPI (Python)
 - **Frontend:** Statisk HTML/JS (servert via FastAPI)
-- **Database:** PostgreSQL (produksjon via Render) / SQLite (lokalt)
+- **Database:** SQLite (lokalt og i produksjon på Render)
 - **Autentisering:** Session‑basert
 - **Drift:** Render
 - **DNS:** Cloudflare
@@ -52,7 +56,7 @@ FastAPI (backend/main.py)
   ├─ /admin/*          → Brukeradministrasjon API
   └─ /static/*         → CSS, JS, favicon
 
-Database: PostgreSQL (Render) / SQLite (lokalt)
+Database: SQLite (Render persistent disk / lokalt)
 ```
 
 ---
@@ -162,10 +166,11 @@ Klikk **Generer OSDM JSON**.
 
 Kun tilgjengelig for admin‑brukere:
 
-- Liste over alle brukere med admin- og innloggingsstatus
+- Søk i brukerlisten og bla med paginering (15 per side)
 - Legg til ny bruker — invitasjon sendes automatisk på e-post
 - Nye brukere tvinges til å bytte passord ved første innlogging
 - Generer nytt passord — sendes på e-post til brukeren
+- Gi/fjern admin-tilgang per bruker
 - Slett bruker
 
 ---
@@ -201,13 +206,13 @@ OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
 
 ## Status
 
-✅ Produksjonsklar
-✅ Validert mot UIC DRTF
-✅ PostgreSQL i produksjon
-✅ Admin‑panel for brukerhåndtering (egen side)
-✅ E-postinvitasjon via Resend
-✅ Tvungen passordbytte ved første innlogging
-✅ Innloggingslogg
-✅ OSDM til Excel-konvertering
-✅ Flerspråklig (norsk, engelsk, tysk)
-✅ Deployet på Render (poptoosdm.livetsmiler.no)
+✅ Produksjonsklar  
+✅ Validert mot UIC DRTF  
+✅ SQLite i produksjon (Render persistent disk)  
+✅ Admin‑panel med paginering og søk  
+✅ E-postinvitasjon via Resend  
+✅ Tvungen passordbytte ved første innlogging  
+✅ Innloggingslogg  
+✅ OSDM til Excel-konvertering med metadata-boks og RICS-navn  
+✅ Flerspråklig (norsk, engelsk, tysk, svensk)  
+✅ Deployet på Render (poptoosdm.livetsmiler.no)  

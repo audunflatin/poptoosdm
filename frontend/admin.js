@@ -172,3 +172,94 @@ document.getElementById("addUserForm").onsubmit = async e => {
 };
 
 loadUserList();
+
+// =============================================================================
+// Innloggingslogg
+// =============================================================================
+
+const LOG_PAGE_SIZE = 25;
+let logPage = 1;
+let logTotal = 0;
+
+function formatLogDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso.endsWith("Z") ? iso : iso + "Z");
+  return d.toLocaleString(undefined, {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
+
+async function loadLoginLog() {
+  const tbody = document.getElementById("logTableBody");
+  tbody.innerHTML = `<tr><td colspan="3" style="padding:8px; color:#888;">${t("loading_log")}</td></tr>`;
+
+  const search   = document.getElementById("logSearch")?.value.trim() || "";
+  const dateFrom = document.getElementById("logDateFrom")?.value || "";
+  const dateTo   = document.getElementById("logDateTo")?.value || "";
+
+  const params = new URLSearchParams({ page: logPage, page_size: LOG_PAGE_SIZE });
+  if (search)   params.set("search",    search);
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo)   params.set("date_to",   dateTo);
+
+  const r = await fetch(`/admin/login-log?${params}`);
+  if (!r.ok) {
+    tbody.innerHTML = `<tr><td colspan="3" style="color:#ff5959;">${t("no_log_results")}</td></tr>`;
+    return;
+  }
+  const data = await r.json();
+  logTotal = data.total;
+  const totalPages = Math.max(1, Math.ceil(logTotal / LOG_PAGE_SIZE));
+
+  if (data.entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="padding:8px; color:rgba(255,255,255,0.5);">${t("no_log_results")}</td></tr>`;
+  } else {
+    tbody.innerHTML = data.entries.map((e, i) => {
+      const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
+      return `<tr style="background:${rowBg}">
+        <td style="padding:6px 8px; color:rgba(255,255,255,0.85); white-space:nowrap;">${formatLogDate(e.logged_at)}</td>
+        <td style="padding:6px 8px; color:white;">${e.email}</td>
+        <td style="padding:6px 8px; color:rgba(255,255,255,0.6); font-family:monospace;">${e.ip_address}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  const paginationEl = document.getElementById("logPagination");
+  const pageInfoEl   = document.getElementById("logPageInfo");
+  const prevBtn      = document.getElementById("logPrev");
+  const nextBtn      = document.getElementById("logNext");
+  const totalEl      = document.getElementById("logTotal");
+
+  totalEl.innerText = `${t("log_total")} ${logTotal}`;
+
+  if (totalPages > 1) {
+    paginationEl.style.display = "flex";
+    pageInfoEl.innerText = `${t("page_label")} ${logPage} ${t("of_label")} ${totalPages}`;
+    prevBtn.disabled = logPage <= 1;
+    nextBtn.disabled = logPage >= totalPages;
+  } else {
+    paginationEl.style.display = "none";
+  }
+}
+
+function onLogSearch() {
+  logPage = 1;
+  loadLoginLog();
+}
+
+function changeLogPage(delta) {
+  const totalPages = Math.max(1, Math.ceil(logTotal / LOG_PAGE_SIZE));
+  logPage = Math.max(1, Math.min(totalPages, logPage + delta));
+  loadLoginLog();
+}
+
+function resetLogFilter() {
+  document.getElementById("logSearch").value = "";
+  document.getElementById("logDateFrom").value = "";
+  document.getElementById("logDateTo").value = "";
+  logPage = 1;
+  loadLoginLog();
+}
+
+loadLoginLog();

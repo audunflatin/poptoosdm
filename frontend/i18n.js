@@ -145,6 +145,18 @@ const translations = {
     email_label:         "E-post",
     password_label:      "Passord",
 
+    // Innloggingslogg – admin.js
+    heading_login_log:   "Innloggingslogg",
+    log_search_ph:       "Søk e-post…",
+    log_date_from:       "Fra dato",
+    log_date_to:         "Til dato",
+    log_reset_filter:    "Nullstill filter",
+    loading_log:         "Laster logg…",
+    no_log_results:      "Ingen innlogginger funnet.",
+    col_time:            "Tidspunkt",
+    col_ip:              "IP-adresse",
+    log_total:           "Totalt:",
+
     // osdmtoExcel.js
     file_too_large:      "⚠️ Filen er {size} MB — maks er {max} MB på denne tjenesten. Last ned og kjør konverteringen lokalt for store filer.",
     err_network:         "❌ Nettverksfeil",
@@ -290,6 +302,18 @@ const translations = {
     admin_removed:       "is no longer admin.",
     email_label:         "Email",
     password_label:      "Password",
+
+    // Login log – admin.js
+    heading_login_log:   "Login log",
+    log_search_ph:       "Search email…",
+    log_date_from:       "From date",
+    log_date_to:         "To date",
+    log_reset_filter:    "Reset filter",
+    loading_log:         "Loading log…",
+    no_log_results:      "No logins found.",
+    col_time:            "Time",
+    col_ip:              "IP address",
+    log_total:           "Total:",
 
     // osdmtoExcel.js
     file_too_large:      "⚠️ The file is {size} MB — max is {max} MB on this service. Download and run the conversion locally for large files.",
@@ -437,6 +461,18 @@ const translations = {
     email_label:         "E-Mail",
     password_label:      "Passwort",
 
+    // Anmeldungsprotokoll – admin.js
+    heading_login_log:   "Anmeldungsprotokoll",
+    log_search_ph:       "E-Mail suchen…",
+    log_date_from:       "Von Datum",
+    log_date_to:         "Bis Datum",
+    log_reset_filter:    "Filter zurücksetzen",
+    loading_log:         "Protokoll laden…",
+    no_log_results:      "Keine Anmeldungen gefunden.",
+    col_time:            "Zeitpunkt",
+    col_ip:              "IP-Adresse",
+    log_total:           "Gesamt:",
+
     // osdmtoExcel.js
     file_too_large:      "⚠️ Die Datei ist {size} MB — Maximum ist {max} MB auf diesem Dienst. Laden Sie sie herunter und führen Sie die Konvertierung lokal für große Dateien durch.",
     err_network:         "❌ Netzwerkfehler",
@@ -582,6 +618,18 @@ const translations = {
     admin_removed:       "är inte längre admin.",
     email_label:         "E-post",
     password_label:      "Lösenord",
+
+    // Inloggningslogg – admin.js
+    heading_login_log:   "Inloggningslogg",
+    log_search_ph:       "Sök e-post…",
+    log_date_from:       "Från datum",
+    log_date_to:         "Till datum",
+    log_reset_filter:    "Återställ filter",
+    loading_log:         "Laddar logg…",
+    no_log_results:      "Inga inloggningar hittades.",
+    col_time:            "Tidpunkt",
+    col_ip:              "IP-adress",
+    log_total:           "Totalt:",
 
     // osdmtoExcel.js
     file_too_large:      "⚠️ Filen är {size} MB — max är {max} MB på den här tjänsten. Ladda ner och kör konverteringen lokalt för stora filer.",
