@@ -12,7 +12,7 @@
 
   <!-- Styles -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="/static/styles.css?v=10">
+  <link rel="stylesheet" href="/static/styles.css?v=11">
 </head>
 <body>
 
@@ -60,15 +60,30 @@
   <section class="panel">
     <h2 data-i18n="section_generate">Generer OSDM</h2>
     <p style="margin-top:0; color:rgba(255,255,255,0.6);" data-i18n="generate_desc">
-      Last opp en TEN-CSV-fil for å komme i gang. Filen valideres automatisk, og deretter åpnes skjemaet for å konfigurere og generere OSDM-leveransen.
+      Last opp avstandsfilen for å komme i gang.
     </p>
 
-    <label data-i18n="label_ten_csv">TEN‑CSV</label>
+    <!-- Steg 1: Avstandsfil (TEN-CSV) -->
+    <label data-i18n="label_ten_csv">Avstandsfil</label>
     <input id="tenFile" type="file" accept=".csv" onchange="validateTen()" />
     <div id="spinnerTen" class="spinner"></div>
     <pre id="tenStatus"></pre>
 
-    <div id="generateForm" style="display:none; margin-top:1.5rem;">
+    <!-- Steg 2: OSDM-fil for validering (vises etter TEN validert) -->
+    <div id="stepOsdm" style="display:none;">
+      <hr class="step-sep">
+      <label data-i18n="label_osdm_val_file">OSDM-fil</label>
+      <input id="osdmValFile" type="file" accept=".json" onchange="validateOsdm()" />
+      <div id="spinnerOsdmVal" class="spinner"></div>
+      <div id="osdmSummary"></div>
+      <div id="osdmWarnings"></div>
+      <div id="spinnerDistances" class="spinner"></div>
+      <div id="distanceSummary"></div>
+    </div>
+
+    <!-- Steg 3: Genereringsform (vises etter OSDM validert) -->
+    <div id="generateForm" style="display:none;">
+      <hr class="step-sep">
 
       <label data-i18n="label_delivery_id">DeliveryId</label>
       <input id="datasetId" type="text" required />
@@ -86,7 +101,11 @@
       </select>
 
       <label data-i18n="label_exchange_rate">Valutakurs NOK → EUR</label>
-      <input id="exchangeRate" type="number" step="0.0001" value="0.091" required />
+      <div class="rate-row">
+        <input id="exchangeRate" type="number" step="0.0001" value="0.091" required />
+        <button type="button" class="btn-sm" onclick="fetchExchangeRate()" data-i18n="btn_fetch_rate">Hent live</button>
+      </div>
+      <div id="rateStatus"></div>
 
       <label data-i18n="label_valid_from">Gyldig fra</label>
       <input id="validFrom" type="date" required />
@@ -100,7 +119,7 @@
         Generer OSDM JSON
       </button>
 
-      <div id="spinnerOsdm" class="spinner"></div>
+      <div id="spinnerGenerate" class="spinner"></div>
       <progress id="progressBar" value="0" max="100" style="display:none;"></progress>
       <br />
       <div id="resultBox" class="status-ok" style="display:none;">
@@ -112,6 +131,11 @@
         Last ned OSDM JSON
       </button>
 
+      <button id="downloadExcelBtn" onclick="downloadAsExcel()" disabled data-i18n="btn_download_excel">
+        Last ned Excel
+      </button>
+      <div id="spinnerExcel" class="spinner"></div>
+
     </div>
   </section>
 
@@ -119,7 +143,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/no.js"></script>
-<script src="/static/i18n.js?v=19"></script>
-<script src="/static/app.js?v=8"></script>
+<script src="/static/i18n.js?v=22"></script>
+<script src="/static/app.js?v=10"></script>
 </body>
 </html>

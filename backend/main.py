@@ -337,6 +337,267 @@ def validate_ten(request: Request, tenFile: UploadFile = File(...)):
     TEN_TABLE = result["table"]
     return {"ok": True}
 
+
+# ---------------------------------------------------------------------
+# OSDM validation
+# ---------------------------------------------------------------------
+
+@app.post("/ui/validate-osdm")
+async def validate_osdm(request: Request, osdmFile: UploadFile = File(...)):
+    require_login(request)
+
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        return {"ok": False, "error": "Filen er ikke gyldig JSON"}
+
+    fd = data.get("fareDelivery", {})
+    if not fd or "fareStructure" not in fd:
+        return {"ok": False, "error": "Filen mangler fareDelivery.fareStructure"}
+
+    delivery = fd.get("delivery", {})
+    fs = fd["fareStructure"]
+    warnings: list[str] = []
+
+    # Build defined-ID sets
+    price_ids      = {p["id"] for p in fs.get("prices", [])}
+    pc_ids         = {p["id"] for p in fs.get("passengerConstraints", [])}
+    rc_ids         = {r["id"] for r in fs.get("regionalConstraints", [])}
+    cc_ids         = {c["id"] for c in fs.get("carrierConstraints", [])}
+    bundle_ids     = {b["id"] for b in fs.get("fareConstraintBundles", [])}
+    text_ids       = {t["id"] for t in fs.get("texts", [])}
+    cp_ids         = {cp["id"] for cp in fs.get("connectionPoints", [])}
+
+    # Track which IDs are actually used
+    used_price_ids: set[str] = set()
+    used_pc_ids:    set[str] = set()
+    used_rc_ids:    set[str] = set()
+
+    missing: dict[str, set[str]] = {
+        "priceRef": set(), "passengerConstraintRef": set(),
+        "regionalConstraintRef": set(), "carrierConstraintRef": set(),
+        "bundleRef": set(), "nameRef": set(),
+    }
+
+    for fare in fs.get("fares", []):
+        pr = fare.get("priceRef")
+        if pr:
+            if pr not in price_ids:
+                missing["priceRef"].add(pr)
+            else:
+                used_price_ids.add(pr)
+
+        pc = fare.get("passengerConstraintRef")
+        if pc:
+            if pc not in pc_ids:
+                missing["passengerConstraintRef"].add(pc)
+            else:
+                used_pc_ids.add(pc)
+
+        rc = fare.get("regionalConstraintRef")
+        if rc:
+            if rc not in rc_ids:
+                missing["regionalConstraintRef"].add(rc)
+            else:
+                used_rc_ids.add(rc)
+
+        cc = fare.get("carrierConstraintRef")
+        if cc and cc not in cc_ids:
+            missing["carrierConstraintRef"].add(cc)
+
+        br = fare.get("bundleRef")
+        if br and br not in bundle_ids:
+            missing["bundleRef"].add(br)
+
+        nr = fare.get("nameRef")
+        if nr and nr not in text_ids:
+            missing["nameRef"].add(nr)
+
+    # Check RC consistency (entry/exit CPs must exist)
+    rc_bad_cps: list[str] = []
+    for rc in fs.get("regionalConstraints", []):
+        for field in ("entryConnectionPointId", "exitConnectionPointId"):
+            cp = rc.get(field)
+            if cp and cp not in cp_ids:
+                rc_bad_cps.append(f"{rc['id']}: {field}={cp}")
+
+    # Emit warnings for missing refs (capped at 5 examples each)
+    label_map = {
+        "priceRef": "prices",
+        "passengerConstraintRef": "passengerConstraints",
+        "regionalConstraintRef": "regionalConstraints",
+        "carrierConstraintRef": "carrierConstraints",
+        "bundleRef": "fareConstraintBundles",
+        "nameRef": "texts",
+    }
+    for field, ids in missing.items():
+        if ids:
+            examples = ", ".join(sorted(ids)[:5])
+            more = f" (+ {len(ids) - 5} til)" if len(ids) > 5 else ""
+            warnings.append(
+                f"{len(ids)} fare(r) peker på ukjent {field} i {label_map[field]}: {examples}{more}"
+            )
+
+    if rc_bad_cps:
+        examples = "; ".join(rc_bad_cps[:3])
+        more = f" (+ {len(rc_bad_cps) - 3} til)" if len(rc_bad_cps) > 3 else ""
+        warnings.append(f"RC-er med ugyldig CP-referanse: {examples}{more}")
+
+    # Warn about unused definitions
+    unused_prices = price_ids - used_price_ids
+    unused_pcs    = pc_ids - used_pc_ids
+    unused_rcs    = rc_ids - used_rc_ids
+
+    if unused_prices:
+        warnings.append(f"{len(unused_prices)} pris(er) er definert men ikke referert av noen fare")
+    if unused_pcs:
+        warnings.append(f"{len(unused_pcs)} passengerConstraint(s) er definert men ikke referert av noen fare")
+    if unused_rcs:
+        warnings.append(f"{len(unused_rcs)} regionalConstraint(s) er definert men ikke referert av noen fare")
+
+    station_count = len({
+        s["code"]
+        for cp in fs.get("connectionPoints", [])
+        for ss in cp.get("stationSets", [])
+        for s in ss
+        if s.get("codeList") == "UIC"
+    })
+
+    return {
+        "ok": True,
+        "warnings": warnings,
+        "deliveryId": delivery.get("deliveryId", ""),
+        "fareProvider": delivery.get("fareProvider", ""),
+        "fareCount": len(fs.get("fares", [])),
+        "priceCount": len(price_ids),
+        "stationCount": station_count,
+    }
+
+
+# ---------------------------------------------------------------------
+# Distance CSV validation
+# ---------------------------------------------------------------------
+
+@app.post("/ui/validate-distances")
+async def validate_distances(
+    request: Request,
+    distanceFile: UploadFile = File(...),
+    osdmFile: UploadFile = File(...),
+):
+    require_login(request)
+
+    # Parse TEN-format avstandsfil (fra_km;til_km;pris)
+    try:
+        csv_text = (await distanceFile.read()).decode("utf-8-sig")
+    except Exception:
+        return {"ok": False, "error": "Kunne ikke lese avstandsfilen"}
+
+    ten_result = validate_ten_csv(csv_text)
+    if not ten_result["ok"]:
+        return {"ok": False, "error": ten_result["error"]}
+    ten_table: list[tuple[int, int, int]] = ten_result["table"]  # (fra_km, til_km, pris)
+
+    # Parse OSDM
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        return {"ok": False, "error": "OSDM-filen er ikke gyldig JSON"}
+
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+    if not fs:
+        return {"ok": False, "error": "OSDM-filen mangler fareDelivery.fareStructure"}
+
+    # Stasjonsnavn fra stationNames
+    station_names: dict[str, str] = {
+        sn["code"]: sn.get("nameUtf8") or sn.get("name") or sn["code"]
+        for sn in fs.get("stationNames", [])
+    }
+
+    # CP-id → beste UIC-kode og stasjonsnavn
+    cp_to_uic: dict[str, str] = {}
+    cp_to_name: dict[str, str] = {}
+    for cp in fs.get("connectionPoints", []):
+        uic_codes = [
+            s["code"]
+            for ss in cp.get("stationSets", [])
+            for s in ss
+            if s.get("codeList") == "UIC"
+        ]
+        best = next((c for c in uic_codes if str(c).startswith("76")), uic_codes[0] if uic_codes else None)
+        if best:
+            cp_to_uic[cp["id"]] = str(best)
+            cp_to_name[cp["id"]] = station_names.get(str(best), str(best))
+
+    # Samle unike avstandsverdier fra OSDM (én per RC, ignorer duplikater)
+    osdm_distances: dict[int, list[str]] = {}  # km → liste med "Fra → Til"-beskrivelser
+    for rc in fs.get("regionalConstraints", []):
+        km = rc.get("distance")
+        if km is None:
+            continue
+        entry = cp_to_name.get(rc.get("entryConnectionPointId", ""), rc.get("entryConnectionPointId", ""))
+        exit_ = cp_to_name.get(rc.get("exitConnectionPointId", ""), rc.get("exitConnectionPointId", ""))
+        osdm_distances.setdefault(km, []).append(f"{entry} → {exit_}")
+
+    def ten_covers(km: int) -> bool:
+        return any(frm <= km <= til for frm, til, _ in ten_table)
+
+    warnings: list[str] = []
+    uncovered: list[str] = []
+
+    for km, routes in sorted(osdm_distances.items()):
+        if not ten_covers(km):
+            example = routes[0]
+            more = f" (+ {len(routes) - 1} RC til med samme avstand)" if len(routes) > 1 else ""
+            uncovered.append(f"{km} km ({example}{more})")
+
+    if uncovered:
+        cap = 15
+        examples = "; ".join(uncovered[:cap])
+        more = f" (+ {len(uncovered) - cap} til)" if len(uncovered) > cap else ""
+        warnings.append(
+            f"{len(uncovered)} avstandsverdi(er) fra OSDM dekkes ikke av TEN-tabellen: {examples}{more}"
+        )
+
+    ten_max = ten_table[-1][1]
+    osdm_max = max(osdm_distances.keys()) if osdm_distances else 0
+    if osdm_max > ten_max:
+        warnings.append(
+            f"OSDM har ruter opp til {osdm_max} km, men TEN-tabellen slutter på {ten_max} km"
+        )
+
+    return {
+        "ok": True,
+        "warnings": warnings,
+        "tenRows": len(ten_table),
+        "tenRangeKm": f"{ten_table[0][0]}–{ten_table[-1][1]}",
+        "osdmDistinctDistances": len(osdm_distances),
+        "osdmRcCount": sum(len(v) for v in osdm_distances.values()),
+        "uncoveredCount": len(uncovered),
+    }
+
+
+# ---------------------------------------------------------------------
+# Exchange rate
+# ---------------------------------------------------------------------
+
+@app.get("/ui/exchange-rate")
+def exchange_rate(request: Request, from_: str = "EUR", to: str = "NOK"):
+    require_login(request)
+    try:
+        resp = requests.get(
+            f"https://api.frankfurter.app/latest",
+            params={"from": from_.upper(), "to": to.upper()},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        rate = payload["rates"][to.upper()]
+        return {"ok": True, "from": from_.upper(), "to": to.upper(), "rate": rate, "date": payload.get("date")}
+    except Exception as exc:
+        logger.warning("Kunne ikke hente valutakurs %s→%s: %s", from_, to, exc)
+        return {"ok": False, "error": "Kunne ikke hente valutakurs fra frankfurter.app"}
+
+
 # ---------------------------------------------------------------------
 # Price helpers
 # ---------------------------------------------------------------------
@@ -534,12 +795,40 @@ def generate_osdm(
 
 
 # ---------------------------------------------------------------------
-# Progress & download
+# Progress, download & Excel export
 # ---------------------------------------------------------------------
 
 @app.get("/ui/progress")
 def get_progress():
     return GENERATION_PROGRESS
+
+@app.post("/ui/excel-from-generated")
+def excel_from_generated(request: Request):
+    require_login(request)
+    if not OSDM_OUT:
+        raise HTTPException(status_code=400, detail="Ingen generert OSDM-fil tilgjengelig")
+    try:
+        data = json.loads(OSDM_OUT["content"])
+    except Exception:
+        raise HTTPException(status_code=500, detail="Kunne ikke lese generert OSDM-fil")
+
+    job_id = str(uuid.uuid4())
+    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
+
+    def run():
+        try:
+            xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
+            delivery   = data.get("fareDelivery", {}).get("delivery", {})
+            env_suffix = "test" if delivery.get("usage") == "TEST_ONLY" else "prod"
+            filename   = f"{delivery.get('fareProvider', '')}_{delivery.get('deliveryId', 'osdm')}_{env_suffix}.xlsx"
+            XLSX_JOBS[job_id].update({"status": "done", "result": xlsx_bytes, "filename": filename, "rows": row_count, "percent": 100})
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            XLSX_JOBS[job_id].update({"status": "error", "error": str(e)})
+
+    threading.Thread(target=run, daemon=True).start()
+    return {"jobId": job_id}
+
 
 @app.get("/ui/download-osdm/{filename}")
 def download_osdm(filename: str):

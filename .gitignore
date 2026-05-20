@@ -6,3 +6,5 @@ users.db
 tools/
 *.pptx
 frontend/admin_mock.js
+.env
+.env.*
