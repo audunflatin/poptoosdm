@@ -104,7 +104,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 ## Cache-busting – gjeldende versjoner
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=9 |
+| `styles.css` | v=10 |
 | `i18n.js` | v=17 |
 | `app.js` | v=7 |
 | `admin.js` | v=11 |
