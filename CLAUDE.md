@@ -8,21 +8,17 @@ pågående oppgaver og OSDM-spesifikk kunnskap som ikke er i koden.
 
 ## Pågående oppgave
 
-**DSB-rabatt på Kornsjø gr ↔ Oslo S** — ikke påbegynt ennå.
+**DSB-rabatt på Kornsjø gr ↔ Oslo S** — klar til å kjøres via fare-discount-verktøyet.
 
-Vy ønsker at DSB (provider `1186`) får 20% rabatt på voksen 2. klasse
-for strekningen Kornsjø grense ↔ Oslo S. Skal ikke være tilgjengelig
-for andre providere. Faren skal hete noe i retning av
-«DSB reduction Adult 2. Klasse».
+Verktøyet (`/fare-discount`) er nå ferdig og kan brukes direkte:
+- Last opp generert OSDM-fil
+- Fra: Kornsjø grense (UIC 7600551), Til: Oslo S (UIC 7600100)
+- Transportør: DSB (RICS 1186) – velg «Spesifikke transportører»
+- Rabatt: 20%
+- Passasjerkategorier: velg etter behov (kun Voksen 2. kl. = kun G__1/G__2)
+- Farnavn: f.eks. «DSB reduction Adult 2nd class»
 
-Tilnærming valgt: **generator utvides** (dynamisk pris, ikke hardkodet).
-
-Hva som trengs:
-1. Ny `carrierConstraint` i templaten for DSB (`1186`)
-2. Nye fare-oppføringer i templaten for de to Kornsjø-RC-ene som
-   refererer til DSB-carrier-constraint (én per retning)
-3. Generatoren (`osdm_to_xlsx_bytes` / genereringsfunksjon) utvides
-   til å beregne 80% av voksen BASIC-pris for disse farene
+Opprinnelig tilnærming (generator-utvidelse) er ikke lenger nødvendig.
 
 ---
 
@@ -113,6 +109,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | `app.js` | v=7 |
 | `admin.js` | v=11 |
 | `osdmtoExcel.js` | v=3 |
+| `fareDiscount.js` | v=5 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.

@@ -204,28 +204,28 @@ document.addEventListener("click", e => {
 });
 
 // ---------------------------------------------------------------------------
-// Transportør, passasjerkategorier, serviceklasse
+// Transportørbegrensning – radio + flervalgs-picker
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Transportørpicker
-// ---------------------------------------------------------------------------
+let selectedCarriers = [];  // [{code, name}]
+const carrierPicker = { activeIdx: -1, matches: [] };
 
-const carrierPicker = { selected: null, activeIdx: -1, matches: [] };
+function onCarrierModeChange() {
+  const specific = document.querySelector("input[name=carrierMode]:checked").value === "specific";
+  document.getElementById("carrierPickerWrap").style.display = specific ? "block" : "none";
+  if (!specific) carrierClear();
+}
 
 function carrierFilter() {
-  if (carrierPicker.selected) carrierClear();
   const q = document.getElementById("inputCarrier").value.trim().toLowerCase();
-  const src = ricsCodes.length ? ricsCodes : [];
   const matches = q.length === 0
-    ? src.slice(0, 60)
-    : src.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q)).slice(0, 60);
+    ? ricsCodes.slice(0, 60)
+    : ricsCodes.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q)).slice(0, 60);
   carrierPicker.activeIdx = -1;
   carrierRenderDrop(matches);
 }
 
 function carrierOpen() {
-  if (carrierPicker.selected) return;
   carrierFilter();
 }
 
@@ -275,33 +275,41 @@ function carrierKey(e) {
 }
 
 function carrierSelect(carrier) {
-  carrierPicker.selected = carrier;
-  carrierPicker.activeIdx = -1;
+  if (selectedCarriers.some(c => c.code === carrier.code)) {
+    document.getElementById("inputCarrier").value = "";
+    document.getElementById("dropCarrier").style.display = "none";
+    return;
+  }
+  selectedCarriers.push(carrier);
+  renderCarrierChips();
   document.getElementById("inputCarrier").value = "";
-  document.getElementById("inputCarrier").style.display = "none";
   document.getElementById("dropCarrier").style.display = "none";
-  document.getElementById("carrierCode").value = carrier.code;
-  const chip = document.getElementById("chipCarrier");
-  chip.innerHTML =
+  carrierPicker.activeIdx = -1;
+}
+
+function carrierRemove(code) {
+  selectedCarriers = selectedCarriers.filter(c => c.code !== code);
+  renderCarrierChips();
+}
+
+function renderCarrierChips() {
+  document.getElementById("carrierChips").innerHTML = selectedCarriers.map(c =>
     `<div class="picker-chip">
-      ${carrier.name} <span style="color:rgba(255,255,255,0.4)">${carrier.code}</span>
-      <button onclick="carrierClear()" title="Fjern">✕</button>
-    </div>`;
-  chip.style.display = "block";
+      ${c.name} <span style="color:rgba(255,255,255,0.4)">${c.code}</span>
+      <button onclick="carrierRemove('${c.code}')" title="Fjern">✕</button>
+    </div>`
+  ).join("");
 }
 
 function carrierClear() {
-  carrierPicker.selected = null;
+  selectedCarriers = [];
   carrierPicker.activeIdx = -1;
   const input = document.getElementById("inputCarrier");
   if (!input) return;
   input.value = "";
-  input.style.display = "";
   document.getElementById("dropCarrier").style.display = "none";
-  document.getElementById("carrierCode").value = "";
-  const chip = document.getElementById("chipCarrier");
-  chip.innerHTML = "";
-  chip.style.display = "none";
+  const chips = document.getElementById("carrierChips");
+  if (chips) chips.innerHTML = "";
 }
 
 function renderPassengerCheckboxes() {
@@ -348,9 +356,9 @@ async function applyDiscount() {
     return;
   }
 
-  const carrierCode = document.getElementById("carrierCode").value;
-  if (!carrierCode) {
-    result.innerText = "❌ Velg eller oppgi en transportør.";
+  const carrierMode = document.querySelector("input[name=carrierMode]:checked").value;
+  if (carrierMode === "specific" && selectedCarriers.length === 0) {
+    result.innerText = "❌ Velg minst én transportør, eller velg «Ingen begrensning».";
     result.className = "status-error";
     return;
   }
@@ -385,8 +393,8 @@ async function applyDiscount() {
   fd.append("fromUic", fromUic);
   fd.append("toUic", toUic);
   fd.append("discountName", discountName);
-  fd.append("carrierCode", carrierCode);
   fd.append("discountPct", discountPct);
+  selectedCarriers.forEach(c => fd.append("carrierCodes", c.code));
   passengerRefs.forEach(r => fd.append("passengerRefs", r));
   serviceClassIds.forEach(s => fd.append("serviceClassIds", s));
 

@@ -1315,7 +1315,7 @@ async def fare_discount_apply(
     fromUic: str = Form(...),
     toUic: str = Form(...),
     discountName: str = Form(...),
-    carrierCode: str = Form(...),
+    carrierCodes: list[str] = Form(default=[]),
     discountPct: float = Form(...),
     passengerRefs: list[str] = Form(...),
     serviceClassIds: list[str] = Form(...),
@@ -1355,11 +1355,14 @@ async def fare_discount_apply(
 
     multiplier = 1 - discountPct / 100
 
-    # --- Ny carrierConstraint ---
-    cc_prefix = f"{id_base}C__"
-    existing_cc_ids = [c["id"] for c in fs.get("carrierConstraints", [])]
-    new_cc_id = f"{cc_prefix}{_next_id_num(existing_cc_ids, cc_prefix)}"
-    new_carrier_constraint = {"id": new_cc_id, "includedCarrier": [carrierCode]}
+    # --- Ny carrierConstraint (kun hvis transportører er valgt) ---
+    new_cc_id: str | None = None
+    new_carrier_constraint: dict | None = None
+    if carrierCodes:
+        cc_prefix = f"{id_base}C__"
+        existing_cc_ids = [c["id"] for c in fs.get("carrierConstraints", [])]
+        new_cc_id = f"{cc_prefix}{_next_id_num(existing_cc_ids, cc_prefix)}"
+        new_carrier_constraint = {"id": new_cc_id, "includedCarrier": list(carrierCodes)}
 
     # --- Ny tekst ---
     text_prefix = f"{id_base}P__"
@@ -1423,19 +1426,21 @@ async def fare_discount_apply(
         if not orig_price:
             continue
 
-        new_fares.append({
+        new_fare: dict = {
             "id": _new_fare_id(),
             "bundleRef": fare.get("bundleRef", ""),
             "fareType": fare.get("fareType", "ADMISSION"),
             "nameRef": new_text_id,
             "priceRef": get_or_create_price_id(orig_price),
             "regionalConstraintRef": rc_ref,
-            "carrierConstraintRef": new_cc_id,
             "regulatoryConditions": fare.get("regulatoryConditions", ["CIV"]),
             "serviceClassRef": sc_ref,
             "passengerConstraintRef": pc_ref,
-            "involvedTCOs": [carrierCode],
-        })
+            "involvedTCOs": list(carrierCodes),
+        }
+        if new_cc_id:
+            new_fare["carrierConstraintRef"] = new_cc_id
+        new_fares.append(new_fare)
 
     if not new_fares:
         raise HTTPException(
@@ -1444,7 +1449,8 @@ async def fare_discount_apply(
         )
 
     # Injer nye elementer i fareStructure
-    fs["carrierConstraints"].append(new_carrier_constraint)
+    if new_carrier_constraint:
+        fs["carrierConstraints"].append(new_carrier_constraint)
     fs["texts"].append(new_text)
     fs["prices"].extend(new_prices)
     fs["fares"].extend(new_fares)
