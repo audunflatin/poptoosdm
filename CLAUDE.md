@@ -105,11 +105,11 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=9 |
-| `i18n.js` | v=16 |
+| `i18n.js` | v=17 |
 | `app.js` | v=7 |
 | `admin.js` | v=11 |
 | `osdmtoExcel.js` | v=3 |
-| `fareDiscount.js` | v=6 |
+| `fareDiscount.js` | v=7 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.

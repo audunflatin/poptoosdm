@@ -42,8 +42,19 @@ async function onFileChange() {
   if (!file) { fileInfo.style.display = "none"; return; }
 
   const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+  const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+  const maxMb = isLocal ? 5000 : 100;
+
+  if (file.size > maxMb * 1024 * 1024) {
+    fileInfo.innerText = t("file_too_large").replace("{size}", sizeMb).replace("{max}", maxMb);
+    fileInfo.style.display = "block";
+    fileInfo.style.color = "#c00";
+    return;
+  }
+
   fileInfo.innerText = `📄 ${file.name} (${sizeMb} MB)`;
   fileInfo.style.display = "block";
+  fileInfo.style.color = "";
 
   result.innerText = "Leser fil…";
   result.className = "";

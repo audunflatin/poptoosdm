@@ -170,7 +170,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt",
     heading_fare_discount:    "Legg til rabatt",
-    fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare.",
+    fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare. Tjenesten håndterer filer opp til 100 MB.",
     label_osdm_file_discount: "OSDM JSON-fil",
   },
 
@@ -337,7 +337,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Add discount",
     heading_fare_discount:    "Add discount",
-    fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare.",
+    fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare. The service handles files up to 100 MB.",
     label_osdm_file_discount: "OSDM JSON file",
   },
 
@@ -504,7 +504,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Rabatt hinzufügen",
     heading_fare_discount:    "Rabatt hinzufügen",
-    fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen.",
+    fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen. Der Dienst verarbeitet Dateien bis zu 100 MB.",
     label_osdm_file_discount: "OSDM JSON-Datei",
   },
 
@@ -671,7 +671,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt",
     heading_fare_discount:    "Lägg till rabatt",
-    fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa.",
+    fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa. Tjänsten hanterar filer upp till 100 MB.",
     label_osdm_file_discount: "OSDM JSON-fil",
   },
 };
