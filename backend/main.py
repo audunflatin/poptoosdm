@@ -10,6 +10,7 @@ import io
 import json
 import math
 
+import base64
 import threading
 import uuid
 
@@ -1163,6 +1164,308 @@ def contact(
     except Exception as exc:
         logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
         return {"ok": False}
+
+@app.get("/fare-discount/rics")
+def fare_discount_rics(request: Request):
+    require_login(request)
+    return [{"code": code, "name": name} for code, name in sorted(RICS_CARRIER_NAMES.items(), key=lambda x: x[1])]
+
+
+@app.get("/fare-discount", response_class=HTMLResponse)
+@app.head("/fare-discount")
+def fare_discount_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/fare-discount.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+    return HTMLResponse(html)
+
+@app.post("/fare-discount/parse")
+async def fare_discount_parse(request: Request, osdmFile: UploadFile = File(...)):
+    require_login(request)
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+
+    # UIC → navn fra stationNames (bruker nameUtf8 for norske tegn)
+    uic_to_name: dict[str, str] = {}
+    for sn in fs.get("stationNames", []):
+        code = sn.get("code") or sn.get("uicCode")
+        name = sn.get("nameUtf8") or sn.get("name") or code
+        if code:
+            uic_to_name[str(code)] = name
+
+    # Stasjonsliste fra connectionPoints
+    stations: list[dict] = []
+    seen: set[str] = set()
+    for cp in fs.get("connectionPoints", []):
+        for station_set in cp.get("stationSets", []):
+            for s in station_set:
+                if s.get("codeList") == "UIC":
+                    uic = str(s["code"])
+                    if uic not in seen:
+                        seen.add(uic)
+                        stations.append({
+                            "cp_id": cp["id"],
+                            "uic": uic,
+                            "name": uic_to_name.get(uic, uic),
+                            "country": s.get("country", ""),
+                        })
+    stations.sort(key=lambda x: x["name"].lower())
+
+    # Carriers fra carrierConstraints
+    carriers: list[dict] = []
+    seen_codes: set[str] = set()
+    for cc in fs.get("carrierConstraints", []):
+        for code in cc.get("includedCarrier", []):
+            if code not in seen_codes:
+                seen_codes.add(code)
+                carriers.append({
+                    "code": code,
+                    "name": RICS_CARRIER_NAMES.get(code, code),
+                    "constraint_id": cc["id"],
+                })
+
+    # Passasjerkategorier (deduplisert per nameRef)
+    texts_map = {t["id"]: t for t in fs.get("texts", [])}
+    seen_refs: dict[str, dict] = {}
+    for pc in fs.get("passengerConstraints", []):
+        ref = pc.get("nameRef", "")
+        text_obj = texts_map.get(ref, {})
+        name = text_obj.get("textUtf8") or text_obj.get("text") or ref
+        if ref not in seen_refs:
+            seen_refs[ref] = {"nameRef": ref, "name": name, "ids": []}
+        seen_refs[ref]["ids"].append(pc["id"])
+    passenger_constraints = list(seen_refs.values())
+
+    # Serviceklasser
+    service_classes = []
+    for scd in fs.get("serviceClassDefinitions", []):
+        text_obj = texts_map.get(scd.get("textRef", ""), {})
+        name = text_obj.get("textUtf8") or text_obj.get("text") or scd["id"]
+        service_classes.append({"id": scd["id"], "name": name})
+
+    delivery = data.get("fareDelivery", {}).get("delivery", {})
+
+    return {
+        "deliveryId": delivery.get("deliveryId", ""),
+        "stations": stations,
+        "carriers": carriers,
+        "passengerConstraints": passenger_constraints,
+        "serviceClasses": service_classes,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Hjelpefunksjoner for fare-discount/apply
+# ---------------------------------------------------------------------------
+
+def _round_up_020(eur: float) -> float:
+    """Rund opp til nærmeste 0.20 EUR."""
+    return math.ceil(eur / 0.20) * 0.20
+
+
+def _id_base(data: dict) -> str:
+    """Utled ID-base (f.eks. '1076_7.0_') fra fareProvider og deliveryId i filen."""
+    delivery = data.get("fareDelivery", {}).get("delivery", {})
+    provider = delivery.get("fareProvider", "")
+    did = delivery.get("deliveryId", "")
+    if provider and did:
+        return f"{provider}_{did}_"
+    # Fallback: trekk ut fra eksisterende IDer i filen
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+    for sample in [
+        next((c["id"] for c in fs.get("carrierConstraints", [])), None),
+        next((t["id"] for t in fs.get("texts", [])), None),
+        next((p["id"] for p in fs.get("prices", [])), None),
+    ]:
+        if sample and "_" in sample:
+            parts = sample.split("_")
+            if len(parts) >= 2:
+                return "_".join(parts[:2]) + "_"
+    return f"disc_{did}_" if did else "disc_"
+
+
+def _next_id_num(existing_ids: list[str], prefix: str) -> int:
+    """Finn neste ledige nummer for IDer med gitt prefix."""
+    import re
+    pattern = re.compile(re.escape(prefix) + r"(\d+)$")
+    nums = [int(m.group(1)) for id_ in existing_ids if (m := pattern.search(id_))]
+    return max(nums) + 1 if nums else 1
+
+
+def _new_fare_id() -> str:
+    """Generer en unik fare-ID i samme format som eksisterende IDer."""
+    return "_" + base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b"=").decode()
+
+
+@app.post("/fare-discount/apply")
+async def fare_discount_apply(
+    request: Request,
+    osdmFile: UploadFile = File(...),
+    fromCpId: str = Form(...),
+    toCpId: str = Form(...),
+    fromUic: str = Form(...),
+    toUic: str = Form(...),
+    discountName: str = Form(...),
+    carrierCodes: list[str] = Form(default=[]),
+    discountPct: float = Form(...),
+    passengerRefs: list[str] = Form(...),
+    serviceClassIds: list[str] = Form(...),
+):
+    require_login(request)
+
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+    delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "")
+    id_base = _id_base(data)
+
+    # Finn RCs som kobler begge CP-ene (begge retninger)
+    target_cps = {fromCpId, toCpId}
+    matching_rc_ids = {
+        rc["id"] for rc in fs.get("regionalConstraints", [])
+        if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == target_cps
+    }
+    if not matching_rc_ids:
+        raise HTTPException(status_code=400, detail="Ingen regionalConstraints funnet for valgt stasjonspar")
+
+    # nameRef → liste av passengerConstraint-IDer
+    nameref_to_pc_ids: dict[str, list[str]] = {}
+    for pc in fs.get("passengerConstraints", []):
+        ref = pc.get("nameRef", "")
+        if ref in passengerRefs:
+            nameref_to_pc_ids.setdefault(ref, []).append(pc["id"])
+    selected_pc_ids = {pid for ids in nameref_to_pc_ids.values() for pid in ids}
+
+    # Prisoppslag: priceId → første price-element
+    price_lookup: dict[str, dict] = {
+        p["id"]: p["price"][0] for p in fs.get("prices", []) if p.get("price")
+    }
+
+    multiplier = 1 - discountPct / 100
+
+    # --- Ny carrierConstraint (kun hvis transportører er valgt) ---
+    new_cc_id: str | None = None
+    new_carrier_constraint: dict | None = None
+    if carrierCodes:
+        cc_prefix = f"{id_base}C__"
+        existing_cc_ids = [c["id"] for c in fs.get("carrierConstraints", [])]
+        new_cc_id = f"{cc_prefix}{_next_id_num(existing_cc_ids, cc_prefix)}"
+        new_carrier_constraint = {"id": new_cc_id, "includedCarrier": list(carrierCodes)}
+
+    # --- Ny tekst ---
+    text_prefix = f"{id_base}P__"
+    existing_text_ids = [t["id"] for t in fs.get("texts", [])]
+    new_text_id = f"{text_prefix}{_next_id_num(existing_text_ids, text_prefix)}"
+    new_text = {
+        "id": new_text_id,
+        "textUtf8": discountName,
+        "text": discountName,
+        "shortTextUtf8": discountName,
+        "shortText": discountName,
+        "translations": [],
+    }
+
+    # --- Nye priser (dedupliser på beløp) ---
+    price_prefix = f"{id_base}I__"
+    existing_price_ids = [p["id"] for p in fs.get("prices", [])]
+    next_price_num = _next_id_num(existing_price_ids, price_prefix)
+    new_amount_to_price_id: dict[int, str] = {}
+    new_prices: list[dict] = []
+
+    def get_or_create_price_id(orig: dict) -> str:
+        nonlocal next_price_num
+        scale = orig.get("scale", 2)
+        eur = orig["amount"] / (10 ** scale)
+        discounted_int = int(round(_round_up_020(eur * multiplier) * (10 ** scale)))
+        if discounted_int in new_amount_to_price_id:
+            return new_amount_to_price_id[discounted_int]
+        new_id = f"{price_prefix}{next_price_num}"
+        next_price_num += 1
+        new_prices.append({
+            "id": new_id,
+            "price": [{"currency": orig.get("currency", "EUR"), "amount": discounted_int,
+                        "scale": scale, "vatDetails": []}],
+        })
+        new_amount_to_price_id[discounted_int] = new_id
+        return new_id
+
+    # --- Nye farer ---
+    new_fares: list[dict] = []
+    seen_combos: set[tuple] = set()
+
+    for fare in fs.get("fares", []):
+        rc_ref = fare.get("regionalConstraintRef")
+        pc_ref = fare.get("passengerConstraintRef")
+        sc_ref = fare.get("serviceClassRef")
+
+        if rc_ref not in matching_rc_ids:
+            continue
+        if pc_ref not in selected_pc_ids:
+            continue
+        if sc_ref not in serviceClassIds:
+            continue
+
+        key = (rc_ref, pc_ref, sc_ref)
+        if key in seen_combos:
+            continue
+        seen_combos.add(key)
+
+        orig_price = price_lookup.get(fare.get("priceRef", ""))
+        if not orig_price:
+            continue
+
+        new_fare: dict = {
+            "id": _new_fare_id(),
+            "bundleRef": fare.get("bundleRef", ""),
+            "fareType": fare.get("fareType", "ADMISSION"),
+            "nameRef": new_text_id,
+            "priceRef": get_or_create_price_id(orig_price),
+            "regionalConstraintRef": rc_ref,
+            "regulatoryConditions": fare.get("regulatoryConditions", ["CIV"]),
+            "serviceClassRef": sc_ref,
+            "passengerConstraintRef": pc_ref,
+            "involvedTCOs": list(carrierCodes),
+        }
+        if new_cc_id:
+            new_fare["carrierConstraintRef"] = new_cc_id
+        new_fares.append(new_fare)
+
+    if not new_fares:
+        raise HTTPException(
+            status_code=400,
+            detail="Ingen eksisterende farer funnet for valgt kombinasjon av stasjoner, passasjerer og serviceklasse",
+        )
+
+    # Injer nye elementer i fareStructure
+    if new_carrier_constraint:
+        fs["carrierConstraints"].append(new_carrier_constraint)
+    fs["texts"].append(new_text)
+    fs["prices"].extend(new_prices)
+    fs["fares"].extend(new_fares)
+
+    filename = f"fareDelivery_{id_base.rstrip('_')}_discount.json"
+    return Response(
+        content=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Fare-Count": str(len(new_fares)),
+            "X-Price-Count": str(len(new_prices)),
+        },
+    )
+
 
 @app.get("/osdmtoexcel", response_class=HTMLResponse)
 @app.head("/osdmtoexcel")

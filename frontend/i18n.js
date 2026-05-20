@@ -165,6 +165,12 @@ const translations = {
     convert_success:     "Konvertering vellykket",
     label_rows:          "Antall relasjoner",
     err_convert_failed:  "❌ Konvertering feilet",
+
+    // fare-discount.html
+    nav_fare_discount:        "Legg til rabatt",
+    heading_fare_discount:    "Legg til rabatt",
+    fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare.",
+    label_osdm_file_discount: "OSDM JSON-fil",
   },
 
   // ---------------------------------------------------------------------------
@@ -325,6 +331,12 @@ const translations = {
     convert_success:     "Conversion successful",
     label_rows:          "Number of relations",
     err_convert_failed:  "❌ Conversion failed",
+
+    // fare-discount.html
+    nav_fare_discount:        "Add discount",
+    heading_fare_discount:    "Add discount",
+    fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare.",
+    label_osdm_file_discount: "OSDM JSON file",
   },
 
   // ---------------------------------------------------------------------------
@@ -485,6 +497,12 @@ const translations = {
     convert_success:     "Konvertierung erfolgreich",
     label_rows:          "Anzahl Relationen",
     err_convert_failed:  "❌ Konvertierung fehlgeschlagen",
+
+    // fare-discount.html
+    nav_fare_discount:        "Rabatt hinzufügen",
+    heading_fare_discount:    "Rabatt hinzufügen",
+    fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen.",
+    label_osdm_file_discount: "OSDM JSON-Datei",
   },
 
   // ---------------------------------------------------------------------------
@@ -645,6 +663,12 @@ const translations = {
     convert_success:     "Konvertering lyckades",
     label_rows:          "Antal relationer",
     err_convert_failed:  "❌ Konvertering misslyckades",
+
+    // fare-discount.html
+    nav_fare_discount:        "Lägg till rabatt",
+    heading_fare_discount:    "Lägg till rabatt",
+    fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa.",
+    label_osdm_file_discount: "OSDM JSON-fil",
   },
 };
 
