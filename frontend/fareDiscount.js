@@ -309,22 +309,32 @@ async function applyDiscount() {
 
   try {
     const r = await fetch("/fare-discount/apply", { method: "POST", body: fd });
-    const res = await r.json();
     if (!r.ok) {
-      result.innerText = `❌ ${res.detail || "Ukjent feil"}`;
+      const err = await r.json().catch(() => ({}));
+      result.innerText = `❌ ${err.detail || "Ukjent feil"}`;
       result.className = "status-error";
-    } else {
-      result.innerText = `✅ ${res.message}`;
-      result.className = "status-ok";
-      if (res.downloadUrl) {
-        const a = document.createElement("a");
-        a.href = res.downloadUrl;
-        a.download = res.filename || "fareDelivery_discount.json";
-        a.textContent = "Last ned fil";
-        a.style.cssText = "display:block; margin-top:0.75rem; color:#ff5959;";
-        result.appendChild(a);
-      }
+      return;
     }
+
+    const fareCount  = r.headers.get("X-Fare-Count")  || "?";
+    const priceCount = r.headers.get("X-Price-Count") || "?";
+
+    const disposition = r.headers.get("Content-Disposition") || "";
+    const m = disposition.match(/filename="(.+?)"/);
+    const filename = m ? m[1] : "fareDelivery_discount.json";
+
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    result.innerHTML =
+      `✅ ${fareCount} nye farer og ${priceCount} nye priser lagt til.<br>` +
+      `<span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Filen lastes ned som <em>${filename}</em></span>`;
+    result.className = "status-ok";
   } catch (err) {
     result.innerText = `❌ Nettverksfeil: ${err.message}`;
     result.className = "status-error";
