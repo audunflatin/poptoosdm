@@ -37,13 +37,11 @@ async function validateTen() {
   const generateBtn = document.getElementById("generateBtn");
 
   statusEl.className = "";
+  statusEl.innerText = "";
   generateBtn.disabled = true;
+  hide("generateForm");
 
-  if (!tenFile.files.length) {
-    statusEl.innerText = t("err_no_ten");
-    statusEl.classList.add("status-error");
-    return;
-  }
+  if (!tenFile.files.length) return;
 
   show("spinnerTen");
 
@@ -62,11 +60,11 @@ async function validateTen() {
     statusEl.innerText = t("ten_validated");
     statusEl.classList.add("status-ok");
     generateBtn.disabled = false;
+    show("generateForm");
   } else {
     statusEl.innerText =
       `${t("err_ten_failed")}\n${res.error || t("unknown_error")}`;
     statusEl.classList.add("status-error");
-    generateBtn.disabled = true;
   }
 }
 

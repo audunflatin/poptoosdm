@@ -33,11 +33,9 @@ const translations = {
     norway_warning_text:  "Dette verktøyet er utelukkende beregnet for norske jernbaneoperatører og håndterer kun norske priser og data.",
 
     // Seksjon 1 – Input
-    section_input:       "1. Input",
+    section_generate:    "Generer OSDM",
+    generate_desc:       "Last opp en TEN-CSV-fil for å komme i gang. Filen valideres automatisk, og deretter åpnes skjemaet for å konfigurere og generere OSDM-leveransen.",
     label_ten_csv:       "TEN‑CSV",
-
-    // Seksjon 2 – Generer OSDM
-    section_generate:    "2. Generer OSDM",
     label_delivery_id:   "DeliveryId",
     label_environment:   "Miljø",
     opt_production:      "Produksjon",
@@ -202,11 +200,9 @@ const translations = {
     norway_warning_text:  "This tool is exclusively intended for Norwegian railway operators and handles Norwegian prices and data only.",
 
     // Seksjon 1 – Input
-    section_input:       "1. Input",
+    section_generate:    "Generate OSDM",
+    generate_desc:       "Upload a TEN-CSV file to get started. The file is validated automatically, and a form will appear for configuring and generating the OSDM delivery.",
     label_ten_csv:       "TEN‑CSV",
-
-    // Seksjon 2 – Generate OSDM
-    section_generate:    "2. Generate OSDM",
     label_delivery_id:   "DeliveryId",
     label_environment:   "Environment",
     opt_production:      "Production",
@@ -371,11 +367,9 @@ const translations = {
     norway_warning_text:  "Dieses Tool ist ausschließlich für norwegische Eisenbahnbetreiber gedacht und verarbeitet ausschließlich norwegische Preise und Daten.",
 
     // Seksjon 1 – Eingabe
-    section_input:       "1. Eingabe",
+    section_generate:    "OSDM generieren",
+    generate_desc:       "Laden Sie eine TEN-CSV-Datei hoch, um zu beginnen. Die Datei wird automatisch validiert, danach öffnet sich das Formular zum Konfigurieren und Generieren der OSDM-Lieferung.",
     label_ten_csv:       "TEN‑CSV",
-
-    // Seksjon 2 – OSDM generieren
-    section_generate:    "2. OSDM generieren",
     label_delivery_id:   "DeliveryId",
     label_environment:   "Umgebung",
     opt_production:      "Produktion",
@@ -540,11 +534,9 @@ const translations = {
     norway_warning_text:  "Det här verktyget är uteslutande avsett för norska järnvägsoperatörer och hanterar endast norska priser och data.",
 
     // Seksjon 1 – Indata
-    section_input:       "1. Indata",
+    section_generate:    "Generera OSDM",
+    generate_desc:       "Ladda upp en TEN-CSV-fil för att komma igång. Filen valideras automatiskt och ett formulär visas för att konfigurera och generera OSDM-leveransen.",
     label_ten_csv:       "TEN‑CSV",
-
-    // Seksjon 2 – Generera OSDM
-    section_generate:    "2. Generera OSDM",
     label_delivery_id:   "DeliveryId",
     label_environment:   "Miljö",
     opt_production:      "Produktion",

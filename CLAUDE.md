@@ -105,8 +105,8 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=10 |
-| `i18n.js` | v=18 |
-| `app.js` | v=7 |
+| `i18n.js` | v=19 |
+| `app.js` | v=8 |
 | `admin.js` | v=11 |
 | `osdmtoExcel.js` | v=3 |
 | `fareDiscount.js` | v=7 |
