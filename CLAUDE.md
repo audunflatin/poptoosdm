@@ -104,12 +104,12 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 ## Cache-busting – gjeldende versjoner
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=6 (v=7 i index.html) |
-| `i18n.js` | v=15 |
+| `styles.css` | v=8 |
+| `i18n.js` | v=16 |
 | `app.js` | v=7 |
 | `admin.js` | v=11 |
 | `osdmtoExcel.js` | v=3 |
-| `fareDiscount.js` | v=5 |
+| `fareDiscount.js` | v=6 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.

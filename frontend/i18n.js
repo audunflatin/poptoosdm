@@ -13,6 +13,7 @@ const translations = {
   no: {
     // Felles
     logout:              "Logg ut",
+    nav_generate:        "Generer OSDM",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -179,6 +180,7 @@ const translations = {
   en: {
     // Felles
     logout:              "Log out",
+    nav_generate:        "Generate OSDM",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -345,6 +347,7 @@ const translations = {
   de: {
     // Felles
     logout:              "Abmelden",
+    nav_generate:        "OSDM generieren",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -511,6 +514,7 @@ const translations = {
   sv: {
     // Felles
     logout:              "Logga ut",
+    nav_generate:        "Generera OSDM",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",

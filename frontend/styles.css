@@ -39,6 +39,7 @@ body {
   color: var(--text);
   background: var(--bg);
   margin: 0;
+  padding-left: 220px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -51,7 +52,7 @@ body {
   z-index: 1000;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 1.5rem 0;
+  padding: 0.75rem 1.5rem 0.75rem;
 }
 
 .logo-bar {
@@ -71,6 +72,73 @@ body {
   font-weight: 800;
   color: var(--coral);
   letter-spacing: -0.02em;
+}
+
+/* =============================================================================
+   Sidebar
+   ============================================================================= */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 220px;
+  height: 100vh;
+  overflow-y: auto;
+  background: #101235;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+}
+
+.sidebar-brand {
+  padding: 1.25rem 1.25rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  display: block;
+}
+
+.sidebar-to { color: var(--coral); }
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.75rem 0.5rem;
+  flex: 1;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background 0.15s;
+}
+
+.sidebar-link:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.07);
+}
+
+.sidebar-link.active {
+  color: var(--text);
+  background: var(--coral-light);
+  box-shadow: inset 3px 0 0 var(--coral);
+}
+
+/* Separator i lang-selector for å skille logg-ut */
+.lang-sep {
+  color: rgba(255,255,255,0.2);
+  padding: 0 3px;
+  font-size: 1rem;
 }
 
 /* =============================================================================
