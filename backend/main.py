@@ -1164,6 +1164,98 @@ def contact(
         logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
         return {"ok": False}
 
+@app.get("/fare-discount", response_class=HTMLResponse)
+@app.head("/fare-discount")
+def fare_discount_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/fare-discount.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+    return HTMLResponse(html)
+
+@app.post("/fare-discount/parse")
+async def fare_discount_parse(request: Request, osdmFile: UploadFile = File(...)):
+    require_login(request)
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+
+    # UIC → navn fra stationNames (bruker nameUtf8 for norske tegn)
+    uic_to_name: dict[str, str] = {}
+    for sn in fs.get("stationNames", []):
+        code = sn.get("code") or sn.get("uicCode")
+        name = sn.get("nameUtf8") or sn.get("name") or code
+        if code:
+            uic_to_name[str(code)] = name
+
+    # Stasjonsliste fra connectionPoints
+    stations: list[dict] = []
+    seen: set[str] = set()
+    for cp in fs.get("connectionPoints", []):
+        for station_set in cp.get("stationSets", []):
+            for s in station_set:
+                if s.get("codeList") == "UIC":
+                    uic = str(s["code"])
+                    if uic not in seen:
+                        seen.add(uic)
+                        stations.append({
+                            "cp_id": cp["id"],
+                            "uic": uic,
+                            "name": uic_to_name.get(uic, uic),
+                            "country": s.get("country", ""),
+                        })
+    stations.sort(key=lambda x: x["name"].lower())
+
+    # Carriers fra carrierConstraints
+    carriers: list[dict] = []
+    seen_codes: set[str] = set()
+    for cc in fs.get("carrierConstraints", []):
+        for code in cc.get("includedCarrier", []):
+            if code not in seen_codes:
+                seen_codes.add(code)
+                carriers.append({
+                    "code": code,
+                    "name": RICS_CARRIER_NAMES.get(code, code),
+                    "constraint_id": cc["id"],
+                })
+
+    # Passasjerkategorier (deduplisert per nameRef)
+    texts_map = {t["id"]: t for t in fs.get("texts", [])}
+    seen_refs: dict[str, dict] = {}
+    for pc in fs.get("passengerConstraints", []):
+        ref = pc.get("nameRef", "")
+        text_obj = texts_map.get(ref, {})
+        name = text_obj.get("textUtf8") or text_obj.get("text") or ref
+        if ref not in seen_refs:
+            seen_refs[ref] = {"nameRef": ref, "name": name, "ids": []}
+        seen_refs[ref]["ids"].append(pc["id"])
+    passenger_constraints = list(seen_refs.values())
+
+    # Serviceklasser
+    service_classes = []
+    for scd in fs.get("serviceClassDefinitions", []):
+        text_obj = texts_map.get(scd.get("textRef", ""), {})
+        name = text_obj.get("textUtf8") or text_obj.get("text") or scd["id"]
+        service_classes.append({"id": scd["id"], "name": name})
+
+    delivery = data.get("fareDelivery", {}).get("delivery", {})
+
+    return {
+        "deliveryId": delivery.get("deliveryId", ""),
+        "stations": stations,
+        "carriers": carriers,
+        "passengerConstraints": passenger_constraints,
+        "serviceClasses": service_classes,
+    }
+
+
 @app.get("/osdmtoexcel", response_class=HTMLResponse)
 @app.head("/osdmtoexcel")
 def osdmtoexcel_page(request: Request):
