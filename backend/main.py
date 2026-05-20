@@ -1272,6 +1272,27 @@ def _round_up_020(eur: float) -> float:
     return math.ceil(eur / 0.20) * 0.20
 
 
+def _id_base(data: dict) -> str:
+    """Utled ID-base (f.eks. '1076_7.0_') fra fareProvider og deliveryId i filen."""
+    delivery = data.get("fareDelivery", {}).get("delivery", {})
+    provider = delivery.get("fareProvider", "")
+    did = delivery.get("deliveryId", "")
+    if provider and did:
+        return f"{provider}_{did}_"
+    # Fallback: trekk ut fra eksisterende IDer i filen
+    fs = data.get("fareDelivery", {}).get("fareStructure", {})
+    for sample in [
+        next((c["id"] for c in fs.get("carrierConstraints", [])), None),
+        next((t["id"] for t in fs.get("texts", [])), None),
+        next((p["id"] for p in fs.get("prices", [])), None),
+    ]:
+        if sample and "_" in sample:
+            parts = sample.split("_")
+            if len(parts) >= 2:
+                return "_".join(parts[:2]) + "_"
+    return f"disc_{did}_" if did else "disc_"
+
+
 def _next_id_num(existing_ids: list[str], prefix: str) -> int:
     """Finn neste ledige nummer for IDer med gitt prefix."""
     import re
@@ -1307,7 +1328,8 @@ async def fare_discount_apply(
         raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
 
     fs = data.get("fareDelivery", {}).get("fareStructure", {})
-    delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "7.0")
+    delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "")
+    id_base = _id_base(data)
 
     # Finn RCs som kobler begge CP-ene (begge retninger)
     target_cps = {fromCpId, toCpId}
@@ -1334,13 +1356,13 @@ async def fare_discount_apply(
     multiplier = 1 - discountPct / 100
 
     # --- Ny carrierConstraint ---
-    cc_prefix = f"1076_{delivery_id}_C__"
+    cc_prefix = f"{id_base}C__"
     existing_cc_ids = [c["id"] for c in fs.get("carrierConstraints", [])]
     new_cc_id = f"{cc_prefix}{_next_id_num(existing_cc_ids, cc_prefix)}"
     new_carrier_constraint = {"id": new_cc_id, "includedCarrier": [carrierCode]}
 
     # --- Ny tekst ---
-    text_prefix = f"1076_{delivery_id}_P__"
+    text_prefix = f"{id_base}P__"
     existing_text_ids = [t["id"] for t in fs.get("texts", [])]
     new_text_id = f"{text_prefix}{_next_id_num(existing_text_ids, text_prefix)}"
     new_text = {
@@ -1353,7 +1375,7 @@ async def fare_discount_apply(
     }
 
     # --- Nye priser (dedupliser på beløp) ---
-    price_prefix = f"1076_{delivery_id}_I__"
+    price_prefix = f"{id_base}I__"
     existing_price_ids = [p["id"] for p in fs.get("prices", [])]
     next_price_num = _next_id_num(existing_price_ids, price_prefix)
     new_amount_to_price_id: dict[int, str] = {}
@@ -1427,7 +1449,7 @@ async def fare_discount_apply(
     fs["prices"].extend(new_prices)
     fs["fares"].extend(new_fares)
 
-    filename = f"fareDelivery_{delivery_id}_discount.json"
+    filename = f"fareDelivery_{id_base.rstrip('_')}_discount.json"
     return Response(
         content=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
         media_type="application/json",
