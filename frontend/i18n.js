@@ -1,5 +1,5 @@
 // =============================================================================
-// i18n.js — Oversettelser for PopToOSDM
+// i18n.js — Oversettelser for OSDMTools
 //
 // Legg til nye nøkler i ALLE tre språk (no, en, de) under riktig seksjon.
 // Bruk t('nokkel') i JavaScript. Bruk data-i18n="nokkel" i HTML.
@@ -17,7 +17,7 @@ const translations = {
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
-    link_back:           "← PopToOSDM",
+    link_back:           "← OSDMTools",
     yes:                 "Ja",
     no_text:             "Nei",
     unknown_error:       "Ukjent feil",
@@ -184,7 +184,7 @@ const translations = {
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
-    link_back:           "← PopToOSDM",
+    link_back:           "← OSDMTools",
     yes:                 "Yes",
     no_text:             "No",
     unknown_error:       "Unknown error",
@@ -351,7 +351,7 @@ const translations = {
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
-    link_back:           "← PopToOSDM",
+    link_back:           "← OSDMTools",
     yes:                 "Ja",
     no_text:             "Nein",
     unknown_error:       "Unbekannter Fehler",
@@ -518,7 +518,7 @@ const translations = {
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
-    link_back:           "← PopToOSDM",
+    link_back:           "← OSDMTools",
     yes:                 "Ja",
     no_text:             "Nej",
     unknown_error:       "Okänt fel",

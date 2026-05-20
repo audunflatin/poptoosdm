@@ -32,7 +32,7 @@ from datetime import datetime, timezone, timedelta
 # App
 # ---------------------------------------------------------------------
 
-app = FastAPI(title="PopToOSDM")
+app = FastAPI(title="OSDMTools")
 
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 

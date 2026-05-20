@@ -40,7 +40,7 @@ def _email_html(heading: str, body_rows: str) -> str:
       </td></tr>
 
       <tr><td style="{s['footer']}">
-        <span style="color:#ff5959;font-size:20px;line-height:1;">&#9679;</span><span style="color:rgba(255,255,255,0.3);font-size:12px;letter-spacing:0px;">&middot;&middot;</span><span style="color:rgba(255,255,255,0.8);font-size:18px;line-height:1;">&#9675;</span><span style="font-size:22px;font-weight:800;color:#ffffff;padding-left:10px;">Pop</span><span style="font-size:22px;font-weight:800;color:#ff5959;">To</span><span style="font-size:22px;font-weight:800;color:#ffffff;">OSDM</span>
+        <span style="color:#ff5959;font-size:20px;line-height:1;">&#9679;</span><span style="color:rgba(255,255,255,0.3);font-size:12px;letter-spacing:0px;">&middot;&middot;</span><span style="color:rgba(255,255,255,0.8);font-size:18px;line-height:1;">&#9675;</span><span style="font-size:22px;font-weight:800;color:#ff5959;padding-left:10px;">OSDM</span><span style="font-size:22px;font-weight:800;color:#ffffff;">Tools</span>
       </td></tr>
 
     </table>
@@ -78,20 +78,20 @@ def send_welcome_email(to: str, password: str) -> None:
     s = _STYLE
     email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'
     body = f"""
-    <p style="{s['p']}">You have been granted access to PopToOSDM.</p>
+    <p style="{s['p']}">You have been granted access to OSDMTools.</p>
     {_cred_row("Email", email_link)}
     {_cred_row("Temporary password", password)}
     <p style="{s['p']}">You will be asked to choose a new password on your first login.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
       <a href="{APP_URL}" style="{s['btn']}">Log in</a>
     </td></tr></table>"""
-    _send(to=to, subject="Welcome to PopToOSDM", html=_email_html('<span style="color:#ff5959;">Welcome to</span> Pop<span style="color:#ff5959;">To</span>OSDM', body))
+    _send(to=to, subject="Welcome to OSDMTools", html=_email_html('Welcome to <span style="color:#ff5959;">OSDM</span>Tools', body))
 
 
 def send_contact_email(name: str, from_email: str, message: str) -> None:
     s = _STYLE
     body = f"""
-    <p style="{s['p']}">New message from the contact form on poptoosdm.livetsmiler.no.</p>
+    <p style="{s['p']}">New message from the contact form on osdmtools.com.</p>
     {_cred_row("Name", name)}
     {_cred_row("Email", from_email)}
     <table cellpadding="0" cellspacing="0" width="100%" style="{s['cred']}">
@@ -99,7 +99,7 @@ def send_contact_email(name: str, from_email: str, message: str) -> None:
     </table>"""
     _send(
         to=CONTACT_EMAIL,
-        subject=f"PopToOSDM - melding fra {name}",
+        subject=f"OSDMTools - melding fra {name}",
         html=_email_html('Ny melding fra <span style="color:#ff5959;">kontaktskjema</span>', body),
     )
 
@@ -107,24 +107,24 @@ def send_contact_email(name: str, from_email: str, message: str) -> None:
 def send_reset_link_email(to: str, reset_url: str) -> None:
     s = _STYLE
     body = f"""
-    <p style="{s['p']}">We received a request to reset your PopToOSDM password.</p>
+    <p style="{s['p']}">We received a request to reset your OSDMTools password.</p>
     <p style="{s['p']}">Click the button below to choose a new password. The link expires in <strong style="color:#ffffff;">1 hour</strong>.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
       <a href="{reset_url}" style="{s['btn']}">Reset password</a>
     </td></tr></table>
     <p style="margin-top:24px;font-size:13px;color:rgba(255,255,255,0.45);">If you did not request this, you can safely ignore this email.</p>"""
-    _send(to=to, subject="Reset your PopToOSDM password", html=_email_html("Reset password", body))
+    _send(to=to, subject="Reset your OSDMTools password", html=_email_html("Reset password", body))
 
 
 def send_reset_email(to: str, password: str) -> None:
     s = _STYLE
     email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'
     body = f"""
-    <p style="{s['p']}">Your password for PopToOSDM has been reset.</p>
+    <p style="{s['p']}">Your password for OSDMTools has been reset.</p>
     {_cred_row("Email", email_link)}
     {_cred_row("Temporary password", password)}
     <p style="{s['p']}">You will be asked to choose a new password on your next login.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
       <a href="{APP_URL}" style="{s['btn']}">Log in</a>
     </td></tr></table>"""
-    _send(to=to, subject="New password – PopToOSDM", html=_email_html("New password", body))
+    _send(to=to, subject="New password – OSDMTools", html=_email_html("New password", body))
