@@ -91,7 +91,7 @@ const translations = {
     // OSDM til Excel-side
     heading_osdm_excel:  "OSDM til Excel",
     section_upload:      "Last opp OSDM-fil",
-    upload_description:  "Last opp en OSDM fareDelivery JSON-fil for å konvertere den til Excel. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Ingen problem - bruk kontaktskjemaet nedenfor, så tar jeg meg av konverteringen for deg!",
+    upload_description:  "Last opp en OSDM fareDelivery JSON-fil for å konvertere den til Excel. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Bruk kontaktskjemaet i venstremenyen, så tar jeg meg av konverteringen for deg!",
     contact_heading:     "Kontakt",
     contact_name:        "Navn",
     contact_email:       "E-post",
@@ -166,6 +166,8 @@ const translations = {
     convert_success:     "Konvertering vellykket",
     label_rows:          "Antall relasjoner",
     err_convert_failed:  "❌ Konvertering feilet",
+
+    nav_contact:              "Kontakt",
 
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt",
@@ -258,7 +260,7 @@ const translations = {
     // OSDM to Excel-side
     heading_osdm_excel:  "OSDM to Excel",
     section_upload:      "Upload OSDM file",
-    upload_description:  "Upload an OSDM fareDelivery JSON file to convert it to Excel. The service handles files up to 100 MB. Have a larger file? No problem - use the contact form below, and I'll take care of the conversion for you!",
+    upload_description:  "Upload an OSDM fareDelivery JSON file to convert it to Excel. The service handles files up to 100 MB. Have a larger file? Use the contact form in the left menu, and I'll take care of the conversion for you!",
     contact_heading:     "Contact",
     contact_name:        "Name",
     contact_email:       "Email",
@@ -333,6 +335,8 @@ const translations = {
     convert_success:     "Conversion successful",
     label_rows:          "Number of relations",
     err_convert_failed:  "❌ Conversion failed",
+
+    nav_contact:              "Contact",
 
     // fare-discount.html
     nav_fare_discount:        "Add discount",
@@ -425,7 +429,7 @@ const translations = {
     // OSDM zu Excel-side
     heading_osdm_excel:  "OSDM zu Excel",
     section_upload:      "OSDM-Datei hochladen",
-    upload_description:  "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um sie in Excel zu konvertieren. Der Dienst verarbeitet Dateien bis zu 100 MB. Haben Sie eine größere Datei? Kein Problem - nutzen Sie das Kontaktformular unten, und ich kümmere mich um die Konvertierung!",
+    upload_description:  "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um sie in Excel zu konvertieren. Der Dienst verarbeitet Dateien bis zu 100 MB. Haben Sie eine größere Datei? Nutzen Sie das Kontaktformular im linken Menü, und ich kümmere mich um die Konvertierung!",
     contact_heading:     "Kontakt",
     contact_name:        "Name",
     contact_email:       "E-Mail",
@@ -500,6 +504,8 @@ const translations = {
     convert_success:     "Konvertierung erfolgreich",
     label_rows:          "Anzahl Relationen",
     err_convert_failed:  "❌ Konvertierung fehlgeschlagen",
+
+    nav_contact:              "Kontakt",
 
     // fare-discount.html
     nav_fare_discount:        "Rabatt hinzufügen",
@@ -592,7 +598,7 @@ const translations = {
     // OSDM till Excel-side
     heading_osdm_excel:  "OSDM till Excel",
     section_upload:      "Ladda upp OSDM-fil",
-    upload_description:  "Ladda upp en OSDM fareDelivery JSON-fil för att konvertera den till Excel. Tjänsten hanterar filer upp till 100 MB. Har du en större fil? Inga problem - använd kontaktformuläret nedan, så tar jag hand om konverteringen åt dig!",
+    upload_description:  "Ladda upp en OSDM fareDelivery JSON-fil för att konvertera den till Excel. Tjänsten hanterar filer upp till 100 MB. Har du en större fil? Använd kontaktformuläret i vänstermenyn, så tar jag hand om konverteringen åt dig!",
     contact_heading:     "Kontakt",
     contact_name:        "Namn",
     contact_email:       "E-post",
@@ -667,6 +673,8 @@ const translations = {
     convert_success:     "Konvertering lyckades",
     label_rows:          "Antal relationer",
     err_convert_failed:  "❌ Konvertering misslyckades",
+
+    nav_contact:              "Kontakt",
 
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt",
