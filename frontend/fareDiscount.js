@@ -1,9 +1,19 @@
 // fareDiscount.js – Legg til rabattert fare i OSDM JSON
 
 let osdmStations = [];            // [{cp_id, uic, name, country}]
-let osdmCarriers = [];            // [{code, name, constraint_id}]
 let osdmPassengers = [];          // [{nameRef, name, ids[]}]
 let osdmServiceClasses = [];      // [{id, name}]
+
+let ricsCodes = [];               // [{code, name}] – lastes én gang fra /fare-discount/rics
+
+async function fetchRicsCodes() {
+  if (ricsCodes.length) return;
+  try {
+    const r = await fetch("/fare-discount/rics");
+    ricsCodes = await r.json();
+  } catch (_) {}
+}
+fetchRicsCodes();
 
 // Picker-tilstand per retning
 const picker = {
@@ -22,9 +32,9 @@ async function onFileChange() {
   const result    = document.getElementById("discountResult");
 
   osdmStations = [];
-  osdmCarriers = [];
   pickerClear("from");
   pickerClear("to");
+  carrierClear();
   stepForm.style.display = "none";
   result.innerText = "";
   result.className = "";
@@ -50,14 +60,12 @@ async function onFileChange() {
       return;
     }
     osdmStations = res.stations;
-    osdmCarriers = res.carriers;
     osdmPassengers = res.passengerConstraints;
     osdmServiceClasses = res.serviceClasses;
 
     document.getElementById("parsedInfo").innerText =
-      `DeliveryId: ${res.deliveryId} · ${res.stations.length} stasjoner · ${res.carriers.length} transportører`;
+      `DeliveryId: ${res.deliveryId} · ${res.stations.length} stasjoner`;
 
-    renderCarrierSelect();
     renderPassengerCheckboxes();
     renderServiceClassCheckboxes();
 
@@ -182,13 +190,16 @@ function pickerClear(dir) {
   chip.style.display = "none";
 }
 
-// Lukk dropdown ved klikk utenfor
+// Lukk dropdowns ved klikk utenfor
 document.addEventListener("click", e => {
-  ["from", "to"].forEach(dir => {
-    const wrap = document.getElementById(dir === "from" ? "wrapFrom" : "wrapTo");
-    if (wrap && !wrap.contains(e.target)) {
-      document.getElementById(dir === "from" ? "dropFrom" : "dropTo").style.display = "none";
-    }
+  [
+    ["wrapFrom", "dropFrom"],
+    ["wrapTo",   "dropTo"],
+    ["wrapCarrier", "dropCarrier"],
+  ].forEach(([wrapId, dropId]) => {
+    const wrap = document.getElementById(wrapId);
+    if (wrap && !wrap.contains(e.target))
+      document.getElementById(dropId).style.display = "none";
   });
 });
 
@@ -196,25 +207,101 @@ document.addEventListener("click", e => {
 // Transportør, passasjerkategorier, serviceklasse
 // ---------------------------------------------------------------------------
 
-function renderCarrierSelect() {
-  const sel = document.getElementById("carrierSelect");
-  sel.innerHTML = '<option value="">— velg transportør —</option>';
-  osdmCarriers.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c.code;
-    opt.textContent = `${c.name} (${c.code})`;
-    sel.appendChild(opt);
-  });
-  const opt = document.createElement("option");
-  opt.value = "__manual__";
-  opt.textContent = "Angi RICS-kode manuelt…";
-  sel.appendChild(opt);
+// ---------------------------------------------------------------------------
+// Transportørpicker
+// ---------------------------------------------------------------------------
+
+const carrierPicker = { selected: null, activeIdx: -1, matches: [] };
+
+function carrierFilter() {
+  if (carrierPicker.selected) carrierClear();
+  const q = document.getElementById("inputCarrier").value.trim().toLowerCase();
+  const src = ricsCodes.length ? ricsCodes : [];
+  const matches = q.length === 0
+    ? src.slice(0, 60)
+    : src.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q)).slice(0, 60);
+  carrierPicker.activeIdx = -1;
+  carrierRenderDrop(matches);
 }
 
-function onCarrierSelectChange() {
-  const sel = document.getElementById("carrierSelect");
-  document.getElementById("carrierManualWrap").style.display =
-    sel.value === "__manual__" ? "block" : "none";
+function carrierOpen() {
+  if (carrierPicker.selected) return;
+  carrierFilter();
+}
+
+function carrierRenderDrop(matches) {
+  carrierPicker.matches = matches;
+  const drop = document.getElementById("dropCarrier");
+  if (!matches.length) { drop.style.display = "none"; return; }
+  drop.innerHTML = matches.map((c, i) =>
+    `<div class="picker-option" data-idx="${i}">
+      ${c.name}<span class="uic">${c.code}</span>
+    </div>`
+  ).join("");
+  drop.querySelectorAll(".picker-option").forEach((el, i) => {
+    el.addEventListener("mousedown", e => { e.preventDefault(); carrierSelect(carrierPicker.matches[i]); });
+    el.addEventListener("mouseover", () => carrierActivate(i));
+  });
+  drop.style.display = "block";
+}
+
+function carrierActivate(idx) {
+  carrierPicker.activeIdx = idx;
+  document.getElementById("dropCarrier").querySelectorAll(".picker-option").forEach((el, i) =>
+    el.classList.toggle("active", i === idx)
+  );
+}
+
+function carrierKey(e) {
+  const drop = document.getElementById("dropCarrier");
+  const opts = drop.querySelectorAll(".picker-option");
+  if (!opts.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    carrierPicker.activeIdx = Math.min(carrierPicker.activeIdx + 1, opts.length - 1);
+    carrierActivate(carrierPicker.activeIdx);
+    opts[carrierPicker.activeIdx]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    carrierPicker.activeIdx = Math.max(carrierPicker.activeIdx - 1, 0);
+    carrierActivate(carrierPicker.activeIdx);
+    opts[carrierPicker.activeIdx]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter" && carrierPicker.activeIdx >= 0) {
+    e.preventDefault();
+    carrierSelect(carrierPicker.matches[carrierPicker.activeIdx]);
+  } else if (e.key === "Escape") {
+    drop.style.display = "none";
+  }
+}
+
+function carrierSelect(carrier) {
+  carrierPicker.selected = carrier;
+  carrierPicker.activeIdx = -1;
+  document.getElementById("inputCarrier").value = "";
+  document.getElementById("inputCarrier").style.display = "none";
+  document.getElementById("dropCarrier").style.display = "none";
+  document.getElementById("carrierCode").value = carrier.code;
+  const chip = document.getElementById("chipCarrier");
+  chip.innerHTML =
+    `<div class="picker-chip">
+      ${carrier.name} <span style="color:rgba(255,255,255,0.4)">${carrier.code}</span>
+      <button onclick="carrierClear()" title="Fjern">✕</button>
+    </div>`;
+  chip.style.display = "block";
+}
+
+function carrierClear() {
+  carrierPicker.selected = null;
+  carrierPicker.activeIdx = -1;
+  const input = document.getElementById("inputCarrier");
+  if (!input) return;
+  input.value = "";
+  input.style.display = "";
+  document.getElementById("dropCarrier").style.display = "none";
+  document.getElementById("carrierCode").value = "";
+  const chip = document.getElementById("chipCarrier");
+  chip.innerHTML = "";
+  chip.style.display = "none";
 }
 
 function renderPassengerCheckboxes() {
@@ -261,11 +348,7 @@ async function applyDiscount() {
     return;
   }
 
-  const sel = document.getElementById("carrierSelect");
-  let carrierCode = sel.value;
-  if (carrierCode === "__manual__") {
-    carrierCode = document.getElementById("carrierManual").value.trim();
-  }
+  const carrierCode = document.getElementById("carrierCode").value;
   if (!carrierCode) {
     result.innerText = "❌ Velg eller oppgi en transportør.";
     result.className = "status-error";

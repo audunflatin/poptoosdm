@@ -1165,6 +1165,12 @@ def contact(
         logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
         return {"ok": False}
 
+@app.get("/fare-discount/rics")
+def fare_discount_rics(request: Request):
+    require_login(request)
+    return [{"code": code, "name": name} for code, name in sorted(RICS_CARRIER_NAMES.items(), key=lambda x: x[1])]
+
+
 @app.get("/fare-discount", response_class=HTMLResponse)
 @app.head("/fare-discount")
 def fare_discount_page(request: Request):

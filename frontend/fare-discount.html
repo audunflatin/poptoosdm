@@ -141,12 +141,16 @@
       <div style="display:grid; grid-template-columns:1fr 180px; gap:1.25rem; margin-top:1.25rem;">
         <div>
           <label>Transportør</label>
-          <select id="carrierSelect" onchange="onCarrierSelectChange()">
-            <option value="">— velg transportør —</option>
-          </select>
-          <div id="carrierManualWrap" style="display:none; margin-top:0.5rem;">
-            <input id="carrierManual" type="text" placeholder="RICS-kode (f.eks. 1186)" />
+          <div class="picker-wrap" id="wrapCarrier">
+            <input id="inputCarrier" type="text" autocomplete="off"
+              placeholder="Søk transportørnavn eller RICS-kode…"
+              oninput="carrierFilter()"
+              onkeydown="carrierKey(event)"
+              onfocus="carrierOpen()" />
+            <div id="dropCarrier" class="picker-dropdown" style="display:none;"></div>
+            <div id="chipCarrier" style="display:none;"></div>
           </div>
+          <input type="hidden" id="carrierCode" />
         </div>
         <div>
           <label>Rabatt (%)</label>
@@ -177,6 +181,6 @@
 </div>
 
 <script src="/static/i18n.js?v=14"></script>
-<script src="/static/fareDiscount.js?v=3"></script>
+<script src="/static/fareDiscount.js?v=4"></script>
 </body>
 </html>
