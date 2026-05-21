@@ -114,7 +114,7 @@ async function validateOsdm() {
 
   // Warnings / suggestions
   if (res.warnings && res.warnings.length > 0) {
-    warningsEl.innerHTML = renderWarnings(res.warnings, t("osdm_warnings_title"));
+    warningsEl.innerHTML = renderWarnings(res.warnings, t("osdm_warnings_title"), null, true);
   } else {
     warningsEl.innerHTML = `<div class="check-ok">✓ ${t("osdm_no_warnings")}</div>`;
   }
@@ -146,39 +146,143 @@ async function validateOsdm() {
     }
   }
 
+  // Autofyll previousDeliveryId med deliveryId fra opplastet fil
+  const prevEl = document.getElementById("previousDeliveryId");
+  if (prevEl && res.deliveryId) prevEl.value = res.deliveryId;
+
   // Show generate form and auto-fetch exchange rate
   show("generateForm");
   generateBtn.disabled = false;
   fetchExchangeRate();
 }
 
-function renderWarnings(warnings, title, footer) {
+function renderWarnings(warnings, title, footer, showFix = false) {
   const items = warnings.map(w => `<li>${w}</li>`).join("");
   const footerHtml = footer
     ? `<div class="warnings-note">${footer}</div>`
     : `<div class="warnings-note">${t("osdm_warnings_note")}</div>`;
+  const fixHtml = showFix
+    ? `<div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.75rem;">
+        <button id="fixOsdmBtn" class="btn-sm" onclick="fixOsdmFile()">${t("btn_fix_osdm")}</button>
+        <div id="spinnerFix" class="spinner" style="display:none;margin:0;"></div>
+      </div>`
+    : "";
   return `<div class="warnings-box">
     <div class="warnings-title">⚠ ${title} (${warnings.length})</div>
     <ul class="warnings-list">${items}</ul>
     ${footerHtml}
+    ${fixHtml}
   </div>`;
+}
+
+function buildFixSuccessHtml(stats) {
+  const statLabels = {
+    removed_bad_rcs:       t("fix_stat_bad_rcs"),
+    removed_bad_fares:     t("fix_stat_bad_fares"),
+    removed_unused_prices: t("fix_stat_unused_prices"),
+    removed_unused_pcs:    t("fix_stat_unused_pcs"),
+    removed_unused_rcs:    t("fix_stat_unused_rcs"),
+  };
+
+  const total = Object.values(stats).reduce((a, b) => a + b, 0);
+
+  if (total === 0) {
+    return `<div class="check-ok">✓ ${t("fix_osdm_nothing")}</div>`;
+  }
+
+  const items = Object.entries(stats)
+    .filter(([, n]) => n > 0)
+    .map(([key, n]) => `<li><b>${n}</b> ${statLabels[key] || key}</li>`)
+    .join("");
+
+  return `<div class="info-box">
+    <div>
+      <strong style="color:var(--success);">✓ ${t("fix_osdm_success")}</strong>
+      <ul style="margin:0.4rem 0 0;padding-left:1.2rem;font-size:0.85rem;opacity:0.85;">${items}</ul>
+    </div>
+  </div>`;
+}
+
+async function fixOsdmFile() {
+  const fileInput = document.getElementById("osdmValFile");
+  if (!fileInput.files.length) return;
+
+  const btn     = document.getElementById("fixOsdmBtn");
+  const spinner = document.getElementById("spinnerFix");
+
+  if (btn)     btn.disabled = true;
+  if (spinner) spinner.style.display = "block";
+
+  try {
+    const fd = new FormData();
+    fd.append("osdmFile", fileInput.files[0]);
+
+    const r = await fetch("/ui/fix-osdm", { method: "POST", body: fd });
+    if (!r.ok) throw new Error();
+
+    const statsRaw = r.headers.get("X-Fix-Stats");
+    const stats    = statsRaw ? JSON.parse(statsRaw) : {};
+
+    const blob = await r.blob();
+    const cd   = r.headers.get("Content-Disposition") || "";
+    const m    = cd.match(/filename="?([^"]+)"?/);
+    const filename = m ? m[1] : "osdm_fixed.json";
+
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    document.getElementById("osdmWarnings").innerHTML = buildFixSuccessHtml(stats);
+  } catch {
+    if (spinner) spinner.style.display = "none";
+    if (btn) { btn.disabled = false; }
+  }
+}
+
+function updateExchangeRateLabel() {
+  const sel = document.getElementById("distanceCurrency");
+  if (!sel) return;
+  const key = "label_exchange_rate_" + sel.value.toLowerCase();
+  const lbl = document.getElementById("exchangeRateLabel");
+  if (lbl) {
+    lbl.setAttribute("data-i18n", key);
+    lbl.textContent = t(key);
+  }
+}
+
+function onCurrencyChange() {
+  updateExchangeRateLabel();
+  fetchExchangeRate();
 }
 
 async function fetchExchangeRate() {
   const rateInput  = document.getElementById("exchangeRate");
   const rateStatus = document.getElementById("rateStatus");
+  const currency   = document.getElementById("distanceCurrency")?.value || "EUR";
+
+  if (currency === "EUR") {
+    rateInput.value = "1";
+    rateStatus.innerHTML = `<span style="color:var(--success);">✓</span> ${t("rate_eur_no_conversion")}`;
+    return;
+  }
+
   rateStatus.innerHTML = `<span style="opacity:0.5;">${t("rate_fetching")}</span>`;
 
   try {
-    const r   = await fetch("/ui/exchange-rate");
+    const r   = await fetch(`/ui/exchange-rate?from_=EUR&to=${currency}`);
     const res = await r.json();
     if (res.ok) {
-      const nokPerEur = res.rate;
-      const eurPerNok = (1 / nokPerEur).toFixed(6);
-      rateInput.value  = eurPerNok;
+      const currPerEur = res.rate;
+      const eurPerCurr = (1 / currPerEur).toFixed(6);
+      rateInput.value  = eurPerCurr;
       rateStatus.innerHTML =
         `<span style="color:var(--success);">✓</span> ` +
-        `${t("rate_fetched").replace("{nok}", nokPerEur.toFixed(4)).replace("{date}", res.date)}`;
+        `${t("rate_fetched")
+          .replace("{rate}", currPerEur.toFixed(4))
+          .replace("{currency}", currency)
+          .replace("{date}", res.date)}`;
     } else {
       rateStatus.innerHTML = `<span style="opacity:0.45;">${t("rate_fetch_failed")}</span>`;
     }
@@ -195,7 +299,7 @@ async function generateOsdm(){
   startProgress();
 
   const fd = new FormData();
-  ["exchangeRate","validFrom","validTo","datasetId","environment","optionalDelivery"]
+  ["exchangeRate","validFrom","validTo","datasetId","environment","optionalDelivery","previousDeliveryId"]
     .forEach(id => fd.append(id, document.getElementById(id).value));
 
   const r   = await fetch("/ui/generate-osdm", { method: "POST", body: fd });
@@ -287,6 +391,8 @@ function renderExampleTable(data){
 
   const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
 
+  const distCurrency = document.getElementById("distanceCurrency")?.value || "NOK";
+
   let html =
     "<div class='example-panel'>" +
     `<div class='example-panel-title'>${t("example_prices")}</div>` +
@@ -294,7 +400,7 @@ function renderExampleTable(data){
     "<tr>" +
     `<th align='left'>${t("col_route")}</th>` +
     `<th align='right'>${t("col_price_eur")}</th>` +
-    `<th align='right'>${t("col_price_nok")}</th>` +
+    `<th align='right'>${distCurrency}</th>` +
     `<th align='right'>${t("col_km")}</th>` +
     "</tr>";
 
@@ -358,3 +464,10 @@ flatpickr("#validTo", {
   locale: "no",
   onChange: fpOnChange,
 });
+
+// Oppdater valutakurs-etikett ved språkbytte
+const _prevSetLanguage = window.setLanguage;
+window.setLanguage = function(lang) {
+  _prevSetLanguage(lang);
+  updateExchangeRateLabel();
+};

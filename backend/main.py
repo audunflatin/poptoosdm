@@ -13,6 +13,7 @@ import math
 import base64
 import threading
 import uuid
+import requests
 
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
@@ -657,6 +658,7 @@ def generate_osdm(
     datasetId: str = Form(...),
     environment: str = Form(...),
     optionalDelivery: str = Form("false"),
+    previousDeliveryId: str = Form(""),
 ):
     require_login(request)
 
@@ -678,6 +680,10 @@ def generate_osdm(
     fs = data["fareDelivery"]["fareStructure"]
 
     data["fareDelivery"]["delivery"]["deliveryId"] = datasetId
+    if previousDeliveryId.strip():
+        data["fareDelivery"]["delivery"]["previousDeliveryId"] = previousDeliveryId.strip()
+    else:
+        data["fareDelivery"]["delivery"].pop("previousDeliveryId", None)
     data["fareDelivery"]["delivery"]["optionalDelivery"] = (optionalDelivery.lower() == "true")
     data["fareDelivery"]["delivery"]["usage"] = (
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
@@ -1913,6 +1919,88 @@ async def fare_discount_apply(
             "Content-Disposition": f'attachment; filename="{filename}"',
             "X-Fare-Count": str(len(new_fares)),
             "X-Price-Count": str(len(new_prices)),
+        },
+    )
+
+
+@app.post("/ui/fix-osdm")
+async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
+    require_login(request)
+
+    try:
+        data = json.loads(await osdmFile.read())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+
+    fd = data.get("fareDelivery", {})
+    if not fd or "fareStructure" not in fd:
+        raise HTTPException(status_code=400, detail="Filen mangler fareDelivery.fareStructure")
+
+    fs = fd["fareStructure"]
+    stats: dict[str, int] = {}
+
+    # Bygg sett med definerte IDer
+    price_ids  = {p["id"] for p in fs.get("prices", [])}
+    pc_ids     = {p["id"] for p in fs.get("passengerConstraints", [])}
+    rc_ids     = {r["id"] for r in fs.get("regionalConstraints", [])}
+    cc_ids     = {c["id"] for c in fs.get("carrierConstraints", [])}
+    bundle_ids = {b["id"] for b in fs.get("fareConstraintBundles", [])}
+    text_ids   = {t["id"] for t in fs.get("texts", [])}
+    cp_ids     = {cp["id"] for cp in fs.get("connectionPoints", [])}
+
+    # 1. Fjern RC-er med ugyldig CP-referanse
+    orig = len(fs.get("regionalConstraints", []))
+    fs["regionalConstraints"] = [
+        rc for rc in fs.get("regionalConstraints", [])
+        if rc.get("entryConnectionPointId") in cp_ids
+        and rc.get("exitConnectionPointId") in cp_ids
+    ]
+    rc_ids = {r["id"] for r in fs["regionalConstraints"]}
+    stats["removed_bad_rcs"] = orig - len(fs["regionalConstraints"])
+
+    # 2. Fjern farer med manglende referanser
+    orig = len(fs.get("fares", []))
+    fs["fares"] = [
+        f for f in fs.get("fares", [])
+        if (not f.get("priceRef")  or f["priceRef"]  in price_ids)
+        and (not f.get("passengerConstraintRef") or f["passengerConstraintRef"] in pc_ids)
+        and (not f.get("regionalConstraintRef") or f["regionalConstraintRef"] in rc_ids)
+        and (not f.get("carrierConstraintRef")  or f["carrierConstraintRef"]  in cc_ids)
+        and (not f.get("bundleRef")             or f["bundleRef"]             in bundle_ids)
+        and (not f.get("nameRef")               or f["nameRef"]               in text_ids)
+    ]
+    stats["removed_bad_fares"] = orig - len(fs["fares"])
+
+    # 3. Fjern ubrukte priser
+    used_price_ids = {f.get("priceRef") for f in fs.get("fares", []) if f.get("priceRef")}
+    orig = len(fs.get("prices", []))
+    fs["prices"] = [p for p in fs.get("prices", []) if p["id"] in used_price_ids]
+    stats["removed_unused_prices"] = orig - len(fs["prices"])
+
+    # 4. Fjern ubrukte passengerConstraints
+    used_pc_ids = {f.get("passengerConstraintRef") for f in fs.get("fares", []) if f.get("passengerConstraintRef")}
+    orig = len(fs.get("passengerConstraints", []))
+    fs["passengerConstraints"] = [p for p in fs.get("passengerConstraints", []) if p["id"] in used_pc_ids]
+    stats["removed_unused_pcs"] = orig - len(fs["passengerConstraints"])
+
+    # 5. Fjern ubrukte regionalConstraints
+    used_rc_ids = {f.get("regionalConstraintRef") for f in fs.get("fares", []) if f.get("regionalConstraintRef")}
+    orig = len(fs.get("regionalConstraints", []))
+    fs["regionalConstraints"] = [r for r in fs.get("regionalConstraints", []) if r["id"] in used_rc_ids]
+    stats["removed_unused_rcs"] = orig - len(fs["regionalConstraints"])
+
+    orig_name = osdmFile.filename or "osdm.json"
+    base = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
+    out_name = f"{base}_fixed.json"
+
+    log_event(request.session.get("user_email"), "osdm_fixed", detail=stats)
+
+    return Response(
+        content=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{out_name}"',
+            "X-Fix-Stats": json.dumps(stats),
         },
     )
 

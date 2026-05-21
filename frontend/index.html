@@ -84,6 +84,9 @@
       <label data-i18n="label_delivery_id">DeliveryId</label>
       <input id="datasetId" type="text" required />
 
+      <label data-i18n="label_previous_delivery_id">Previous DeliveryId <span style="opacity:0.5;font-weight:normal;">(valgfri)</span></label>
+      <input id="previousDeliveryId" type="text" data-i18n-placeholder="placeholder_previous_delivery_id" placeholder="Autofylles fra opplastet OSDM-fil" />
+
       <label data-i18n="label_environment">Miljø</label>
       <select id="environment">
         <option value="prod" data-i18n="opt_production">Produksjon</option>
@@ -96,9 +99,26 @@
         <option value="true" data-i18n="opt_yes">Ja</option>
       </select>
 
-      <label data-i18n="label_exchange_rate">Valutakurs NOK → EUR</label>
+      <label data-i18n="label_distance_currency">Valuta i avstandsfilen</label>
+      <select id="distanceCurrency" onchange="onCurrencyChange()">
+        <option value="EUR" selected data-i18n="opt_eur">Euro (EUR)</option>
+        <option value="NOK" data-i18n="opt_nok">Norske kroner (NOK)</option>
+        <option value="SEK" data-i18n="opt_sek">Svenske kroner (SEK)</option>
+        <option value="DKK" data-i18n="opt_dkk">Danske kroner (DKK)</option>
+        <option value="GBP" data-i18n="opt_gbp">Britiske pund (GBP)</option>
+        <option value="CHF" data-i18n="opt_chf">Sveitserfranc (CHF)</option>
+        <option value="BGN" data-i18n="opt_bgn">Bulgarske lev (BGN)</option>
+        <option value="CZK" data-i18n="opt_czk">Tsjekkiske koruna (CZK)</option>
+        <option value="HUF" data-i18n="opt_huf">Ungarske forint (HUF)</option>
+        <option value="ISK" data-i18n="opt_isk">Islandske kroner (ISK)</option>
+        <option value="PLN" data-i18n="opt_pln">Polske zloty (PLN)</option>
+        <option value="RON" data-i18n="opt_ron">Rumenske leu (RON)</option>
+        <option value="TRY" data-i18n="opt_try">Tyrkiske lira (TRY)</option>
+      </select>
+
+      <label id="exchangeRateLabel" data-i18n="label_exchange_rate_eur">Valutakurs EUR → EUR</label>
       <div class="rate-row">
-        <input id="exchangeRate" type="number" step="0.0001" value="0.091" required />
+        <input id="exchangeRate" type="number" step="0.0001" value="1" required />
         <button type="button" class="btn-sm" onclick="fetchExchangeRate()" data-i18n="btn_fetch_rate">Hent live</button>
       </div>
       <div id="rateStatus"></div>
@@ -139,7 +159,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/no.js"></script>
-<script src="/static/i18n.js?v=24"></script>
-<script src="/static/app.js?v=11"></script>
+<script src="/static/i18n.js?v=28"></script>
+<script src="/static/app.js?v=14"></script>
 </body>
 </html>
