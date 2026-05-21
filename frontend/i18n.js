@@ -182,6 +182,8 @@ const translations = {
     err_convert_failed:  "❌ Konvertering feilet",
 
     nav_contact:              "Kontakt",
+    nav_change_password:      "Endre passord",
+    change_pw_success:        "Passordet er oppdatert.",
 
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt",
@@ -365,6 +367,8 @@ const translations = {
     err_convert_failed:  "❌ Conversion failed",
 
     nav_contact:              "Contact",
+    nav_change_password:      "Change password",
+    change_pw_success:        "Password updated.",
 
     // fare-discount.html
     nav_fare_discount:        "Add discount",
@@ -548,6 +552,8 @@ const translations = {
     err_convert_failed:  "❌ Konvertierung fehlgeschlagen",
 
     nav_contact:              "Kontakt",
+    nav_change_password:      "Passwort ändern",
+    change_pw_success:        "Passwort wurde aktualisiert.",
 
     // fare-discount.html
     nav_fare_discount:        "Rabatt hinzufügen",
@@ -731,6 +737,8 @@ const translations = {
     err_convert_failed:  "❌ Konvertering misslyckades",
 
     nav_contact:              "Kontakt",
+    nav_change_password:      "Ändra lösenord",
+    change_pw_success:        "Lösenordet har uppdaterats.",
 
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt",

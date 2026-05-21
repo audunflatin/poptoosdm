@@ -1446,8 +1446,22 @@ def admin_page(request: Request):
 def kontakt_page(request: Request):
     if "user_email" not in request.session:
         return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
-    is_admin = bool(request.session.get("is_admin"))
+    is_admin  = bool(request.session.get("is_admin"))
+    user_email = request.session.get("user_email", "")
     html = Path("frontend/contact.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()}; window.USER_EMAIL = {json.dumps(user_email)};</script></head>"
+    )
+    return HTMLResponse(html)
+
+@app.get("/endre-passord", response_class=HTMLResponse)
+@app.head("/endre-passord")
+def endre_passord_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/endre-passord.html").read_text(encoding="utf-8")
     html = html.replace(
         "</head>",
         f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"

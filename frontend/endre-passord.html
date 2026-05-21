@@ -2,7 +2,7 @@
 <html lang="no" translate="no">
 <head>
   <meta charset="UTF-8" />
-  <title>OSDMTools – Kontakt</title>
+  <title>OSDMTools – Endre passord</title>
 
   <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
@@ -19,8 +19,8 @@
     <a href="/" class="sidebar-link" data-i18n="nav_generate">Oppdater OSDM-priser</a>
     <a href="/osdmtoexcel" class="sidebar-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
     <a href="/fare-discount" class="sidebar-link" data-i18n="nav_fare_discount">Legg til rabatt</a>
-    <a href="/kontakt" class="sidebar-link active" data-i18n="nav_contact">Kontakt</a>
-    <a href="/endre-passord" class="sidebar-link" data-i18n="nav_change_password">Endre passord</a>
+    <a href="/kontakt" class="sidebar-link" data-i18n="nav_contact">Kontakt</a>
+    <a href="/endre-passord" class="sidebar-link active" data-i18n="nav_change_password">Endre passord</a>
     <a id="adminLink" href="/admin" class="sidebar-link" data-i18n="nav_admin" style="display:none;">Admin</a>
   </div>
 </nav>
@@ -45,25 +45,20 @@
 </header>
 
 <div class="container">
-  <section class="panel">
-    <h2 data-i18n="contact_heading">Kontakt</h2>
+  <section class="panel" style="max-width:480px;">
+    <h2 data-i18n="change_pw_title">Endre passord</h2>
 
-    <div id="contactSuccess" style="display:none; background:rgba(90,195,154,0.12); border-left:4px solid #5ac39a; border-radius:4px; padding:0.875rem 1rem; color:#5ac39a; font-size:0.9rem;"></div>
-    <div id="contactError" style="display:none; background:rgba(255,89,89,0.15); border-left:4px solid #ff5959; border-radius:4px; padding:0.875rem 1rem; color:#ff5959; font-size:0.9rem;"></div>
+    <div id="successMsg" style="display:none; background:rgba(90,195,154,0.12); border-left:4px solid #5ac39a; border-radius:4px; padding:0.875rem 1rem; color:#5ac39a; font-size:0.9rem; margin-bottom:1rem;"></div>
+    <div id="errorMsg" class="validation-error" style="display:none;"></div>
 
-    <form id="contactForm">
-      <label data-i18n="contact_name">Navn</label>
-      <input id="contactName" type="text" required />
+    <form id="changeForm">
+      <label data-i18n="change_pw_label">Nytt passord</label>
+      <input id="password" type="password" required minlength="8" />
 
-      <label data-i18n="contact_email">E-post</label>
-      <input id="contactEmail" type="email" required readonly />
+      <label data-i18n="change_pw_confirm">Bekreft passord</label>
+      <input id="confirm" type="password" required minlength="8" />
 
-      <label data-i18n="contact_message">Melding</label>
-      <textarea id="contactMessage" rows="5" required
-        style="width:100%; padding:0.65rem 0.875rem; margin-top:0.375rem; font-size:1rem; font-family:inherit; font-weight:500; color:#ffffff; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:4px; resize:vertical;"
-        data-i18n-placeholder="contact_placeholder"></textarea>
-
-      <button type="submit" style="margin-top:1.25rem;" data-i18n="contact_btn">Send melding</button>
+      <button type="submit" data-i18n="change_pw_btn">Lagre passord</button>
     </form>
   </section>
 </div>
@@ -72,29 +67,35 @@
 <script>
   if (window.IS_ADMIN) { const el = document.getElementById("adminLink"); if (el) el.style.display = ""; }
 
-  if (window.USER_EMAIL) {
-    document.getElementById("contactEmail").value = window.USER_EMAIL;
-  }
-
-  document.getElementById("contactForm").onsubmit = async e => {
+  document.getElementById("changeForm").onsubmit = async e => {
     e.preventDefault();
-    const successEl = document.getElementById("contactSuccess");
-    const errorEl   = document.getElementById("contactError");
+    const successEl = document.getElementById("successMsg");
+    const errorEl   = document.getElementById("errorMsg");
     successEl.style.display = "none";
     errorEl.style.display   = "none";
+
+    const pw   = document.getElementById("password").value;
+    const conf = document.getElementById("confirm").value;
+
+    if (pw !== conf) {
+      errorEl.textContent = t("change_pw_mismatch");
+      errorEl.style.display = "block";
+      return;
+    }
+
     const fd = new FormData();
-    fd.append("name",    document.getElementById("contactName").value);
-    fd.append("email",   document.getElementById("contactEmail").value);
-    fd.append("message", document.getElementById("contactMessage").value);
-    const r   = await fetch("/contact", { method: "POST", body: fd });
+    fd.append("password", pw);
+    fd.append("confirm",  conf);
+
+    const r   = await fetch("/change-password", { method: "POST", body: fd });
     const res = await r.json().catch(() => ({}));
-    if (res.ok) {
-      successEl.textContent = t("contact_sent");
+
+    if (r.ok) {
+      successEl.textContent = t("change_pw_success");
       successEl.style.display = "block";
-      document.getElementById("contactForm").reset();
-      document.getElementById("contactEmail").value = window.USER_EMAIL || "";
+      document.getElementById("changeForm").reset();
     } else {
-      errorEl.textContent = t("contact_error");
+      errorEl.textContent = res.detail || t("unknown_error");
       errorEl.style.display = "block";
     }
   };

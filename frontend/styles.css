@@ -291,6 +291,15 @@ select:focus {
   background: rgba(255, 255, 255, 0.1);
 }
 
+input[readonly] {
+  opacity: 0.55;
+  cursor: default;
+}
+input[readonly]:focus {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.07);
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
