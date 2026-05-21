@@ -14,7 +14,7 @@ const SLIDES = [
     type: "cover",
     title: "OSDMTools",
     subtitle: "Automatisert generering av OSDM fareDelivery-filer",
-    subnote: "for norske jernbaneoperatører",
+    subnote: "for europeiske jernbaneoperatører",
   },
 
   // ── 2. Bakgrunn ────────────────────────────────────────────────────────────

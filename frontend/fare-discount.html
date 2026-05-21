@@ -191,17 +191,17 @@
         </div>
       </div>
 
-      <!-- Rabattnavn + rabattprosent -->
-      <div style="display:grid; grid-template-columns:1fr 180px; gap:1.25rem; margin-top:1.25rem;">
-        <div>
-          <label data-i18n="label_discount_name">Rabattnavn</label>
-          <input id="discountName" type="text" placeholder="f.eks. DSB-rabatt 20%"
-            data-i18n-placeholder="placeholder_discount_name" />
-        </div>
-        <div>
+      <!-- Rabattprosent + rabattnavn -->
+      <div style="margin-top:1.25rem;">
+        <div style="max-width:180px;">
           <label data-i18n="label_discount_pct">Rabatt (%)</label>
           <input id="discountPct" type="number" min="1" max="99" step="1" placeholder="f.eks. 20"
             data-i18n-placeholder="placeholder_discount_pct" />
+        </div>
+        <div style="margin-top:1rem;">
+          <label data-i18n="label_discount_name">Rabattnavn</label>
+          <input id="discountName" type="text" placeholder="f.eks. DSB-rabatt 20%"
+            data-i18n-placeholder="placeholder_discount_name" />
         </div>
       </div>
 
