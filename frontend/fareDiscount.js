@@ -48,10 +48,11 @@ function removePair(idx) {
 
 function renderPairHtml(pair, idx) {
   const removable = stationPairs.length > 1;
+  const labels = idx === 0;
   return `
     <div class="pair-row" id="pairRow_${idx}">
       <div class="pair-col">
-        <label>Fra stasjon</label>
+        ${labels ? '<label>Fra stasjon</label>' : ''}
         <div class="picker-wrap" id="wrap_from_${idx}">
           <input id="input_from_${idx}" type="text" autocomplete="off"
             placeholder="Søk stasjonsnavn eller UIC…"
@@ -64,7 +65,7 @@ function renderPairHtml(pair, idx) {
         </div>
       </div>
       <div class="pair-col">
-        <label>Til stasjon</label>
+        ${labels ? '<label>Til stasjon</label>' : ''}
         <div class="picker-wrap" id="wrap_to_${idx}">
           <input id="input_to_${idx}" type="text" autocomplete="off"
             placeholder="Søk stasjonsnavn eller UIC…"
