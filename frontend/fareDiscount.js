@@ -53,29 +53,29 @@ function renderPairHtml(pair, idx) {
       <div class="pair-col">
         <div class="picker-wrap" id="wrap_from_${idx}">
           <input id="input_from_${idx}" type="text" autocomplete="off"
-            placeholder="Fra stasjon…"
+            placeholder="${t('placeholder_from_station')}"
             oninput="pickerFilter('from',${idx})"
             onkeydown="pickerKey(event,'from',${idx})"
             onfocus="pickerOpen('from',${idx})" />
           <button type="button" class="picker-clear-btn" id="clear_from_${idx}"
-            onclick="pickerClear('from',${idx})" title="Fjern">${SVG_X}</button>
+            onclick="pickerClear('from',${idx})" title="${t('title_remove')}">${SVG_X}</button>
           <div id="drop_from_${idx}" class="picker-dropdown" style="display:none;"></div>
         </div>
       </div>
       <div class="pair-col">
         <div class="picker-wrap" id="wrap_to_${idx}">
           <input id="input_to_${idx}" type="text" autocomplete="off"
-            placeholder="Til stasjon…"
+            placeholder="${t('placeholder_to_station')}"
             oninput="pickerFilter('to',${idx})"
             onkeydown="pickerKey(event,'to',${idx})"
             onfocus="pickerOpen('to',${idx})" />
           <button type="button" class="picker-clear-btn" id="clear_to_${idx}"
-            onclick="pickerClear('to',${idx})" title="Fjern">${SVG_X}</button>
+            onclick="pickerClear('to',${idx})" title="${t('title_remove')}">${SVG_X}</button>
           <div id="drop_to_${idx}" class="picker-dropdown" style="display:none;"></div>
         </div>
       </div>
       <button type="button" class="btn-remove-pair"
-        onclick="removePair(${idx})" title="Fjern stasjonpar"
+        onclick="removePair(${idx})" title="${t('title_remove_pair')}"
         ${!removable ? 'style="visibility:hidden;"' : ''}>${SVG_X}</button>
     </div>`;
 }
@@ -249,7 +249,7 @@ async function onFileChange() {
   fileInfo.style.display = "block";
   fileInfo.style.color = "";
 
-  result.innerText = "Leser fil…";
+  result.innerText = t("discount_reading");
 
   const fd = new FormData();
   fd.append("osdmFile", file);
@@ -258,7 +258,7 @@ async function onFileChange() {
     const r = await fetch("/fare-discount/parse", { method: "POST", body: fd });
     const res = await r.json();
     if (!r.ok) {
-      result.innerText = `❌ ${res.detail || "Ukjent feil"}`;
+      result.innerText = `❌ ${res.detail || t("unknown_error")}`;
       result.className = "status-error";
       return;
     }
@@ -267,7 +267,7 @@ async function onFileChange() {
     osdmServiceClasses = res.serviceClasses;
 
     document.getElementById("parsedInfo").innerText =
-      `DeliveryId: ${res.deliveryId} · ${res.stations.length} stasjoner`;
+      t("discount_parsed_info").replace("{id}", res.deliveryId).replace("{count}", res.stations.length);
 
     renderPairs();
     renderPassengerCheckboxes();
@@ -275,7 +275,7 @@ async function onFileChange() {
     result.innerText = "";
     stepForm.style.display = "block";
   } catch (err) {
-    result.innerText = `❌ Nettverksfeil: ${err.message}`;
+    result.innerText = `${t("err_network")}: ${err.message}`;
     result.className = "status-error";
   }
 }
@@ -374,7 +374,7 @@ function renderCarrierChips() {
   document.getElementById("carrierChips").innerHTML = selectedCarriers.map(c =>
     `<div class="picker-chip">
       <span>${carrierDisplayName(c)} <span style="color:rgba(255,255,255,0.4)">${c.code}</span></span>
-      <button type="button" onclick="carrierRemove('${c.code}')" title="Fjern">${SVG_X}</button>
+      <button type="button" onclick="carrierRemove('${c.code}')" title="${t('title_remove')}">${SVG_X}</button>
     </div>`
   ).join("");
 }
@@ -422,12 +422,12 @@ async function applyDiscount() {
     const completePairs   = stationPairs.filter(p => p.from && p.to);
     const incompletePairs = stationPairs.filter(p => (p.from && !p.to) || (!p.from && p.to));
     if (completePairs.length === 0) {
-      result.innerText = "❌ Velg minst ett stasjonspar (både fra og til).";
+      result.innerText = t("discount_error_no_pair");
       result.className = "status-error";
       return;
     }
     if (incompletePairs.length > 0) {
-      result.innerText = "❌ Alle stasjonspar må ha både fra- og til-stasjon valgt, eller fjernes.";
+      result.innerText = t("discount_error_incomplete_pair");
       result.className = "status-error";
       return;
     }
@@ -439,21 +439,21 @@ async function applyDiscount() {
 
   const discountName = document.getElementById("discountName").value.trim();
   if (!discountName) {
-    result.innerText = "❌ Skriv inn et rabattnavn.";
+    result.innerText = t("discount_error_no_name");
     result.className = "status-error";
     return;
   }
 
   const carrierMode = document.querySelector("input[name=carrierMode]:checked").value;
   if (carrierMode === "specific" && selectedCarriers.length === 0) {
-    result.innerText = "❌ Velg minst én transportør, eller velg «Ingen begrensning».";
+    result.innerText = t("discount_error_no_carrier");
     result.className = "status-error";
     return;
   }
 
   const discountPct = parseFloat(document.getElementById("discountPct").value);
   if (isNaN(discountPct) || discountPct <= 0 || discountPct >= 100) {
-    result.innerText = "❌ Rabattprosent må være mellom 1 og 99.";
+    result.innerText = t("discount_error_bad_pct");
     result.className = "status-error";
     return;
   }
@@ -462,12 +462,12 @@ async function applyDiscount() {
   const serviceClassIds = [...document.querySelectorAll("input[name=serviceClassId]:checked")].map(el => el.value);
 
   if (!passengerRefs.length || !serviceClassIds.length) {
-    result.innerText = "❌ Velg minst én passasjerkategori og én serviceklasse.";
+    result.innerText = t("discount_error_no_passenger");
     result.className = "status-error";
     return;
   }
 
-  result.innerText = "Bearbeider fil…";
+  result.innerText = t("discount_processing");
   result.className = "";
   document.getElementById("applyBtn").disabled = true;
 
@@ -485,7 +485,11 @@ async function applyDiscount() {
     const r = await fetch("/fare-discount/apply", { method: "POST", body: fd });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      result.innerText = `❌ ${err.detail || "Ukjent feil"}`;
+      const detail = err.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map(e => `${(e.loc || []).join(".")} – ${e.msg}`).join("; ")
+        : (detail || t("unknown_error"));
+      result.innerText = `❌ ${msg}`;
       result.className = "status-error";
       return;
     }
@@ -506,11 +510,11 @@ async function applyDiscount() {
     URL.revokeObjectURL(url);
 
     result.innerHTML =
-      `✅ ${fareCount} nye farer og ${priceCount} nye priser lagt til.<br>` +
-      `<span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Filen lastes ned som <em>${filename}</em></span>`;
+      t("discount_success").replace("{fares}", fareCount).replace("{prices}", priceCount) + "<br>" +
+      `<span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">${t("discount_success_filename").replace("{filename}", `<em>${filename}</em>`)}</span>`;
     result.className = "status-ok";
   } catch (err) {
-    result.innerText = `❌ Nettverksfeil: ${err.message}`;
+    result.innerText = `${t("err_network")}: ${err.message}`;
     result.className = "status-error";
   } finally {
     document.getElementById("applyBtn").disabled = false;

@@ -1911,8 +1911,7 @@ async def fare_discount_apply(
 
     log_event(request.session.get("user_email"), "discount_applied", detail={
         "deliveryId": delivery_id,
-        "fromUic": fromUic,
-        "toUic": toUic,
+        "stationPairs": station_pairs,
         "carrierCodes": list(carrierCodes),
         "discountPct": discountPct,
         "fareName": discountName,

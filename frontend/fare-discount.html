@@ -2,7 +2,7 @@
 <html lang="no" translate="no">
 <head>
   <meta charset="UTF-8" />
-  <title>OSDMTools – Legg til rabatt</title>
+  <title>OSDMTools – Legg til rabatt i OSDM</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
@@ -146,40 +146,41 @@
 
       <!-- Strekningsbegrensning -->
       <div>
-        <label style="display:block; margin-bottom:0.5rem;">Strekningsbegrensning</label>
+        <label style="display:block; margin-bottom:0.5rem;" data-i18n="label_route_constraint">Strekningsbegrensning</label>
         <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
           <label class="toggle-btn">
             <input type="radio" name="routeMode" value="none" checked onchange="onRouteModeChange()">
-            Ingen begrensning
+            <span data-i18n="opt_no_constraint">Ingen begrensning</span>
           </label>
           <label class="toggle-btn">
             <input type="radio" name="routeMode" value="specific" onchange="onRouteModeChange()">
-            Spesifikke strekninger
+            <span data-i18n="opt_specific_routes">Spesifikke strekninger</span>
           </label>
         </div>
         <div id="stationPickerWrap" style="display:none;">
           <div id="stationPairsContainer"></div>
-          <button type="button" class="btn-sm" onclick="addPair()" style="margin-top:0.5rem; margin-bottom:0;">+ Legg til stasjonpar</button>
+          <button type="button" class="btn-sm" onclick="addPair()" style="margin-top:0.5rem; margin-bottom:0;" data-i18n="btn_add_pair">+ Legg til stasjonpar</button>
         </div>
       </div>
 
       <!-- Transportørbegrensning -->
       <div style="margin-top:1.5rem;">
-        <label style="display:block; margin-bottom:0.5rem;">Transportørbegrensning</label>
+        <label style="display:block; margin-bottom:0.5rem;" data-i18n="label_carrier_constraint">Transportørbegrensning</label>
         <div style="display:flex; gap:0.75rem; margin-bottom:0.75rem; flex-wrap:wrap;">
           <label class="toggle-btn">
             <input type="radio" name="carrierMode" value="none" checked onchange="onCarrierModeChange()">
-            Ingen begrensning
+            <span data-i18n="opt_no_constraint">Ingen begrensning</span>
           </label>
           <label class="toggle-btn">
             <input type="radio" name="carrierMode" value="specific" onchange="onCarrierModeChange()">
-            Spesifikke transportører
+            <span data-i18n="opt_specific_carriers">Spesifikke transportører</span>
           </label>
         </div>
         <div id="carrierPickerWrap" style="display:none;">
           <div class="picker-wrap" id="wrapCarrier">
             <input id="inputCarrier" type="text" autocomplete="off"
               placeholder="Søk transportørnavn eller RICS-kode…"
+              data-i18n-placeholder="placeholder_carrier_search"
               oninput="carrierFilter()"
               onkeydown="carrierKey(event)"
               onfocus="carrierOpen()" />
@@ -192,30 +193,32 @@
       <!-- Rabattnavn + rabattprosent -->
       <div style="display:grid; grid-template-columns:1fr 180px; gap:1.25rem; margin-top:1.25rem;">
         <div>
-          <label>Rabattnavn</label>
-          <input id="discountName" type="text" placeholder="f.eks. DSB-rabatt 20%" />
+          <label data-i18n="label_discount_name">Rabattnavn</label>
+          <input id="discountName" type="text" placeholder="f.eks. DSB-rabatt 20%"
+            data-i18n-placeholder="placeholder_discount_name" />
         </div>
         <div>
-          <label>Rabatt (%)</label>
-          <input id="discountPct" type="number" min="1" max="99" step="1" placeholder="f.eks. 20" />
+          <label data-i18n="label_discount_pct">Rabatt (%)</label>
+          <input id="discountPct" type="number" min="1" max="99" step="1" placeholder="f.eks. 20"
+            data-i18n-placeholder="placeholder_discount_pct" />
         </div>
       </div>
 
       <!-- Passasjerkategorier -->
       <div style="margin-top:1.5rem;">
-        <label style="margin-bottom:0.5rem; display:block;">Passasjerkategorier</label>
+        <label style="margin-bottom:0.5rem; display:block;" data-i18n="label_passenger_categories">Passasjerkategorier</label>
         <div id="passengerCheckboxes" style="display:flex; flex-wrap:wrap; gap:0.5rem 1.25rem;"></div>
       </div>
 
       <!-- Serviceklasser -->
       <div style="margin-top:1.5rem;">
-        <label style="margin-bottom:0.5rem; display:block;">Serviceklasse</label>
+        <label style="margin-bottom:0.5rem; display:block;" data-i18n="label_service_class">Serviceklasse</label>
         <div id="serviceClassCheckboxes" style="display:flex; flex-wrap:wrap; gap:0.5rem 1.25rem;"></div>
       </div>
 
       <!-- Submit -->
       <div style="margin-top:2rem;">
-        <button id="applyBtn" onclick="applyDiscount()" class="btn-primary">Generer rabattert fil</button>
+        <button id="applyBtn" onclick="applyDiscount()" class="btn-primary" data-i18n="btn_apply_discount">Generer rabattert fil</button>
       </div>
     </div>
 
@@ -223,8 +226,8 @@
   </section>
 </div>
 
-<script src="/static/i18n.js?v=29"></script>
-<script src="/static/fareDiscount.js?v=13"></script>
+<script src="/static/i18n.js?v=30"></script>
+<script src="/static/fareDiscount.js?v=14"></script>
 <script>
   if (window.IS_ADMIN) {
     const el = document.getElementById("adminLink"); if (el) el.style.display = "";
