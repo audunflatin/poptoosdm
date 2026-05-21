@@ -5,13 +5,7 @@ import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./users.db")
 
-# Render setter postgresql:// men SQLAlchemy krever postgresql+psycopg2://
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
-
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
@@ -68,17 +62,12 @@ def _migrate():
     user_cols = {c["name"] for c in insp.get_columns("users")}
     log_cols  = {c["name"] for c in insp.get_columns("login_log")}
     with engine.begin() as conn:
-        if DATABASE_URL.startswith("sqlite"):
-            if "must_change_password" not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT 0"))
-            if "first_login_at" not in user_cols:
-                conn.execute(text("ALTER TABLE users ADD COLUMN first_login_at DATETIME"))
-            if "success" not in log_cols:
-                conn.execute(text("ALTER TABLE login_log ADD COLUMN success BOOLEAN DEFAULT 1"))
-        else:
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT FALSE"))
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_login_at TIMESTAMP"))
-            conn.execute(text("ALTER TABLE login_log ADD COLUMN IF NOT EXISTS success BOOLEAN DEFAULT TRUE"))
+        if "must_change_password" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT 0"))
+        if "first_login_at" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN first_login_at DATETIME"))
+        if "success" not in log_cols:
+            conn.execute(text("ALTER TABLE login_log ADD COLUMN success BOOLEAN DEFAULT 1"))
 
         # Normaliser eksisterende e-poster til lowercase (idempotent)
         conn.execute(text("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)"))

@@ -202,7 +202,6 @@ og oppdateres via JS — se `updateExchangeRateLabel()` i `app.js`.
 
 ## Kjente fallgruver
 
-- **`psycopg2-binary` bygges ikke lokalt** — brukes kun på Render (PostgreSQL). Lokalt kjøres SQLite, så installer med `grep -v psycopg2 requirements.txt | .venv/bin/pip install -r /dev/stdin` om du gjenskaper venv-en.
 - **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt. Dette er by design (stateless storage mellom requests, men state lever i server-prosessen).
 - **`import requests` var lenge glemt** i `main.py` (lagt til mai 2026). Valutahenting feilet stille.
 - **Priser rundes opp til nærmeste 0,20 EUR** (`math.ceil(eur / 0.20) * 0.20`). Dette er DRTF-krav.
