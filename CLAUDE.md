@@ -7,11 +7,8 @@ Rask referanse for Claude. Detaljert arkitektur og kontekst: `CONTEXT_PopToOSDM.
 ## Slik starter du lokalt
 
 ```bash
-python3.14 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
-
-> **OBS:** `.venv/bin/uvicorn` har feil interpreter-path (gammel disk-lokasjon).
-> Bruk alltid `python3.14 -m uvicorn` direkte.
 
 ---
 
@@ -205,7 +202,7 @@ og oppdateres via JS — se `updateExchangeRateLabel()` i `app.js`.
 
 ## Kjente fallgruver
 
-- **`.venv/bin/uvicorn` virker ikke** — interpreter-path er feil (prosjektet ble flyttet). Bruk `python3.14 -m uvicorn`.
+- **`psycopg2-binary` bygges ikke lokalt** — brukes kun på Render (PostgreSQL). Lokalt kjøres SQLite, så installer med `grep -v psycopg2 requirements.txt | .venv/bin/pip install -r /dev/stdin` om du gjenskaper venv-en.
 - **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt. Dette er by design (stateless storage mellom requests, men state lever i server-prosessen).
 - **`import requests` var lenge glemt** i `main.py` (lagt til mai 2026). Valutahenting feilet stille.
 - **Priser rundes opp til nærmeste 0,20 EUR** (`math.ceil(eur / 0.20) * 0.20`). Dette er DRTF-krav.
