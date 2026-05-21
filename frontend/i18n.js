@@ -34,7 +34,7 @@ const translations = {
 
     // Seksjon 1 – Input
     section_generate:    "Oppdater OSDM-priser",
-    generate_desc:       "Last opp avstandsfilen (TEN-CSV-format) og den eksisterende OSDM-filen. Prisene beregnes på nytt fra avstandsfilen og valutakursen, og du får en oppdatert OSDM-leveranse tilbake.",
+    generate_desc:       "Last opp avstandsfilen (TEN-CSV-format) og den eksisterende OSDM-filen. Prisene beregnes på nytt fra avstandsfilen og valutakursen, og du får en oppdatert OSDM-leveranse tilbake. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Bruk kontaktskjemaet i venstremenyen, så tar jeg meg av det for deg!",
     label_ten_csv:       "Avstandsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validert",
@@ -228,7 +228,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt",
     heading_fare_discount:    "Legg til rabatt",
-    fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare. Tjenesten håndterer filer opp til 100 MB.",
+    fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare. Tjenesten håndterer filer opp til 100 MB. Har du en større fil? Bruk kontaktskjemaet i venstremenyen, så tar jeg meg av det for deg!",
     label_osdm_file_discount: "OSDM JSON-fil",
   },
 
@@ -259,7 +259,7 @@ const translations = {
 
     // Seksjon 1 – Input
     section_generate:    "Update OSDM prices",
-    generate_desc:       "Upload the distance file (TEN-CSV format) and the existing OSDM file. Prices are recalculated from the distance file and exchange rate, and you get an updated OSDM delivery back.",
+    generate_desc:       "Upload the distance file (TEN-CSV format) and the existing OSDM file. Prices are recalculated from the distance file and exchange rate, and you get an updated OSDM delivery back. The service handles files up to 100 MB. Have a larger file? Use the contact form in the left menu, and I'll take care of it for you!",
     label_ten_csv:       "Distance file",
     label_osdm_val_file: "OSDM file (validation)",
     osdm_validated:      "OSDM validated",
@@ -453,7 +453,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Add discount",
     heading_fare_discount:    "Add discount",
-    fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare. The service handles files up to 100 MB.",
+    fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare. The service handles files up to 100 MB. Have a larger file? Use the contact form in the left menu, and I'll take care of it for you!",
     label_osdm_file_discount: "OSDM JSON file",
   },
 
@@ -484,7 +484,7 @@ const translations = {
 
     // Seksjon 1 – Eingabe
     section_generate:    "OSDM-Preise aktualisieren",
-    generate_desc:       "Laden Sie die Entfernungsdatei (TEN-CSV-Format) und die vorhandene OSDM-Datei hoch. Die Preise werden anhand der Entfernungsdatei und des Wechselkurses neu berechnet und Sie erhalten eine aktualisierte OSDM-Lieferung zurück.",
+    generate_desc:       "Laden Sie die Entfernungsdatei (TEN-CSV-Format) und die vorhandene OSDM-Datei hoch. Die Preise werden anhand der Entfernungsdatei und des Wechselkurses neu berechnet und Sie erhalten eine aktualisierte OSDM-Lieferung zurück. Der Dienst verarbeitet Dateien bis zu 100 MB. Haben Sie eine größere Datei? Nutzen Sie das Kontaktformular im linken Menü, und ich kümmere mich darum!",
     label_ten_csv:       "Entfernungsdatei",
     label_osdm_val_file: "OSDM-Datei (Validierung)",
     osdm_validated:      "OSDM validiert",
@@ -678,7 +678,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Rabatt hinzufügen",
     heading_fare_discount:    "Rabatt hinzufügen",
-    fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen. Der Dienst verarbeitet Dateien bis zu 100 MB.",
+    fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen. Der Dienst verarbeitet Dateien bis zu 100 MB. Haben Sie eine größere Datei? Nutzen Sie das Kontaktformular im linken Menü, und ich kümmere mich darum!",
     label_osdm_file_discount: "OSDM JSON-Datei",
   },
 
@@ -709,7 +709,7 @@ const translations = {
 
     // Seksjon 1 – Indata
     section_generate:    "Uppdatera OSDM-priser",
-    generate_desc:       "Ladda upp avståndsfilen (TEN-CSV-format) och den befintliga OSDM-filen. Priserna beräknas om utifrån avståndsfilen och växelkursen, och du får en uppdaterad OSDM-leverans tillbaka.",
+    generate_desc:       "Ladda upp avståndsfilen (TEN-CSV-format) och den befintliga OSDM-filen. Priserna beräknas om utifrån avståndsfilen och växelkursen, och du får en uppdaterad OSDM-leverans tillbaka. Tjänsten hanterar filer upp till 100 MB. Har du en större fil? Använd kontaktformuläret i vänstermenyn, så tar jag hand om det åt dig!",
     label_ten_csv:       "Avståndsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validerad",
@@ -903,7 +903,7 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt",
     heading_fare_discount:    "Lägg till rabatt",
-    fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa. Tjänsten hanterar filer upp till 100 MB.",
+    fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa. Tjänsten hanterar filer upp till 100 MB. Har du en större fil? Använd kontaktformuläret i vänstermenyn, så tar jag hand om det åt dig!",
     label_osdm_file_discount: "OSDM JSON-fil",
   },
 };

@@ -170,8 +170,8 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=13 |
-| `i18n.js` | v=28 |
-| `app.js` | v=14 |
+| `i18n.js` | v=29 |
+| `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=3 |
@@ -180,7 +180,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=28:
+HTML-filer som laster `i18n.js` med v=29:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `osdmtoexcel.html`
 

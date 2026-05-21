@@ -82,6 +82,14 @@ async function validateOsdm() {
   const fileInput = document.getElementById("osdmValFile");
   if (!fileInput.files.length) return;
 
+  const file = fileInput.files[0];
+  const maxMb = window.location.hostname === "localhost" ? 5000 : 100;
+  const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+  if (file.size > maxMb * 1024 * 1024) {
+    summaryEl.innerHTML = `<pre class="status-error">${t("file_too_large").replace("{size}", sizeMb).replace("{max}", maxMb)}</pre>`;
+    return;
+  }
+
   show("spinnerOsdmVal");
 
   const fd = new FormData();
