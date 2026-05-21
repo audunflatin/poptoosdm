@@ -1513,6 +1513,12 @@ def admin_log_page(request: Request):
         return RedirectResponse("/", status_code=302)
     return HTMLResponse(Path("frontend/admin-log.html").read_text(encoding="utf-8"))
 
+@app.get("/admin/presentation", response_class=HTMLResponse)
+def admin_presentation_page(request: Request):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        return RedirectResponse("/", status_code=302)
+    return HTMLResponse(Path("frontend/presentation.html").read_text(encoding="utf-8"))
+
 @app.get("/admin/event-log")
 def admin_event_log(
     request: Request,

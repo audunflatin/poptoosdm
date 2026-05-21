@@ -224,6 +224,7 @@ const translations = {
     change_pw_success:        "Passordet er oppdatert.",
     nav_admin_users:          "Brukere",
     nav_admin_log:            "Logg",
+    nav_admin_presentation:   "Presentasjon",
 
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt i OSDM",
@@ -478,6 +479,7 @@ const translations = {
     change_pw_success:        "Password updated.",
     nav_admin_users:          "Users",
     nav_admin_log:            "Log",
+    nav_admin_presentation:   "Presentation",
 
     // fare-discount.html
     nav_fare_discount:        "Add discount to OSDM",
@@ -732,6 +734,7 @@ const translations = {
     change_pw_success:        "Passwort wurde aktualisiert.",
     nav_admin_users:          "Benutzer",
     nav_admin_log:            "Protokoll",
+    nav_admin_presentation:   "Präsentation",
 
     // fare-discount.html
     nav_fare_discount:        "Rabatt zu OSDM hinzufügen",
@@ -986,6 +989,7 @@ const translations = {
     change_pw_success:        "Lösenordet har uppdaterats.",
     nav_admin_users:          "Användare",
     nav_admin_log:            "Logg",
+    nav_admin_presentation:   "Presentation",
 
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt i OSDM",

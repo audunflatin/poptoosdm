@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="no" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>OSDMTools – Presentasjon</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1b2a;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* ── Back button ── */
+    #backBtn {
+      position: fixed; top: 20px; left: 24px; z-index: 200;
+      color: rgba(255,255,255,0.3); text-decoration: none;
+      font-size: 0.78rem; letter-spacing: 0.03em;
+      display: flex; align-items: center; gap: 5px;
+      transition: color 0.15s;
+    }
+    #backBtn:hover { color: rgba(255,255,255,0.75); }
+
+    /* ── Slide viewport ── */
+    #slideWrap {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 72px 9vw 72px;
+    }
+
+    #slide {
+      width: 100%; max-width: 960px;
+    }
+
+    /* ── Animations ── */
+    .anim-forward {
+      animation: slideInRight 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    .anim-backward {
+      animation: slideInLeft 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(32px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-32px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Cover slide ── */
+    .slide-cover { text-align: center; }
+    .slide-cover .logo { margin-bottom: 3.5rem; opacity: 0.95; }
+    .slide-cover h1 {
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 800; line-height: 1.1; margin-bottom: 1.1rem;
+    }
+    .slide-cover .subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.45rem);
+      color: rgba(255,255,255,0.55); font-weight: 400;
+    }
+    .slide-cover .subnote {
+      font-size: 0.9rem; color: rgba(255,255,255,0.28);
+      margin-top: 0.6rem; letter-spacing: 0.04em;
+    }
+
+    /* ── Content slides ── */
+    .slide-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #ff5959;
+      margin-bottom: 1rem;
+    }
+    .slide-heading {
+      font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+      font-weight: 700; line-height: 1.2;
+      margin-bottom: 1.6rem;
+    }
+    .slide-rule {
+      width: 52px; height: 3px; background: #ff5959;
+      border-radius: 2px; margin-bottom: 2.4rem;
+    }
+
+    /* ── Bullet list ── */
+    .bullet-list {
+      list-style: none;
+      display: flex; flex-direction: column;
+      gap: clamp(0.75rem, 1.5vh, 1.1rem);
+    }
+    .bullet-list li {
+      display: flex; align-items: flex-start; gap: 1rem;
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      color: rgba(255,255,255,0.82); line-height: 1.45;
+    }
+    .bullet-list li::before {
+      content: ""; flex-shrink: 0;
+      width: 7px; height: 7px; background: #ff5959;
+      border-radius: 50%; margin-top: 0.45em;
+    }
+    .bullet-list li strong { color: white; }
+    .bullet-list li em { color: rgba(255,255,255,0.6); font-style: normal; font-size: 0.9em; }
+
+    /* ── Flow diagram ── */
+    .flow-row {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: nowrap; gap: 0;
+    }
+    .flow-box {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; padding: 0.9rem 1.1rem;
+      text-align: center;
+      font-size: clamp(0.8rem, 1.4vw, 1rem);
+      color: rgba(255,255,255,0.88); line-height: 1.4;
+      min-width: 110px;
+    }
+    .flow-box .step-num {
+      display: block; font-size: 0.65rem; color: #ff5959;
+      font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 0.3rem;
+    }
+    .flow-arrow {
+      color: rgba(255,89,89,0.6); font-size: 1.1rem;
+      padding: 0 0.5rem; flex-shrink: 0;
+    }
+
+    /* ── Two-column layout ── */
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;
+      align-items: start;
+    }
+
+    /* ── Stat highlight ── */
+    .stat-row {
+      display: flex; gap: 2rem; margin-top: 0.5rem; flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(255,89,89,0.08);
+      border: 1px solid rgba(255,89,89,0.2);
+      border-radius: 10px; padding: 1.1rem 1.6rem;
+      text-align: center; flex: 1; min-width: 120px;
+    }
+    .stat-box .stat-num {
+      display: block; font-size: 2.2rem; font-weight: 800; color: #ff5959;
+      line-height: 1;
+    }
+    .stat-box .stat-label {
+      display: block; font-size: 0.78rem; color: rgba(255,255,255,0.5);
+      margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    /* ── Tag chips ── */
+    .tag-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .tag {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 0.85rem; color: rgba(255,255,255,0.7);
+    }
+
+    /* ── Counter ── */
+    #counter {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.2); font-size: 0.78rem; letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+    #progressBar {
+      position: fixed; bottom: 0; left: 0; height: 2px;
+      background: #ff5959; transition: width 0.28s ease;
+    }
+
+    /* ── Nav arrows ── */
+    #navBtns {
+      position: fixed; bottom: 18px; right: 24px;
+      display: flex; gap: 6px;
+    }
+    .nav-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4); border-radius: 6px;
+      width: 34px; height: 34px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, color 0.12s; font-size: 0.8rem;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.14); color: white;
+    }
+    .nav-btn:disabled { opacity: 0.2; cursor: default; }
+
+    /* ── Key hint ── */
+    #keyHint {
+      position: fixed; bottom: 26px; left: 24px;
+      color: rgba(255,255,255,0.15); font-size: 0.68rem;
+      letter-spacing: 0.04em; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<a id="backBtn" href="/admin/users">← Admin</a>
+
+<div id="slideWrap">
+  <div id="slide"></div>
+</div>
+
+<div id="counter"></div>
+<div id="progressBar"></div>
+
+<div id="navBtns">
+  <button class="nav-btn" id="btnPrev" onclick="prevSlide()" title="Forrige (←)">◀</button>
+  <button class="nav-btn" id="btnNext" onclick="nextSlide()" title="Neste (→)">▶</button>
+</div>
+
+<div id="keyHint">← → &nbsp;·&nbsp; Home End &nbsp;·&nbsp; F = fullskjerm</div>
+
+<script src="/static/presentation.js?v=1"></script>
+</body>
+</html>
