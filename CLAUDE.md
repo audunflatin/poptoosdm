@@ -79,6 +79,14 @@ Ingenting skrives til disk under generering.
 | `POST /fare-discount/apply` | Legger til rabatterte farer, returnerer oppdatert OSDM-fil direkte |
 | `GET /fare-discount/rics` | Liste over alle RICS-transportørkoder (for dropdown) |
 
+### `/fare-discount/apply` – nøkkelparametere
+- `stationPairsJson` — JSON-streng: `[{fromCpId, toCpId, fromUic, toUic}, …]` (støtter mange par)
+- `discountName`, `discountPct` — navn og prosent (1–99)
+- `carrierCodes[]` — valgfri liste med RICS-koder (tom = ingen begrensning)
+- `passengerRefs[]`, `serviceClassIds[]` — hvilke kategorier og klasser rabatten gjelder
+
+Backend samler RC-er fra **alle** par og lager farer for samtlige kombinasjoner av RC × passasjerkategori × serviceklasse.
+
 ---
 
 ## OSDM-validering – typer advarsler
