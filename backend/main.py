@@ -1778,15 +1778,21 @@ async def fare_discount_apply(
     delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "")
     id_base = _id_base(data)
 
-    # Finn RCs som kobler CP-parene (begge retninger, alle par)
-    matching_rc_ids: set[str] = set()
-    for pair in station_pairs:
-        pair_cps = {pair["fromCpId"], pair["toCpId"]}
-        for rc in fs.get("regionalConstraints", []):
-            if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == pair_cps:
-                matching_rc_ids.add(rc["id"])
-    if not matching_rc_ids:
-        raise HTTPException(status_code=400, detail="Ingen regionalConstraints funnet for valgte stasjonspar")
+    # Finn relevante RC-er
+    if not station_pairs:
+        # Ingen strekningsbegrensning – bruk alle RC-er i filen
+        matching_rc_ids = {rc["id"] for rc in fs.get("regionalConstraints", [])}
+        if not matching_rc_ids:
+            raise HTTPException(status_code=400, detail="OSDM-filen inneholder ingen regionalConstraints")
+    else:
+        matching_rc_ids: set[str] = set()
+        for pair in station_pairs:
+            pair_cps = {pair["fromCpId"], pair["toCpId"]}
+            for rc in fs.get("regionalConstraints", []):
+                if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == pair_cps:
+                    matching_rc_ids.add(rc["id"])
+        if not matching_rc_ids:
+            raise HTTPException(status_code=400, detail="Ingen regionalConstraints funnet for valgte stasjonspar")
 
     # nameRef → liste av passengerConstraint-IDer
     nameref_to_pc_ids: dict[str, list[str]] = {}

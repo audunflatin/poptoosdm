@@ -48,14 +48,12 @@ function removePair(idx) {
 
 function renderPairHtml(pair, idx) {
   const removable = stationPairs.length > 1;
-  const labels = idx === 0;
   return `
     <div class="pair-row" id="pairRow_${idx}">
       <div class="pair-col">
-        ${labels ? '<label>Fra stasjon</label>' : ''}
         <div class="picker-wrap" id="wrap_from_${idx}">
           <input id="input_from_${idx}" type="text" autocomplete="off"
-            placeholder="Søk stasjonsnavn eller UIC…"
+            placeholder="Fra stasjon…"
             oninput="pickerFilter('from',${idx})"
             onkeydown="pickerKey(event,'from',${idx})"
             onfocus="pickerOpen('from',${idx})" />
@@ -65,10 +63,9 @@ function renderPairHtml(pair, idx) {
         </div>
       </div>
       <div class="pair-col">
-        ${labels ? '<label>Til stasjon</label>' : ''}
         <div class="picker-wrap" id="wrap_to_${idx}">
           <input id="input_to_${idx}" type="text" autocomplete="off"
-            placeholder="Søk stasjonsnavn eller UIC…"
+            placeholder="Til stasjon…"
             oninput="pickerFilter('to',${idx})"
             onkeydown="pickerKey(event,'to',${idx})"
             onfocus="pickerOpen('to',${idx})" />
@@ -203,6 +200,19 @@ document.addEventListener("click", e => {
 });
 
 // ---------------------------------------------------------------------------
+// Strekningsbegrensning
+// ---------------------------------------------------------------------------
+
+function onRouteModeChange() {
+  const specific = document.querySelector("input[name=routeMode]:checked")?.value === "specific";
+  document.getElementById("stationPickerWrap").style.display = specific ? "block" : "none";
+  if (!specific) {
+    stationPairs = [{ from: null, to: null }];
+    Object.keys(pairPS).forEach(k => delete pairPS[k]);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Fil-opplasting og parsing
 // ---------------------------------------------------------------------------
 
@@ -216,6 +226,8 @@ async function onFileChange() {
   stationPairs = [{ from: null, to: null }];
   Object.keys(pairPS).forEach(k => delete pairPS[k]);
   carrierClear();
+  const routeNone = document.querySelector("input[name=routeMode][value='none']");
+  if (routeNone) { routeNone.checked = true; onRouteModeChange(); }
   stepForm.style.display = "none";
   result.innerText = "";
   result.className = "";
@@ -403,18 +415,26 @@ function renderServiceClassCheckboxes() {
 async function applyDiscount() {
   const result = document.getElementById("discountResult");
 
-  const completePairs   = stationPairs.filter(p => p.from && p.to);
-  const incompletePairs = stationPairs.filter(p => (p.from && !p.to) || (!p.from && p.to));
+  const routeMode = document.querySelector("input[name=routeMode]:checked")?.value ?? "none";
+  let pairsPayload = [];
 
-  if (completePairs.length === 0) {
-    result.innerText = "❌ Velg minst ett stasjonspar (både fra og til).";
-    result.className = "status-error";
-    return;
-  }
-  if (incompletePairs.length > 0) {
-    result.innerText = "❌ Alle stasjonspar må ha både fra- og til-stasjon valgt, eller fjernes.";
-    result.className = "status-error";
-    return;
+  if (routeMode === "specific") {
+    const completePairs   = stationPairs.filter(p => p.from && p.to);
+    const incompletePairs = stationPairs.filter(p => (p.from && !p.to) || (!p.from && p.to));
+    if (completePairs.length === 0) {
+      result.innerText = "❌ Velg minst ett stasjonspar (både fra og til).";
+      result.className = "status-error";
+      return;
+    }
+    if (incompletePairs.length > 0) {
+      result.innerText = "❌ Alle stasjonspar må ha både fra- og til-stasjon valgt, eller fjernes.";
+      result.className = "status-error";
+      return;
+    }
+    pairsPayload = completePairs.map(p => ({
+      fromCpId: p.from.cp_id, toCpId: p.to.cp_id,
+      fromUic:  p.from.uic,   toUic:  p.to.uic,
+    }));
   }
 
   const discountName = document.getElementById("discountName").value.trim();
@@ -454,10 +474,7 @@ async function applyDiscount() {
   const file = document.getElementById("discountFile").files[0];
   const fd = new FormData();
   fd.append("osdmFile", file);
-  fd.append("stationPairsJson", JSON.stringify(completePairs.map(p => ({
-    fromCpId: p.from.cp_id, toCpId: p.to.cp_id,
-    fromUic:  p.from.uic,   toUic:  p.to.uic,
-  }))));
+  fd.append("stationPairsJson", JSON.stringify(pairsPayload));
   fd.append("discountName", discountName);
   fd.append("discountPct",  discountPct);
   selectedCarriers.forEach(c => fd.append("carrierCodes", c.code));
