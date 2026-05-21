@@ -1,11 +1,11 @@
 /* =============================================================================
-   Entur mørkt tema – inspirert av linje.entur.no
-   Farger: --colors-brand-blue: #181c56, --colors-brand-coral: #ff5959
+   Mørkt marineblå tema
+   Farger: --bg: #0d1b2a, --surface: #152535, --coral: #ff5959
    ============================================================================= */
 :root {
-  --bg:            #101235;   /* Entur brand blue – sidebakgrunn */
-  --surface:       #1e2468;   /* kortbakgrunn */
-  --surface-hover: #232876;
+  --bg:            #0d1b2a;   /* mørk marineblå – sidebakgrunn */
+  --surface:       #152535;   /* kortbakgrunn */
+  --surface-hover: #1d3047;
   --border:        rgba(255, 255, 255, 0.12);
   --border-focus:  rgba(255, 255, 255, 0.5);
 
@@ -87,7 +87,7 @@ body {
   width: 220px;
   height: calc(100vh - 8rem);
   overflow-y: auto;
-  background: #101235;
+  background: var(--bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -325,7 +325,7 @@ input[readonly]:focus {
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #1e2468 inset;
+  -webkit-box-shadow: 0 0 0px 1000px #152535 inset;
   -webkit-text-fill-color: #ffffff;
   transition: background-color 5000s ease-in-out 0s;
 }
@@ -344,36 +344,36 @@ input.flatpickr-input:hover {
 input.flatpickr-input:-webkit-autofill,
 input.flatpickr-input:-webkit-autofill:hover,
 input.flatpickr-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #1e2468 inset;
+  -webkit-box-shadow: 0 0 0px 1000px #152535 inset;
   -webkit-text-fill-color: #ffffff;
 }
 
 /* Flatpickr theme */
 .flatpickr-calendar {
-  background: #1e2468;
+  background: #152535;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   color: #ffffff;
 }
 .flatpickr-calendar.arrowTop:before { border-bottom-color: rgba(255, 255, 255, 0.12); }
-.flatpickr-calendar.arrowTop:after  { border-bottom-color: #1e2468; }
+.flatpickr-calendar.arrowTop:after  { border-bottom-color: #152535; }
 .flatpickr-months .flatpickr-month,
 .flatpickr-current-month,
 .flatpickr-current-month .flatpickr-monthDropdown-months,
 .flatpickr-weekdays,
 span.flatpickr-weekday {
-  background: #1e2468;
+  background: #152535;
   color: #ffffff;
   fill: #ffffff;
 }
 .flatpickr-current-month input.cur-year { color: #ffffff; }
-.flatpickr-current-month .flatpickr-monthDropdown-months { color: #ffffff; background: #1e2468; }
+.flatpickr-current-month .flatpickr-monthDropdown-months { color: #ffffff; background: #152535; }
 .flatpickr-innerContainer,
 .flatpickr-rContainer,
 .dayContainer,
 .flatpickr-days {
-  background: #1e2468;
+  background: #152535;
   border-color: rgba(255, 255, 255, 0.12);
 }
 .flatpickr-day {
@@ -382,7 +382,7 @@ span.flatpickr-weekday {
 }
 .flatpickr-day:hover,
 .flatpickr-day:focus {
-  background: #232876;
+  background: #1d3047;
   border-color: transparent;
   color: #ffffff;
 }
@@ -393,7 +393,7 @@ span.flatpickr-weekday {
   color: #ffffff;
 }
 .flatpickr-day.today { border-color: rgba(255, 89, 89, 0.6); }
-.flatpickr-day.today:hover { background: #232876; border-color: rgba(255, 89, 89, 0.6); }
+.flatpickr-day.today:hover { background: #1d3047; border-color: rgba(255, 89, 89, 0.6); }
 .flatpickr-day.prevMonthDay,
 .flatpickr-day.nextMonthDay,
 .flatpickr-day.flatpickr-disabled,
