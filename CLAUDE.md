@@ -175,7 +175,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=3 |
-| `fareDiscount.js` | v=8 |
+| `fareDiscount.js` | v=9 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.

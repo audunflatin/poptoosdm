@@ -1,10 +1,11 @@
 // fareDiscount.js – Legg til rabattert fare i OSDM JSON
 
-let osdmStations = [];            // [{cp_id, uic, name, country}]
-let osdmPassengers = [];          // [{nameRef, name, ids[]}]
-let osdmServiceClasses = [];      // [{id, name}]
+const SVG_X = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="1" x2="8" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="1" x2="1" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
-let ricsCodes = [];               // [{code, name, country}] – lastes én gang fra /fare-discount/rics
+let osdmStations      = [];
+let osdmPassengers    = [];
+let osdmServiceClasses = [];
+let ricsCodes         = [];
 
 function carrierDisplayName(c) {
   return c.country ? `${c.name} (${c.country})` : c.name;
@@ -19,25 +20,199 @@ async function fetchRicsCodes() {
 }
 fetchRicsCodes();
 
-// Picker-tilstand per retning
-const picker = {
-  from: { selected: null, activeIdx: -1, matches: [] },
-  to:   { selected: null, activeIdx: -1, matches: [] },
-};
+// ---------------------------------------------------------------------------
+// Stasjonspar – støtter mange par
+// ---------------------------------------------------------------------------
+
+let stationPairs = [];   // [{from: null|stationObj, to: null|stationObj}]
+const pairPS = {};       // "from_0", "to_0", … → {matches:[], activeIdx:-1}
+
+function ps(dir, idx) {
+  const k = `${dir}_${idx}`;
+  if (!pairPS[k]) pairPS[k] = { matches: [], activeIdx: -1 };
+  return pairPS[k];
+}
+
+function addPair() {
+  stationPairs.push({ from: null, to: null });
+  renderPairs();
+}
+
+function removePair(idx) {
+  if (stationPairs.length <= 1) return;
+  stationPairs.splice(idx, 1);
+  delete pairPS[`from_${idx}`];
+  delete pairPS[`to_${idx}`];
+  renderPairs();
+}
+
+function renderPairHtml(pair, idx) {
+  const removable = stationPairs.length > 1;
+  return `
+    <div class="pair-row" id="pairRow_${idx}">
+      <div>
+        <label>Fra stasjon</label>
+        <div class="picker-wrap" id="wrap_from_${idx}">
+          <input id="input_from_${idx}" type="text" autocomplete="off"
+            placeholder="Søk stasjonsnavn eller UIC…"
+            oninput="pickerFilter('from',${idx})"
+            onkeydown="pickerKey(event,'from',${idx})"
+            onfocus="pickerOpen('from',${idx})"
+            style="${pair.from ? 'display:none;' : ''}" />
+          <div id="drop_from_${idx}" class="picker-dropdown" style="display:none;"></div>
+          <div id="chip_from_${idx}" style="${pair.from ? '' : 'display:none;'}"></div>
+        </div>
+      </div>
+      <div>
+        <label>Til stasjon</label>
+        <div class="picker-wrap" id="wrap_to_${idx}">
+          <input id="input_to_${idx}" type="text" autocomplete="off"
+            placeholder="Søk stasjonsnavn eller UIC…"
+            oninput="pickerFilter('to',${idx})"
+            onkeydown="pickerKey(event,'to',${idx})"
+            onfocus="pickerOpen('to',${idx})"
+            style="${pair.to ? 'display:none;' : ''}" />
+          <div id="drop_to_${idx}" class="picker-dropdown" style="display:none;"></div>
+          <div id="chip_to_${idx}" style="${pair.to ? '' : 'display:none;'}"></div>
+        </div>
+      </div>
+      <button type="button" class="btn-remove-pair"
+        onclick="removePair(${idx})" title="Fjern stasjonpar"
+        ${!removable ? 'style="visibility:hidden;"' : ''}>${SVG_X}</button>
+    </div>`;
+}
+
+function renderPairs() {
+  const container = document.getElementById("stationPairsContainer");
+  if (!container) return;
+  container.innerHTML = stationPairs.map((pair, idx) => renderPairHtml(pair, idx)).join("");
+  stationPairs.forEach((pair, idx) => {
+    if (pair.from) renderChip("from", idx, pair.from);
+    if (pair.to)   renderChip("to",   idx, pair.to);
+  });
+}
+
+function renderChip(dir, idx, station) {
+  const chipEl = document.getElementById(`chip_${dir}_${idx}`);
+  if (!chipEl) return;
+  chipEl.innerHTML = `<div class="picker-chip">
+    <span>${station.name} <span style="color:rgba(255,255,255,0.4)">${station.uic}</span></span>
+    <button type="button" onclick="pickerClear('${dir}',${idx})" title="Fjern">${SVG_X}</button>
+  </div>`;
+  chipEl.style.display = "block";
+}
+
+function pickerFilter(dir, idx) {
+  const input = document.getElementById(`input_${dir}_${idx}`);
+  if (!input) return;
+  const q = input.value.trim().toLowerCase();
+  const matches = q.length === 0
+    ? osdmStations.slice(0, 80)
+    : osdmStations.filter(s => s.name.toLowerCase().includes(q) || s.uic.includes(q)).slice(0, 80);
+  ps(dir, idx).activeIdx = -1;
+  pickerRenderDrop(dir, idx, matches);
+}
+
+function pickerOpen(dir, idx) {
+  if (stationPairs[idx]?.[dir]) return;
+  pickerFilter(dir, idx);
+}
+
+function pickerRenderDrop(dir, idx, matches) {
+  const state = ps(dir, idx);
+  state.matches = matches;
+  const drop = document.getElementById(`drop_${dir}_${idx}`);
+  if (!drop) return;
+  if (matches.length === 0) { drop.style.display = "none"; return; }
+  drop.innerHTML = matches.map((s, i) =>
+    `<div class="picker-option" data-idx="${i}">
+      ${s.name}<span class="uic">${s.uic}</span>
+    </div>`
+  ).join("");
+  drop.querySelectorAll(".picker-option").forEach((el, i) => {
+    el.addEventListener("mousedown", e => { e.preventDefault(); pickerSelect(dir, idx, state.matches[i]); });
+    el.addEventListener("mouseover", () => pickerActivate(dir, idx, i));
+  });
+  drop.style.display = "block";
+}
+
+function pickerActivate(dir, idx, aIdx) {
+  ps(dir, idx).activeIdx = aIdx;
+  const drop = document.getElementById(`drop_${dir}_${idx}`);
+  if (!drop) return;
+  drop.querySelectorAll(".picker-option").forEach((el, i) =>
+    el.classList.toggle("active", i === aIdx)
+  );
+}
+
+function pickerKey(e, dir, idx) {
+  const drop = document.getElementById(`drop_${dir}_${idx}`);
+  if (!drop) return;
+  const opts = drop.querySelectorAll(".picker-option");
+  if (!opts.length) return;
+  const state = ps(dir, idx);
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    state.activeIdx = Math.min(state.activeIdx + 1, opts.length - 1);
+    pickerActivate(dir, idx, state.activeIdx);
+    opts[state.activeIdx]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    state.activeIdx = Math.max(state.activeIdx - 1, 0);
+    pickerActivate(dir, idx, state.activeIdx);
+    opts[state.activeIdx]?.scrollIntoView({ block: "nearest" });
+  } else if (e.key === "Enter" && state.activeIdx >= 0) {
+    e.preventDefault();
+    pickerSelect(dir, idx, state.matches[state.activeIdx]);
+  } else if (e.key === "Escape") {
+    drop.style.display = "none";
+  }
+}
+
+function pickerSelect(dir, idx, station) {
+  stationPairs[idx][dir] = station;
+  ps(dir, idx).activeIdx = -1;
+  const inputEl = document.getElementById(`input_${dir}_${idx}`);
+  if (inputEl) { inputEl.value = ""; inputEl.style.display = "none"; }
+  const dropEl = document.getElementById(`drop_${dir}_${idx}`);
+  if (dropEl) dropEl.style.display = "none";
+  renderChip(dir, idx, station);
+}
+
+function pickerClear(dir, idx) {
+  stationPairs[idx][dir] = null;
+  ps(dir, idx).activeIdx = -1;
+  const inputEl = document.getElementById(`input_${dir}_${idx}`);
+  if (inputEl) { inputEl.value = ""; inputEl.style.display = ""; }
+  const dropEl = document.getElementById(`drop_${dir}_${idx}`);
+  if (dropEl) dropEl.style.display = "none";
+  const chipEl = document.getElementById(`chip_${dir}_${idx}`);
+  if (chipEl) { chipEl.innerHTML = ""; chipEl.style.display = "none"; }
+}
+
+// Lukk dropdowns ved klikk utenfor
+document.addEventListener("click", e => {
+  document.querySelectorAll(".picker-wrap").forEach(wrap => {
+    if (!wrap.contains(e.target)) {
+      const drop = wrap.querySelector(".picker-dropdown");
+      if (drop) drop.style.display = "none";
+    }
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Fil-opplasting og parsing
 // ---------------------------------------------------------------------------
 
 async function onFileChange() {
-  const file = document.getElementById("discountFile").files[0];
-  const fileInfo  = document.getElementById("fileInfo");
-  const stepForm  = document.getElementById("stepForm");
-  const result    = document.getElementById("discountResult");
+  const file     = document.getElementById("discountFile").files[0];
+  const fileInfo = document.getElementById("fileInfo");
+  const stepForm = document.getElementById("stepForm");
+  const result   = document.getElementById("discountResult");
 
   osdmStations = [];
-  pickerClear("from");
-  pickerClear("to");
+  stationPairs = [{ from: null, to: null }];
+  Object.keys(pairPS).forEach(k => delete pairPS[k]);
   carrierClear();
   stepForm.style.display = "none";
   result.innerText = "";
@@ -61,7 +236,6 @@ async function onFileChange() {
   fileInfo.style.color = "";
 
   result.innerText = "Leser fil…";
-  result.className = "";
 
   const fd = new FormData();
   fd.append("osdmFile", file);
@@ -74,16 +248,16 @@ async function onFileChange() {
       result.className = "status-error";
       return;
     }
-    osdmStations = res.stations;
-    osdmPassengers = res.passengerConstraints;
+    osdmStations      = res.stations;
+    osdmPassengers    = res.passengerConstraints;
     osdmServiceClasses = res.serviceClasses;
 
     document.getElementById("parsedInfo").innerText =
       `DeliveryId: ${res.deliveryId} · ${res.stations.length} stasjoner`;
 
+    renderPairs();
     renderPassengerCheckboxes();
     renderServiceClassCheckboxes();
-
     result.innerText = "";
     stepForm.style.display = "block";
   } catch (err) {
@@ -93,136 +267,10 @@ async function onFileChange() {
 }
 
 // ---------------------------------------------------------------------------
-// Stasjonsvelger
-// ---------------------------------------------------------------------------
-
-function pickerFilter(dir) {
-  const input = document.getElementById(dir === "from" ? "inputFrom" : "inputTo");
-  const q = input.value.trim().toLowerCase();
-
-  if (picker[dir].selected) pickerClear(dir);
-
-  const matches = q.length === 0
-    ? osdmStations.slice(0, 80)
-    : osdmStations.filter(s =>
-        s.name.toLowerCase().includes(q) || s.uic.includes(q)
-      ).slice(0, 80);
-
-  picker[dir].activeIdx = -1;
-  pickerRenderDrop(dir, matches);
-}
-
-function pickerOpen(dir) {
-  if (picker[dir].selected) return;
-  pickerFilter(dir);
-}
-
-function pickerRenderDrop(dir, matches) {
-  picker[dir].matches = matches;
-  const drop = document.getElementById(dir === "from" ? "dropFrom" : "dropTo");
-  if (matches.length === 0) { drop.style.display = "none"; return; }
-
-  drop.innerHTML = matches.map((s, i) =>
-    `<div class="picker-option" data-idx="${i}">
-      ${s.name}<span class="uic">${s.uic}</span>
-    </div>`
-  ).join("");
-
-  drop.querySelectorAll(".picker-option").forEach((el, i) => {
-    el.addEventListener("mousedown", e => {
-      e.preventDefault();
-      pickerSelect(dir, picker[dir].matches[i]);
-    });
-    el.addEventListener("mouseover", () => pickerActivate(dir, i));
-  });
-
-  drop.style.display = "block";
-}
-
-function pickerActivate(dir, idx) {
-  picker[dir].activeIdx = idx;
-  const drop = document.getElementById(dir === "from" ? "dropFrom" : "dropTo");
-  drop.querySelectorAll(".picker-option").forEach((el, i) =>
-    el.classList.toggle("active", i === idx)
-  );
-}
-
-function pickerKey(e, dir) {
-  const drop = document.getElementById(dir === "from" ? "dropFrom" : "dropTo");
-  const opts = drop.querySelectorAll(".picker-option");
-  if (!opts.length) return;
-
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    picker[dir].activeIdx = Math.min(picker[dir].activeIdx + 1, opts.length - 1);
-    pickerActivate(dir, picker[dir].activeIdx);
-    opts[picker[dir].activeIdx]?.scrollIntoView({ block: "nearest" });
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    picker[dir].activeIdx = Math.max(picker[dir].activeIdx - 1, 0);
-    pickerActivate(dir, picker[dir].activeIdx);
-    opts[picker[dir].activeIdx]?.scrollIntoView({ block: "nearest" });
-  } else if (e.key === "Enter" && picker[dir].activeIdx >= 0) {
-    e.preventDefault();
-    pickerSelect(dir, picker[dir].matches[picker[dir].activeIdx]);
-  } else if (e.key === "Escape") {
-    drop.style.display = "none";
-  }
-}
-
-function pickerSelect(dir, station) {
-  picker[dir].selected = station;
-  picker[dir].activeIdx = -1;
-
-  const isFrom = dir === "from";
-  document.getElementById(isFrom ? "inputFrom" : "inputTo").value = "";
-  document.getElementById(isFrom ? "inputFrom" : "inputTo").style.display = "none";
-  document.getElementById(isFrom ? "dropFrom"  : "dropTo").style.display  = "none";
-  document.getElementById(isFrom ? "fromCpId"  : "toCpId").value   = station.cp_id;
-  document.getElementById(isFrom ? "fromUic"   : "toUic").value    = station.uic;
-
-  const chip = document.getElementById(isFrom ? "chipFrom" : "chipTo");
-  chip.innerHTML =
-    `<div class="picker-chip">
-      ${station.name} <span style="color:rgba(255,255,255,0.4)">${station.uic}</span>
-      <button onclick="pickerClear('${dir}')" title="Fjern">✕</button>
-    </div>`;
-  chip.style.display = "block";
-}
-
-function pickerClear(dir) {
-  picker[dir].selected = null;
-  picker[dir].activeIdx = -1;
-  const isFrom = dir === "from";
-  const input = document.getElementById(isFrom ? "inputFrom" : "inputTo");
-  input.value = "";
-  input.style.display = "";
-  document.getElementById(isFrom ? "dropFrom"  : "dropTo").style.display  = "none";
-  document.getElementById(isFrom ? "fromCpId"  : "toCpId").value   = "";
-  document.getElementById(isFrom ? "fromUic"   : "toUic").value    = "";
-  const chip = document.getElementById(isFrom ? "chipFrom" : "chipTo");
-  chip.innerHTML = "";
-  chip.style.display = "none";
-}
-
-// Lukk dropdowns ved klikk utenfor
-document.addEventListener("click", e => {
-  [
-    ["wrapFrom", "dropFrom"],
-    ["wrapTo",   "dropTo"],
-    ["wrapCarrier", "dropCarrier"],
-  ].forEach(([wrapId, dropId]) => {
-    const wrap = document.getElementById(wrapId);
-    if (wrap && !wrap.contains(e.target))
-      document.getElementById(dropId).style.display = "none";
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Transportørbegrensning – radio + flervalgs-picker
 // ---------------------------------------------------------------------------
 
-let selectedCarriers = [];  // [{code, name}]
+let selectedCarriers = [];
 const carrierPicker = { activeIdx: -1, matches: [] };
 
 function onCarrierModeChange() {
@@ -235,14 +283,15 @@ function carrierFilter() {
   const q = document.getElementById("inputCarrier").value.trim().toLowerCase();
   const matches = q.length === 0
     ? ricsCodes.slice(0, 60)
-    : ricsCodes.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q) || (c.country && c.country.toLowerCase().includes(q))).slice(0, 60);
+    : ricsCodes.filter(c =>
+        c.name.toLowerCase().includes(q) || c.code.includes(q) ||
+        (c.country && c.country.toLowerCase().includes(q))
+      ).slice(0, 60);
   carrierPicker.activeIdx = -1;
   carrierRenderDrop(matches);
 }
 
-function carrierOpen() {
-  carrierFilter();
-}
+function carrierOpen() { carrierFilter(); }
 
 function carrierRenderDrop(matches) {
   carrierPicker.matches = matches;
@@ -310,8 +359,8 @@ function carrierRemove(code) {
 function renderCarrierChips() {
   document.getElementById("carrierChips").innerHTML = selectedCarriers.map(c =>
     `<div class="picker-chip">
-      ${carrierDisplayName(c)} <span style="color:rgba(255,255,255,0.4)">${c.code}</span>
-      <button onclick="carrierRemove('${c.code}')" title="Fjern">✕</button>
+      <span>${carrierDisplayName(c)} <span style="color:rgba(255,255,255,0.4)">${c.code}</span></span>
+      <button type="button" onclick="carrierRemove('${c.code}')" title="Fjern">${SVG_X}</button>
     </div>`
   ).join("");
 }
@@ -328,8 +377,7 @@ function carrierClear() {
 }
 
 function renderPassengerCheckboxes() {
-  const wrap = document.getElementById("passengerCheckboxes");
-  wrap.innerHTML = osdmPassengers.map(pc =>
+  document.getElementById("passengerCheckboxes").innerHTML = osdmPassengers.map(pc =>
     `<label class="checkbox-label">
       <input type="checkbox" name="passengerRef" value="${pc.nameRef}" checked>
       ${pc.name}
@@ -338,8 +386,7 @@ function renderPassengerCheckboxes() {
 }
 
 function renderServiceClassCheckboxes() {
-  const wrap = document.getElementById("serviceClassCheckboxes");
-  wrap.innerHTML = osdmServiceClasses.map(sc =>
+  document.getElementById("serviceClassCheckboxes").innerHTML = osdmServiceClasses.map(sc =>
     `<label class="checkbox-label">
       <input type="checkbox" name="serviceClassId" value="${sc.id}" checked>
       ${sc.name}
@@ -352,14 +399,18 @@ function renderServiceClassCheckboxes() {
 // ---------------------------------------------------------------------------
 
 async function applyDiscount() {
-  const result  = document.getElementById("discountResult");
-  const fromCpId = document.getElementById("fromCpId").value;
-  const toCpId   = document.getElementById("toCpId").value;
-  const fromUic  = document.getElementById("fromUic").value;
-  const toUic    = document.getElementById("toUic").value;
+  const result = document.getElementById("discountResult");
 
-  if (!fromCpId || !toCpId) {
-    result.innerText = "❌ Velg både fra- og til-stasjon.";
+  const completePairs   = stationPairs.filter(p => p.from && p.to);
+  const incompletePairs = stationPairs.filter(p => (p.from && !p.to) || (!p.from && p.to));
+
+  if (completePairs.length === 0) {
+    result.innerText = "❌ Velg minst ett stasjonspar (både fra og til).";
+    result.className = "status-error";
+    return;
+  }
+  if (incompletePairs.length > 0) {
+    result.innerText = "❌ Alle stasjonspar må ha både fra- og til-stasjon valgt, eller fjernes.";
     result.className = "status-error";
     return;
   }
@@ -385,10 +436,8 @@ async function applyDiscount() {
     return;
   }
 
-  const passengerRefs = [...document.querySelectorAll("input[name=passengerRef]:checked")]
-    .map(el => el.value);
-  const serviceClassIds = [...document.querySelectorAll("input[name=serviceClassId]:checked")]
-    .map(el => el.value);
+  const passengerRefs   = [...document.querySelectorAll("input[name=passengerRef]:checked")].map(el => el.value);
+  const serviceClassIds = [...document.querySelectorAll("input[name=serviceClassId]:checked")].map(el => el.value);
 
   if (!passengerRefs.length || !serviceClassIds.length) {
     result.innerText = "❌ Velg minst én passasjerkategori og én serviceklasse.";
@@ -403,14 +452,14 @@ async function applyDiscount() {
   const file = document.getElementById("discountFile").files[0];
   const fd = new FormData();
   fd.append("osdmFile", file);
-  fd.append("fromCpId", fromCpId);
-  fd.append("toCpId", toCpId);
-  fd.append("fromUic", fromUic);
-  fd.append("toUic", toUic);
+  fd.append("stationPairsJson", JSON.stringify(completePairs.map(p => ({
+    fromCpId: p.from.cp_id, toCpId: p.to.cp_id,
+    fromUic:  p.from.uic,   toUic:  p.to.uic,
+  }))));
   fd.append("discountName", discountName);
-  fd.append("discountPct", discountPct);
+  fd.append("discountPct",  discountPct);
   selectedCarriers.forEach(c => fd.append("carrierCodes", c.code));
-  passengerRefs.forEach(r => fd.append("passengerRefs", r));
+  passengerRefs.forEach(r   => fd.append("passengerRefs", r));
   serviceClassIds.forEach(s => fd.append("serviceClassIds", s));
 
   try {

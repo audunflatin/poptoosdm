@@ -1755,10 +1755,7 @@ def _new_fare_id() -> str:
 async def fare_discount_apply(
     request: Request,
     osdmFile: UploadFile = File(...),
-    fromCpId: str = Form(...),
-    toCpId: str = Form(...),
-    fromUic: str = Form(...),
-    toUic: str = Form(...),
+    stationPairsJson: str = Form(...),
     discountName: str = Form(...),
     carrierCodes: list[str] = Form(default=[]),
     discountPct: float = Form(...),
@@ -1772,18 +1769,24 @@ async def fare_discount_apply(
     except Exception:
         raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
 
+    try:
+        station_pairs = json.loads(stationPairsJson)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Ugyldig stationPairsJson")
+
     fs = data.get("fareDelivery", {}).get("fareStructure", {})
     delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "")
     id_base = _id_base(data)
 
-    # Finn RCs som kobler begge CP-ene (begge retninger)
-    target_cps = {fromCpId, toCpId}
-    matching_rc_ids = {
-        rc["id"] for rc in fs.get("regionalConstraints", [])
-        if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == target_cps
-    }
+    # Finn RCs som kobler CP-parene (begge retninger, alle par)
+    matching_rc_ids: set[str] = set()
+    for pair in station_pairs:
+        pair_cps = {pair["fromCpId"], pair["toCpId"]}
+        for rc in fs.get("regionalConstraints", []):
+            if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == pair_cps:
+                matching_rc_ids.add(rc["id"])
     if not matching_rc_ids:
-        raise HTTPException(status_code=400, detail="Ingen regionalConstraints funnet for valgt stasjonspar")
+        raise HTTPException(status_code=400, detail="Ingen regionalConstraints funnet for valgte stasjonspar")
 
     # nameRef → liste av passengerConstraint-IDer
     nameref_to_pc_ids: dict[str, list[str]] = {}
