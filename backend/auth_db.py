@@ -42,6 +42,17 @@ class LoginLog(Base):
     success = Column(Boolean, default=True, nullable=False)
 
 
+class EventLog(Base):
+    __tablename__ = "event_log"
+
+    id = Column(Integer, primary_key=True)
+    logged_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    user_email = Column(String, nullable=True, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False, default="ok")  # "ok" | "error"
+    detail = Column(String, nullable=True)  # JSON-streng
+
+
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
 

@@ -184,6 +184,8 @@ const translations = {
     nav_contact:              "Kontakt",
     nav_change_password:      "Endre passord",
     change_pw_success:        "Passordet er oppdatert.",
+    nav_admin_users:          "Brukere",
+    nav_admin_log:            "Logg",
 
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt",
@@ -369,6 +371,8 @@ const translations = {
     nav_contact:              "Contact",
     nav_change_password:      "Change password",
     change_pw_success:        "Password updated.",
+    nav_admin_users:          "Users",
+    nav_admin_log:            "Log",
 
     // fare-discount.html
     nav_fare_discount:        "Add discount",
@@ -554,6 +558,8 @@ const translations = {
     nav_contact:              "Kontakt",
     nav_change_password:      "Passwort ändern",
     change_pw_success:        "Passwort wurde aktualisiert.",
+    nav_admin_users:          "Benutzer",
+    nav_admin_log:            "Protokoll",
 
     // fare-discount.html
     nav_fare_discount:        "Rabatt hinzufügen",
@@ -739,6 +745,8 @@ const translations = {
     nav_contact:              "Kontakt",
     nav_change_password:      "Ändra lösenord",
     change_pw_success:        "Lösenordet har uppdaterats.",
+    nav_admin_users:          "Användare",
+    nav_admin_log:            "Logg",
 
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt",

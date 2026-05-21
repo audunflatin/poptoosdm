@@ -329,6 +329,8 @@ function renderExampleTable(data){
 if (window.IS_ADMIN) {
   const adminLink = document.getElementById("adminLink");
   if (adminLink) adminLink.style.display = "";
+  const adminSubmenu = document.getElementById("adminSubmenu");
+  if (adminSubmenu) adminSubmenu.style.display = "flex";
 }
 
 ["datasetId", "exchangeRate"].forEach(id => {

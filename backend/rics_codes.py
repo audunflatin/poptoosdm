@@ -2390,3 +2390,28 @@ RICS_CODES = {
     '9974': 'ASTOC Association of Swedish Train Operating Companies Sveriges Tägoperatorer Service AB',  # Sweden
     '9997': 'Mitteldeutscher Verkehrsverbund GmbH (MDV)',  # Germany
 }
+
+import re as _re, os as _os
+
+def _build_countries():
+    countries = {}
+    try:
+        src = _os.path.abspath(__file__)
+        if src.endswith('.pyc'):
+            src = src[:-1]
+        with open(src, 'r', encoding='utf-8') as _f:
+            for line in _f:
+                m = _re.match(r"\s+'(\d+)':\s+'.*',\s+#\s+(.*)", line)
+                if m:
+                    code    = m.group(1)
+                    comment = m.group(2).strip()
+                    if ' | EXPIRED' in comment:
+                        comment = comment.split(' | EXPIRED')[0].strip()
+                    elif comment.upper().startswith('EXPIRED'):
+                        comment = ''
+                    countries[code] = comment
+    except Exception:
+        pass
+    return countries
+
+RICS_COUNTRIES = _build_countries()

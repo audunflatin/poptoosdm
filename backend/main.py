@@ -14,7 +14,7 @@ import base64
 import threading
 import uuid
 
-from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, init_db
+from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
 from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email
@@ -101,6 +101,31 @@ def require_admin(request: Request):
         raise HTTPException(status_code=403, detail="Ikke administrator")
 
 # ---------------------------------------------------------------------
+# Event logging
+# ---------------------------------------------------------------------
+
+def log_event(
+    user_email: str | None,
+    event_type: str,
+    status: str = "ok",
+    detail: dict | None = None,
+):
+    try:
+        db = SessionLocal()
+        try:
+            db.add(EventLog(
+                user_email=user_email,
+                event_type=event_type,
+                status=status,
+                detail=json.dumps(detail, ensure_ascii=False) if detail else None,
+            ))
+            db.commit()
+        finally:
+            db.close()
+    except Exception:
+        pass  # Logging skal aldri bryte en forespørsel
+
+# ---------------------------------------------------------------------
 # Root / GUI
 # ---------------------------------------------------------------------
 
@@ -141,11 +166,13 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
         if not user or not user.is_active or not verify_password(password, user.password_hash):
             db.add(LoginLog(email=email, ip_address=ip, success=False))
             db.commit()
+            log_event(email, "login_failed", "error", {"ip": ip})
             raise HTTPException(status_code=401, detail="Ugyldig innlogging")
         _rate_limit_reset(ip)
         request.session["user_email"] = user.email
         request.session["is_admin"] = user.is_admin
         db.add(LoginLog(email=user.email, ip_address=ip, success=True))
+        log_event(user.email, "login_success", "ok", {"ip": ip})
         if user.must_change_password:
             db.commit()
             return RedirectResponse("/change-password", status_code=302)
@@ -158,7 +185,9 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
 
 @app.get("/logout")
 def logout(request: Request):
+    email = request.session.get("user_email")
     request.session.clear()
+    log_event(email, "logout")
     return RedirectResponse("/", status_code=302)
 
 # ---------------------------------------------------------------------
@@ -196,6 +225,7 @@ def change_password(
         db.commit()
     finally:
         db.close()
+    log_event(email, "password_changed")
     return {"ok": True}
 
 # ---------------------------------------------------------------------
@@ -266,6 +296,7 @@ def reset_password(token: str, password: str = Form(...), confirm: str = Form(..
         db.commit()
     finally:
         db.close()
+    log_event(rt.email, "password_changed", detail={"via": "reset_link"})
     return {"ok": True}
 
 # ---------------------------------------------------------------------
@@ -780,6 +811,14 @@ def generate_osdm(
     global OSDM_OUT
     OSDM_OUT = {"filename": filename, "content": content}
 
+    log_event(request.session.get("user_email"), "osdm_generated", detail={
+        "deliveryId": datasetId,
+        "environment": environment,
+        "validFrom": validFrom,
+        "validTo": validTo,
+        "priceCount": len(new_prices),
+    })
+
     return {
         "step": "OSDM generation",
         "ok": True,
@@ -815,6 +854,8 @@ def excel_from_generated(request: Request):
     job_id = str(uuid.uuid4())
     XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
 
+    caller_email = request.session.get("user_email")
+
     def run():
         try:
             xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
@@ -822,9 +863,11 @@ def excel_from_generated(request: Request):
             env_suffix = "test" if delivery.get("usage") == "TEST_ONLY" else "prod"
             filename   = f"{delivery.get('fareProvider', '')}_{delivery.get('deliveryId', 'osdm')}_{env_suffix}.xlsx"
             XLSX_JOBS[job_id].update({"status": "done", "result": xlsx_bytes, "filename": filename, "rows": row_count, "percent": 100})
+            log_event(caller_email, "excel_exported", detail={"filename": filename, "rows": row_count})
         except Exception as e:
             import traceback; traceback.print_exc()
             XLSX_JOBS[job_id].update({"status": "error", "error": str(e)})
+            log_event(caller_email, "excel_exported", "error", {"error": str(e)})
 
     threading.Thread(target=run, daemon=True).start()
     return {"jobId": job_id}
@@ -883,6 +926,9 @@ def admin_add_user(request: Request, email: str = Form(...), is_admin: str = For
         db.commit()
     finally:
         db.close()
+    log_event(request.session.get("user_email"), "admin_user_created", detail={
+        "email": email, "is_admin": is_admin.lower() == "true",
+    })
     try:
         send_welcome_email(email, password)
         return {"ok": True, "email": email, "email_sent": True}
@@ -905,6 +951,7 @@ def admin_reset_password(request: Request, email: str = Form(...)):
         db.commit()
     finally:
         db.close()
+    log_event(request.session.get("user_email"), "admin_password_reset", detail={"email": email})
     try:
         send_reset_email(email, new_password)
         return {"ok": True, "email": email, "email_sent": True}
@@ -925,6 +972,9 @@ def admin_set_admin(request: Request, email: str = Form(...), is_admin: str = Fo
             raise HTTPException(status_code=404, detail="Bruker ikke funnet")
         user.is_admin = (is_admin.lower() == "true")
         db.commit()
+        log_event(request.session.get("user_email"), "admin_set_admin", detail={
+            "email": email, "is_admin": user.is_admin,
+        })
         return {"ok": True, "email": email, "is_admin": user.is_admin}
     finally:
         db.close()
@@ -942,6 +992,7 @@ def delete_user(request: Request, email: str = Form(...)):
             raise HTTPException(status_code=404, detail="Bruker ikke funnet")
         db.delete(user)
         db.commit()
+        log_event(request.session.get("user_email"), "admin_user_deleted", detail={"email": email})
         return {"ok": True, "deleted": email}
     finally:
         db.close()
@@ -1004,7 +1055,7 @@ def suffix(id_str: str) -> str:
     return id_str
 
 
-from backend.rics_codes import RICS_CODES as RICS_CARRIER_NAMES
+from backend.rics_codes import RICS_CODES as RICS_CARRIER_NAMES, RICS_COUNTRIES
 
 
 def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> bytes:
@@ -1376,6 +1427,7 @@ async def osdm_to_csv(
     job_id = str(uuid.uuid4())
     print(f"Starter jobb: {job_id}")
     XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
+    caller_email = request.session.get("user_email")
 
     def run():
         try:
@@ -1392,12 +1444,14 @@ async def osdm_to_csv(
             XLSX_JOBS[job_id]["filename"] = filename
             XLSX_JOBS[job_id]["status"] = "done"
             XLSX_JOBS[job_id]["percent"] = 100
+            log_event(caller_email, "excel_exported", detail={"filename": filename, "rows": row_count})
         except Exception as e:
             print(f"run() feilet: {e}")
             import traceback
             traceback.print_exc()
             XLSX_JOBS[job_id]["status"] = "error"
             XLSX_JOBS[job_id]["error"] = str(e)
+            log_event(caller_email, "excel_exported", "error", {"error": str(e)})
             
     threading.Thread(target=run, daemon=True).start()
     print(f"Returnerer jobId: {job_id}")
@@ -1436,10 +1490,74 @@ def osdm_to_csv_download(job_id: str, request: Request):
     )
 
 @app.get("/admin", response_class=HTMLResponse)
-def admin_page(request: Request):
+def admin_redirect(request: Request):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        return RedirectResponse("/", status_code=302)
+    return RedirectResponse("/admin/users", status_code=302)
+
+@app.get("/admin/users", response_class=HTMLResponse)
+def admin_users_page(request: Request):
     if "user_email" not in request.session or not request.session.get("is_admin"):
         return RedirectResponse("/", status_code=302)
     return HTMLResponse(Path("frontend/admin.html").read_text(encoding="utf-8"))
+
+@app.get("/admin/log", response_class=HTMLResponse)
+def admin_log_page(request: Request):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        return RedirectResponse("/", status_code=302)
+    return HTMLResponse(Path("frontend/admin-log.html").read_text(encoding="utf-8"))
+
+@app.get("/admin/event-log")
+def admin_event_log(
+    request: Request,
+    search: str = "",
+    date_from: str = "",
+    date_to: str = "",
+    event_type: str = "",
+    status: str = "",
+    page: int = 1,
+    page_size: int = 50,
+):
+    require_admin(request)
+    db = SessionLocal()
+    try:
+        q = db.query(EventLog)
+        if search:
+            q = q.filter(EventLog.user_email.ilike(f"%{search}%"))
+        if date_from:
+            q = q.filter(EventLog.logged_at >= date_from)
+        if date_to:
+            dt_to = datetime.fromisoformat(date_to) + timedelta(days=1)
+            q = q.filter(EventLog.logged_at < dt_to)
+        if event_type:
+            q = q.filter(EventLog.event_type == event_type)
+        if status:
+            q = q.filter(EventLog.status == status)
+        total = q.count()
+        entries = (
+            q.order_by(EventLog.logged_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "entries": [
+                {
+                    "id": e.id,
+                    "logged_at": e.logged_at.isoformat() if e.logged_at else None,
+                    "user_email": e.user_email or "—",
+                    "event_type": e.event_type,
+                    "status": e.status or "ok",
+                    "detail": json.loads(e.detail) if e.detail else {},
+                }
+                for e in entries
+            ],
+        }
+    finally:
+        db.close()
 
 @app.get("/kontakt", response_class=HTMLResponse)
 @app.head("/kontakt")
@@ -1476,15 +1594,20 @@ def contact(
 ):
     try:
         send_contact_email(name, email, message)
+        log_event(email, "contact_sent", detail={"name": name})
         return {"ok": True}
     except Exception as exc:
         logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
+        log_event(email, "contact_sent", "error", {"name": name})
         return {"ok": False}
 
 @app.get("/fare-discount/rics")
 def fare_discount_rics(request: Request):
     require_login(request)
-    return [{"code": code, "name": name} for code, name in sorted(RICS_CARRIER_NAMES.items(), key=lambda x: x[1])]
+    return [
+        {"code": code, "name": name, "country": RICS_COUNTRIES.get(code, "")}
+        for code, name in sorted(RICS_CARRIER_NAMES.items(), key=lambda x: x[1])
+    ]
 
 
 @app.get("/fare-discount", response_class=HTMLResponse)
@@ -1770,6 +1893,17 @@ async def fare_discount_apply(
     fs["texts"].append(new_text)
     fs["prices"].extend(new_prices)
     fs["fares"].extend(new_fares)
+
+    log_event(request.session.get("user_email"), "discount_applied", detail={
+        "deliveryId": delivery_id,
+        "fromUic": fromUic,
+        "toUic": toUic,
+        "carrierCodes": list(carrierCodes),
+        "discountPct": discountPct,
+        "fareName": discountName,
+        "fareCount": len(new_fares),
+        "priceCount": len(new_prices),
+    })
 
     filename = f"fareDelivery_{id_base.rstrip('_')}_discount.json"
     return Response(

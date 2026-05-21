@@ -4,7 +4,11 @@ let osdmStations = [];            // [{cp_id, uic, name, country}]
 let osdmPassengers = [];          // [{nameRef, name, ids[]}]
 let osdmServiceClasses = [];      // [{id, name}]
 
-let ricsCodes = [];               // [{code, name}] – lastes én gang fra /fare-discount/rics
+let ricsCodes = [];               // [{code, name, country}] – lastes én gang fra /fare-discount/rics
+
+function carrierDisplayName(c) {
+  return c.country ? `${c.name} (${c.country})` : c.name;
+}
 
 async function fetchRicsCodes() {
   if (ricsCodes.length) return;
@@ -231,7 +235,7 @@ function carrierFilter() {
   const q = document.getElementById("inputCarrier").value.trim().toLowerCase();
   const matches = q.length === 0
     ? ricsCodes.slice(0, 60)
-    : ricsCodes.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q)).slice(0, 60);
+    : ricsCodes.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q) || (c.country && c.country.toLowerCase().includes(q))).slice(0, 60);
   carrierPicker.activeIdx = -1;
   carrierRenderDrop(matches);
 }
@@ -246,7 +250,7 @@ function carrierRenderDrop(matches) {
   if (!matches.length) { drop.style.display = "none"; return; }
   drop.innerHTML = matches.map((c, i) =>
     `<div class="picker-option" data-idx="${i}">
-      ${c.name}<span class="uic">${c.code}</span>
+      ${carrierDisplayName(c)}<span class="uic">${c.code}</span>
     </div>`
   ).join("");
   drop.querySelectorAll(".picker-option").forEach((el, i) => {
@@ -306,7 +310,7 @@ function carrierRemove(code) {
 function renderCarrierChips() {
   document.getElementById("carrierChips").innerHTML = selectedCarriers.map(c =>
     `<div class="picker-chip">
-      ${c.name} <span style="color:rgba(255,255,255,0.4)">${c.code}</span>
+      ${carrierDisplayName(c)} <span style="color:rgba(255,255,255,0.4)">${c.code}</span>
       <button onclick="carrierRemove('${c.code}')" title="Fjern">✕</button>
     </div>`
   ).join("");

@@ -137,6 +137,28 @@ body {
   box-shadow: inset 3px 0 0 var(--coral);
 }
 
+.sidebar-sublink {
+  display: block;
+  padding: 0.45rem 0.75rem 0.45rem 1.75rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: color 0.15s, background 0.15s;
+}
+
+.sidebar-sublink:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.07);
+}
+
+.sidebar-sublink.active {
+  color: var(--text);
+  background: var(--coral-light);
+  box-shadow: inset 3px 0 0 var(--coral);
+}
+
 /* Separator i lang-selector for å skille logg-ut */
 .lang-sep {
   color: rgba(255,255,255,0.2);

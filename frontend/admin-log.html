@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="no" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <title>OSDMTools – Aktivitetslogg</title>
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
+
+  <link rel="stylesheet" href="/static/styles.css?v=13">
+  <style>
+    input[type="date"].log-date {
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 0.95rem;
+      color-scheme: dark;
+    }
+    input[type="date"].log-date::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
+    select.log-select {
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 0.95rem;
+      color-scheme: dark;
+    }
+    .badge-ok    { color: #5ac39a; font-weight: 700; font-size: 0.8rem; }
+    .badge-error { color: #ff5959; font-weight: 700; font-size: 0.8rem; }
+    .detail-text { color: rgba(255,255,255,0.55); font-size: 0.82rem; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <a href="/" class="sidebar-brand"><span class="sidebar-to">OSDM</span>Tools</a>
+  <div class="sidebar-nav">
+    <a href="/" class="sidebar-link" data-i18n="nav_generate">Oppdater OSDM-priser</a>
+    <a href="/osdmtoexcel" class="sidebar-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
+    <a href="/fare-discount" class="sidebar-link" data-i18n="nav_fare_discount">Legg til rabatt</a>
+    <a href="/kontakt" class="sidebar-link" data-i18n="nav_contact">Kontakt</a>
+    <a href="/endre-passord" class="sidebar-link" data-i18n="nav_change_password">Endre passord</a>
+    <a href="/admin/users" class="sidebar-link" data-i18n="nav_admin">Admin</a>
+    <div style="display:flex; flex-direction:column; gap:1px;">
+      <a href="/admin/users" class="sidebar-sublink" data-i18n="nav_admin_users">Brukere</a>
+      <a href="/admin/log" class="sidebar-sublink active" data-i18n="nav_admin_log">Logg</a>
+    </div>
+  </div>
+</nav>
+
+<header class="app-header">
+  <span class="lang-selector">
+    <button class="lang-btn" data-lang="no" onclick="setLanguage('no')" title="Norsk">🇳🇴</button>
+    <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" title="English">🇬🇧</button>
+    <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">🇩🇪</button>
+    <button class="lang-btn" data-lang="sv" onclick="setLanguage('sv')" title="Svenska">🇸🇪</button>
+    <span class="lang-sep">|</span>
+    <a href="/logout" class="logout-button" data-i18n="logout">Logg ut</a>
+  </span>
+  <div style="display:flex; justify-content:center; align-items:center; padding:1rem 0 0;">
+    <svg width="440" height="88" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="22" r="9" fill="#ff5959"/>
+      <line x1="23" y1="22" x2="35" y2="22" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-dasharray="3 2"/>
+      <circle cx="44" cy="22" r="7" fill="none" stroke="white" stroke-width="2.5"/>
+      <text x="60" y="29" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="21" fill="white"><tspan fill="#ff5959">OSDM</tspan>Tools</text>
+    </svg>
+  </div>
+</header>
+
+<div style="max-width:1200px; margin:0 auto; padding:0 1.5rem;">
+  <section class="panel">
+    <h2>Aktivitetslogg</h2>
+
+    <!-- Filters -->
+    <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:1rem;">
+      <input id="logSearch" type="search" placeholder="Søk e-post…" oninput="onSearch()"
+        style="flex:1; min-width:180px; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:0.95rem;" />
+      <input id="logDateFrom" type="date" class="log-date" onchange="loadLog()" />
+      <input id="logDateTo"   type="date" class="log-date" onchange="loadLog()" />
+      <select id="logEventType" class="log-select" onchange="loadLog()">
+        <option value="">Alle hendelser</option>
+        <option value="login_success">Innlogging</option>
+        <option value="login_failed">Mislykket innlogging</option>
+        <option value="logout">Utlogging</option>
+        <option value="password_changed">Passord endret</option>
+        <option value="osdm_generated">OSDM generert</option>
+        <option value="discount_applied">Rabatt lagt til</option>
+        <option value="excel_exported">Excel-eksport</option>
+        <option value="contact_sent">Kontaktmelding</option>
+        <option value="admin_user_created">Bruker opprettet</option>
+        <option value="admin_user_deleted">Bruker slettet</option>
+        <option value="admin_password_reset">Passord nullstilt (admin)</option>
+        <option value="admin_set_admin">Admin-status endret</option>
+      </select>
+      <select id="logStatus" class="log-select" onchange="loadLog()">
+        <option value="">Alle statuser</option>
+        <option value="ok">OK</option>
+        <option value="error">Feil</option>
+      </select>
+      <button class="btn-table" onclick="resetFilter()">Nullstill</button>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; margin-bottom:0.75rem;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc; white-space:nowrap;">Tidspunkt</th>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;">Bruker</th>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;">Hendelse</th>
+            <th style="text-align:center; padding:6px 8px; border-bottom:2px solid #ccc;">Status</th>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid #ccc;">Detaljer</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr><td colspan="5" style="padding:8px; color:#888;">Laster logg…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+      <div id="logPagination" style="display:none; align-items:center; gap:0.75rem;">
+        <button class="btn-table" id="logPrev" onclick="changePage(-1)">&#8592;</button>
+        <span id="logPageInfo" style="color:rgba(255,255,255,0.75); font-size:0.9rem;"></span>
+        <button class="btn-table" id="logNext" onclick="changePage(1)">&#8594;</button>
+      </div>
+      <span id="logTotal" style="color:rgba(255,255,255,0.45); font-size:0.85rem;"></span>
+    </div>
+
+  </section>
+</div>
+
+<script src="/static/i18n.js?v=24"></script>
+<script src="/static/admin-log.js?v=1"></script>
+</body>
+</html>
