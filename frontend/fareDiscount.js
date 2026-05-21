@@ -2,10 +2,10 @@
 
 const SVG_X = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="1" x2="8" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="1" x2="1" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 
-let osdmStations      = [];
-let osdmPassengers    = [];
+let osdmStations       = [];
+let osdmPassengers     = [];
 let osdmServiceClasses = [];
-let ricsCodes         = [];
+let ricsCodes          = [];
 
 function carrierDisplayName(c) {
   return c.country ? `${c.name} (${c.country})` : c.name;
@@ -50,30 +50,30 @@ function renderPairHtml(pair, idx) {
   const removable = stationPairs.length > 1;
   return `
     <div class="pair-row" id="pairRow_${idx}">
-      <div>
+      <div class="pair-col">
         <label>Fra stasjon</label>
         <div class="picker-wrap" id="wrap_from_${idx}">
           <input id="input_from_${idx}" type="text" autocomplete="off"
             placeholder="Søk stasjonsnavn eller UIC…"
             oninput="pickerFilter('from',${idx})"
             onkeydown="pickerKey(event,'from',${idx})"
-            onfocus="pickerOpen('from',${idx})"
-            style="${pair.from ? 'display:none;' : ''}" />
+            onfocus="pickerOpen('from',${idx})" />
+          <button type="button" class="picker-clear-btn" id="clear_from_${idx}"
+            onclick="pickerClear('from',${idx})" title="Fjern">${SVG_X}</button>
           <div id="drop_from_${idx}" class="picker-dropdown" style="display:none;"></div>
-          <div id="chip_from_${idx}" style="${pair.from ? '' : 'display:none;'}"></div>
         </div>
       </div>
-      <div>
+      <div class="pair-col">
         <label>Til stasjon</label>
         <div class="picker-wrap" id="wrap_to_${idx}">
           <input id="input_to_${idx}" type="text" autocomplete="off"
             placeholder="Søk stasjonsnavn eller UIC…"
             oninput="pickerFilter('to',${idx})"
             onkeydown="pickerKey(event,'to',${idx})"
-            onfocus="pickerOpen('to',${idx})"
-            style="${pair.to ? 'display:none;' : ''}" />
+            onfocus="pickerOpen('to',${idx})" />
+          <button type="button" class="picker-clear-btn" id="clear_to_${idx}"
+            onclick="pickerClear('to',${idx})" title="Fjern">${SVG_X}</button>
           <div id="drop_to_${idx}" class="picker-dropdown" style="display:none;"></div>
-          <div id="chip_to_${idx}" style="${pair.to ? '' : 'display:none;'}"></div>
         </div>
       </div>
       <button type="button" class="btn-remove-pair"
@@ -82,29 +82,29 @@ function renderPairHtml(pair, idx) {
     </div>`;
 }
 
+function applyPickerSelection(dir, idx, station) {
+  const inputEl = document.getElementById(`input_${dir}_${idx}`);
+  if (inputEl) {
+    inputEl.value = `${station.name}  ·  ${station.uic}`;
+    inputEl.readOnly = true;
+  }
+  const clearBtn = document.getElementById(`clear_${dir}_${idx}`);
+  if (clearBtn) clearBtn.style.display = "inline-flex";
+}
+
 function renderPairs() {
   const container = document.getElementById("stationPairsContainer");
   if (!container) return;
   container.innerHTML = stationPairs.map((pair, idx) => renderPairHtml(pair, idx)).join("");
   stationPairs.forEach((pair, idx) => {
-    if (pair.from) renderChip("from", idx, pair.from);
-    if (pair.to)   renderChip("to",   idx, pair.to);
+    if (pair.from) applyPickerSelection("from", idx, pair.from);
+    if (pair.to)   applyPickerSelection("to",   idx, pair.to);
   });
-}
-
-function renderChip(dir, idx, station) {
-  const chipEl = document.getElementById(`chip_${dir}_${idx}`);
-  if (!chipEl) return;
-  chipEl.innerHTML = `<div class="picker-chip">
-    <span>${station.name} <span style="color:rgba(255,255,255,0.4)">${station.uic}</span></span>
-    <button type="button" onclick="pickerClear('${dir}',${idx})" title="Fjern">${SVG_X}</button>
-  </div>`;
-  chipEl.style.display = "block";
 }
 
 function pickerFilter(dir, idx) {
   const input = document.getElementById(`input_${dir}_${idx}`);
-  if (!input) return;
+  if (!input || input.readOnly) return;
   const q = input.value.trim().toLowerCase();
   const matches = q.length === 0
     ? osdmStations.slice(0, 80)
@@ -114,7 +114,8 @@ function pickerFilter(dir, idx) {
 }
 
 function pickerOpen(dir, idx) {
-  if (stationPairs[idx]?.[dir]) return;
+  const input = document.getElementById(`input_${dir}_${idx}`);
+  if (input?.readOnly) return;
   pickerFilter(dir, idx);
 }
 
@@ -146,6 +147,8 @@ function pickerActivate(dir, idx, aIdx) {
 }
 
 function pickerKey(e, dir, idx) {
+  const input = document.getElementById(`input_${dir}_${idx}`);
+  if (input?.readOnly) return;
   const drop = document.getElementById(`drop_${dir}_${idx}`);
   if (!drop) return;
   const opts = drop.querySelectorAll(".picker-option");
@@ -172,22 +175,20 @@ function pickerKey(e, dir, idx) {
 function pickerSelect(dir, idx, station) {
   stationPairs[idx][dir] = station;
   ps(dir, idx).activeIdx = -1;
-  const inputEl = document.getElementById(`input_${dir}_${idx}`);
-  if (inputEl) { inputEl.value = ""; inputEl.style.display = "none"; }
   const dropEl = document.getElementById(`drop_${dir}_${idx}`);
   if (dropEl) dropEl.style.display = "none";
-  renderChip(dir, idx, station);
+  applyPickerSelection(dir, idx, station);
 }
 
 function pickerClear(dir, idx) {
   stationPairs[idx][dir] = null;
   ps(dir, idx).activeIdx = -1;
   const inputEl = document.getElementById(`input_${dir}_${idx}`);
-  if (inputEl) { inputEl.value = ""; inputEl.style.display = ""; }
+  if (inputEl) { inputEl.value = ""; inputEl.readOnly = false; }
+  const clearBtn = document.getElementById(`clear_${dir}_${idx}`);
+  if (clearBtn) clearBtn.style.display = "none";
   const dropEl = document.getElementById(`drop_${dir}_${idx}`);
   if (dropEl) dropEl.style.display = "none";
-  const chipEl = document.getElementById(`chip_${dir}_${idx}`);
-  if (chipEl) { chipEl.innerHTML = ""; chipEl.style.display = "none"; }
 }
 
 // Lukk dropdowns ved klikk utenfor
@@ -248,8 +249,8 @@ async function onFileChange() {
       result.className = "status-error";
       return;
     }
-    osdmStations      = res.stations;
-    osdmPassengers    = res.passengerConstraints;
+    osdmStations       = res.stations;
+    osdmPassengers     = res.passengerConstraints;
     osdmServiceClasses = res.serviceClasses;
 
     document.getElementById("parsedInfo").innerText =

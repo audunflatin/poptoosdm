@@ -26,6 +26,14 @@
     .picker-option:last-child { border-bottom: none; }
     .picker-option:hover, .picker-option.active { background: rgba(255,255,255,0.12); }
     .picker-option .uic { color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-left: 6px; }
+    .picker-clear-btn {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.4);
+      cursor: pointer; padding: 4px; line-height: 0;
+      display: none; align-items: center;
+    }
+    .picker-clear-btn:hover { color: #ff5959; }
+    input[readonly] { cursor: default; padding-right: 2rem; }
     .picker-chip {
       display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
       background: rgba(255,255,255,0.12); border-radius: 20px;
@@ -38,16 +46,17 @@
     }
     .picker-chip button:hover { color: #ff5959; }
     .pair-row {
-      display: grid; grid-template-columns: 1fr 1fr auto;
-      gap: 1rem; align-items: start;
-      padding-bottom: 0.75rem; margin-bottom: 0.75rem;
+      display: flex; align-items: flex-end; gap: 1rem;
+      padding-bottom: 0.5rem; margin-bottom: 0.5rem;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .pair-row:last-child { border-bottom: none; margin-bottom: 0; }
+    .pair-col { flex: 1; }
     .btn-remove-pair {
       background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
       color: rgba(255,255,255,0.45); cursor: pointer; padding: 0.35rem 0.5rem;
-      margin-top: 1.75rem; display: inline-flex; align-items: center; line-height: 0;
+      display: inline-flex; align-items: center; line-height: 0; flex-shrink: 0;
+      margin-bottom: 2px;
     }
     .btn-remove-pair:hover { color: #ff5959; border-color: #ff5959; }
     .checkbox-label {
@@ -197,7 +206,7 @@
 </div>
 
 <script src="/static/i18n.js?v=29"></script>
-<script src="/static/fareDiscount.js?v=9"></script>
+<script src="/static/fareDiscount.js?v=10"></script>
 <script>
   if (window.IS_ADMIN) {
     const el = document.getElementById("adminLink"); if (el) el.style.display = "";
