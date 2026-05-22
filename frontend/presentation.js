@@ -46,7 +46,7 @@ const SLIDES = [
     type: "flow",
     heading: "Løsningen – én flyt",
     steps: [
-      { num: "1", label: "Last opp\nTEN-CSV" },
+      { num: "1", label: "Last opp\nKm-CSV" },
       { num: "2", label: "Last opp\nOSDM-mal" },
       { num: "3", label: "Velg valuta\nog periode" },
       { num: "4", label: "Klikk\nGenerer" },
@@ -85,7 +85,7 @@ const SLIDES = [
     heading: "Teknisk",
     left: {
       label: "Backend",
-      bullets: ["Python / FastAPI", "SQLite (brukere + logg)", "Kjøres på Render (cloud)", "Auto-deploy fra GitHub"],
+      bullets: ["Python / FastAPI", "SQLite (brukere + logg)", "Kjøres på Railway (cloud)", "Auto-deploy fra GitHub"],
     },
     right: {
       label: "Frontend",
