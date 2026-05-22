@@ -24,12 +24,30 @@ _STYLE = {
 def _email_html(heading: str, body_rows: str) -> str:
     s = _STYLE
     return f"""<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no"></head>
-<body style="{s['body']}">
-<table width="100%" cellpadding="0" cellspacing="0" style="{s['wrap']}">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    :root {{ color-scheme: light dark; supported-color-schemes: light dark; }}
+    body, .email-wrap, .email-card {{ background-color: #0d1b2a !important; }}
+    .email-card {{ border-top: 3px solid #ff5959 !important; }}
+    h1, p, .cred-val {{ color: #ffffff !important; }}
+    .cred-label {{ color: rgba(255,255,255,0.5) !important; }}
+    .email-footer span {{ color: rgba(255,255,255,0.3) !important; }}
+    @media (prefers-color-scheme: dark) {{
+      body, .email-wrap {{ background-color: #0d1b2a !important; }}
+      .email-card {{ background-color: #152535 !important; }}
+    }}
+  </style>
+</head>
+<body style="{s['body']}" class="email-wrap">
+<table width="100%" cellpadding="0" cellspacing="0" style="{s['wrap']}" class="email-wrap">
   <tr><td align="center">
-    <table cellpadding="0" cellspacing="0" style="{s['card']}">
+    <table cellpadding="0" cellspacing="0" style="{s['card']}" class="email-card" data-ogsc="background: #152535;">
 
       <tr><td style="{s['header']}">
         <h1 style="{s['h1']}">{heading}</h1>
@@ -39,7 +57,7 @@ def _email_html(heading: str, body_rows: str) -> str:
         {body_rows}
       </td></tr>
 
-      <tr><td style="{s['footer']}">
+      <tr><td style="{s['footer']}" class="email-footer">
         <span style="color:#ff5959;font-size:20px;line-height:1;">&#9679;</span><span style="color:rgba(255,255,255,0.3);font-size:12px;letter-spacing:0px;">&middot;&middot;</span><span style="color:rgba(255,255,255,0.8);font-size:18px;line-height:1;">&#9675;</span><span style="font-size:22px;font-weight:800;color:#ff5959;padding-left:10px;">OSDM</span><span style="font-size:22px;font-weight:800;color:#ffffff;">Tools</span>
       </td></tr>
 
