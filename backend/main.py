@@ -2031,3 +2031,80 @@ def osdmtoexcel_page(request: Request):
         f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
     )
     return HTMLResponse(html)
+
+
+# ── Midlertidig migreringsendepunkt – slett etter bruk ───────────────────────
+
+@app.get("/admin/export-db")
+def export_db(request: Request):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        raise HTTPException(status_code=403)
+    db = SessionLocal()
+    try:
+        users = [
+            {
+                "id": u.id, "email": u.email, "password_hash": u.password_hash,
+                "is_admin": u.is_admin, "is_active": u.is_active,
+                "must_change_password": u.must_change_password,
+                "first_login_at": u.first_login_at.isoformat() if u.first_login_at else None,
+            }
+            for u in db.query(User).all()
+        ]
+        login_logs = [
+            {
+                "id": l.id, "email": l.email,
+                "logged_at": l.logged_at.isoformat() if l.logged_at else None,
+                "ip_address": l.ip_address, "success": l.success,
+            }
+            for l in db.query(LoginLog).all()
+        ]
+        event_logs = [
+            {
+                "id": e.id,
+                "logged_at": e.logged_at.isoformat() if e.logged_at else None,
+                "user_email": e.user_email, "event_type": e.event_type,
+                "status": e.status, "detail": e.detail,
+            }
+            for e in db.query(EventLog).all()
+        ]
+    finally:
+        db.close()
+    return Response(
+        content=json.dumps({"users": users, "login_logs": login_logs, "event_logs": event_logs}, ensure_ascii=False, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=\"db-export.json\""},
+    )
+
+
+@app.post("/admin/import-db")
+async def import_db(request: Request, file: UploadFile = File(...)):
+    if "user_email" not in request.session or not request.session.get("is_admin"):
+        raise HTTPException(status_code=403)
+    data = json.loads(await file.read())
+    db = SessionLocal()
+    try:
+        for u in data.get("users", []):
+            if db.query(User).filter_by(email=u["email"]).first():
+                continue
+            db.add(User(
+                email=u["email"], password_hash=u["password_hash"],
+                is_admin=u["is_admin"], is_active=u["is_active"],
+                must_change_password=u["must_change_password"],
+                first_login_at=datetime.fromisoformat(u["first_login_at"]) if u["first_login_at"] else None,
+            ))
+        for l in data.get("login_logs", []):
+            db.add(LoginLog(
+                email=l["email"],
+                logged_at=datetime.fromisoformat(l["logged_at"]) if l["logged_at"] else None,
+                ip_address=l["ip_address"], success=l["success"],
+            ))
+        for e in data.get("event_logs", []):
+            db.add(EventLog(
+                logged_at=datetime.fromisoformat(e["logged_at"]) if e["logged_at"] else None,
+                user_email=e["user_email"], event_type=e["event_type"],
+                status=e["status"], detail=e["detail"],
+            ))
+        db.commit()
+    finally:
+        db.close()
+    return {"ok": True, "users": len(data.get("users", [])), "login_logs": len(data.get("login_logs", [])), "event_logs": len(data.get("event_logs", []))}
