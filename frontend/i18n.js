@@ -34,7 +34,7 @@ const translations = {
 
     // Seksjon 1 – Input
     section_generate:    "Oppdater OSDM-priser",
-    generate_desc:       "Last opp avstandsfilen (TEN-CSV-format) og den eksisterende OSDM-filen. Prisene beregnes på nytt fra avstandsfilen og valutakursen, og du får en oppdatert OSDM-leveranse tilbake.",
+    generate_desc:       "Last opp avstandsfilen (Km-CSV-format) og den eksisterende OSDM-filen. Prisene beregnes på nytt fra avstandsfilen og valutakursen, og du får en oppdatert OSDM-leveranse tilbake.",
     label_ten_csv:       "Avstandsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validert",
@@ -289,7 +289,7 @@ const translations = {
 
     // Seksjon 1 – Input
     section_generate:    "Update OSDM prices",
-    generate_desc:       "Upload the distance file (TEN-CSV format) and the existing OSDM file. Prices are recalculated from the distance file and exchange rate, and you get an updated OSDM delivery back.",
+    generate_desc:       "Upload the distance file (Km-CSV format) and the existing OSDM file. Prices are recalculated from the distance file and exchange rate, and you get an updated OSDM delivery back.",
     label_ten_csv:       "Distance file",
     label_osdm_val_file: "OSDM file (validation)",
     osdm_validated:      "OSDM validated",
@@ -544,7 +544,7 @@ const translations = {
 
     // Seksjon 1 – Eingabe
     section_generate:    "OSDM-Preise aktualisieren",
-    generate_desc:       "Laden Sie die Entfernungsdatei (TEN-CSV-Format) und die vorhandene OSDM-Datei hoch. Die Preise werden anhand der Entfernungsdatei und des Wechselkurses neu berechnet und Sie erhalten eine aktualisierte OSDM-Lieferung zurück.",
+    generate_desc:       "Laden Sie die Entfernungsdatei (Km-CSV-Format) und die vorhandene OSDM-Datei hoch. Die Preise werden anhand der Entfernungsdatei und des Wechselkurses neu berechnet und Sie erhalten eine aktualisierte OSDM-Lieferung zurück.",
     label_ten_csv:       "Entfernungsdatei",
     label_osdm_val_file: "OSDM-Datei (Validierung)",
     osdm_validated:      "OSDM validiert",
@@ -799,7 +799,7 @@ const translations = {
 
     // Seksjon 1 – Indata
     section_generate:    "Uppdatera OSDM-priser",
-    generate_desc:       "Ladda upp avståndsfilen (TEN-CSV-format) och den befintliga OSDM-filen. Priserna beräknas om utifrån avståndsfilen och växelkursen, och du får en uppdaterad OSDM-leverans tillbaka.",
+    generate_desc:       "Ladda upp avståndsfilen (Km-CSV-format) och den befintliga OSDM-filen. Priserna beräknas om utifrån avståndsfilen och växelkursen, och du får en uppdaterad OSDM-leverans tillbaka.",
     label_ten_csv:       "Avståndsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validerad",
