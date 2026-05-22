@@ -92,10 +92,44 @@
       </div>
       <pre id="userActionResult"></pre>
 
+      <!-- Midlertidig: importer database fra Render -->
+      <h2 style="margin-top:3.5rem;">Importer database</h2>
+      <p style="color:rgba(255,255,255,0.5); font-size:0.9rem; margin-bottom:1rem;">Last opp <code>db-export.json</code> for å migrere brukere og logger fra Render.</p>
+      <input id="importFile" type="file" accept=".json" style="margin-bottom:0.75rem;" />
+      <button id="importBtn" onclick="importDb()" style="margin-top:0;">Importer</button>
+      <pre id="importResult" style="margin-top:0.75rem;"></pre>
+
     </div>
   </section>
 
 </div>
+
+<script>
+async function importDb() {
+  const file = document.getElementById("importFile").files[0];
+  const result = document.getElementById("importResult");
+  if (!file) { result.textContent = "Velg en fil først."; return; }
+  const btn = document.getElementById("importBtn");
+  btn.disabled = true;
+  btn.textContent = "Importerer…";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const r = await fetch("/admin/import-db", { method: "POST", body: fd });
+    const res = await r.json();
+    if (r.ok) {
+      result.textContent = `✅ Importert: ${res.users} brukere, ${res.login_logs} pålogginger, ${res.event_logs} hendelser.`;
+    } else {
+      result.textContent = "❌ Feil: " + (res.detail || JSON.stringify(res));
+    }
+  } catch(e) {
+    result.textContent = "❌ " + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Importer";
+  }
+}
+</script>
 
 <script src="/static/i18n.js?v=31"></script>
 <script src="/static/admin.js?v=12"></script>
