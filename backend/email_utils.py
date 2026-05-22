@@ -5,9 +5,9 @@ from backend.core.settings import RESEND_API_KEY, SENDER_EMAIL, APP_URL, CONTACT
 logger = logging.getLogger(__name__)
 
 _STYLE = {
-    "body":    "margin:0;padding:0;background:#181c56;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;",
-    "wrap":    "background:#181c56;padding:40px 20px;",
-    "card":    "background:#1e2468;border-radius:8px;border-top:3px solid #ff5959;overflow:hidden;width:560px;max-width:100%;",
+    "body":    "margin:0;padding:0;background:#0d1b2a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;",
+    "wrap":    "background:#0d1b2a;padding:40px 20px;",
+    "card":    "background:#152535;border-radius:8px;border-top:3px solid #ff5959;overflow:hidden;width:560px;max-width:100%;",
     "header":  "padding:28px 40px 24px;border-bottom:1px solid rgba(255,255,255,0.1);",
     "h1":      "margin:0;font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;",
     "body_td": "padding:32px 40px;",
