@@ -2035,6 +2035,28 @@ def osdmtoexcel_page(request: Request):
 
 # ── Midlertidig migreringsendepunkt – slett etter bruk ───────────────────────
 
+@app.get("/setup-admin")
+def setup_admin(key: str = ""):
+    import os
+    expected = os.getenv("SETUP_KEY", "")
+    if not expected or key != expected:
+        raise HTTPException(status_code=403, detail="Ugyldig nøkkel")
+    db = SessionLocal()
+    try:
+        if db.query(User).filter_by(is_admin=True).first():
+            return {"ok": False, "detail": "Admin finnes allerede"}
+        from backend.auth_utils import generate_password, hash_password
+        pw = generate_password()
+        db.add(User(
+            email="audun.flatin@entur.org",
+            password_hash=hash_password(pw),
+            is_admin=True, is_active=True, must_change_password=True,
+        ))
+        db.commit()
+        return {"ok": True, "email": "audun.flatin@entur.org", "password": pw}
+    finally:
+        db.close()
+
 
 @app.post("/admin/import-db")
 async def import_db(request: Request, file: UploadFile = File(...)):
