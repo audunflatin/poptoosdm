@@ -260,6 +260,17 @@ const translations = {
     discount_error_no_passenger:    "❌ Velg minst én passasjerkategori og én serviceklasse.",
     discount_success:               "✅ {fares} nye farer og {prices} nye priser lagt til.",
     discount_success_filename:      "Filen lastes ned som {filename}",
+
+    // Landingsside
+    landing_tagline:    "Automatisert prissetting for europeiske jernbaneoperatører",
+    landing_desc:       "OSDMTools hjelper deg med å generere, konvertere og tilpasse OSDM fareDelivery-filer — raskt og uten manuelt arbeid.",
+    landing_login_btn:  "Logg inn",
+    landing_feat1_title:"Oppdater OSDM-priser",
+    landing_feat1_desc: "Last opp avstandsfil og OSDM-fil. Prisene beregnes automatisk fra tabellen og valutakursen, og du får en oppdatert leveranse tilbake.",
+    landing_feat2_title:"OSDM → Excel",
+    landing_feat2_desc: "Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.",
+    landing_feat3_title:"Legg til rabatt i OSDM",
+    landing_feat3_desc: "Legg til rabatterte farer direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
   },
 
   // ---------------------------------------------------------------------------
@@ -515,6 +526,17 @@ const translations = {
     discount_error_no_passenger:    "❌ Select at least one passenger category and one service class.",
     discount_success:               "✅ {fares} new fares and {prices} new prices added.",
     discount_success_filename:      "File downloaded as {filename}",
+
+    // Landing page
+    landing_tagline:    "Automated pricing for European railway operators",
+    landing_desc:       "OSDMTools helps you generate, convert and customise OSDM fareDelivery files — quickly and without manual work.",
+    landing_login_btn:  "Log in",
+    landing_feat1_title:"Update OSDM prices",
+    landing_feat1_desc: "Upload a distance file and an OSDM file. Prices are recalculated automatically from the table and exchange rate, and you get an updated delivery back.",
+    landing_feat2_title:"OSDM → Excel",
+    landing_feat2_desc: "Convert a fareDelivery file into a clear Excel sheet with all station relations and prices per ticket category.",
+    landing_feat3_title:"Add discount to OSDM",
+    landing_feat3_desc: "Add discounted fares directly to an existing OSDM file for specific routes, carriers and passenger categories.",
   },
 
   // ---------------------------------------------------------------------------
@@ -770,6 +792,17 @@ const translations = {
     discount_error_no_passenger:    "❌ Wählen Sie mindestens eine Fahrgastkategorie und eine Serviceklasse.",
     discount_success:               "✅ {fares} neue Tarife und {prices} neue Preise hinzugefügt.",
     discount_success_filename:      "Datei wird heruntergeladen als {filename}",
+
+    // Landingseite
+    landing_tagline:    "Automatisierte Preisgestaltung für europäische Eisenbahnbetreiber",
+    landing_desc:       "OSDMTools hilft Ihnen, OSDM fareDelivery-Dateien zu generieren, zu konvertieren und anzupassen — schnell und ohne manuelle Arbeit.",
+    landing_login_btn:  "Anmelden",
+    landing_feat1_title:"OSDM-Preise aktualisieren",
+    landing_feat1_desc: "Laden Sie eine Entfernungsdatei und eine OSDM-Datei hoch. Die Preise werden automatisch aus der Tabelle und dem Wechselkurs berechnet.",
+    landing_feat2_title:"OSDM → Excel",
+    landing_feat2_desc: "Konvertieren Sie eine fareDelivery-Datei in eine übersichtliche Excel-Tabelle mit allen Stationsbeziehungen und Preisen.",
+    landing_feat3_title:"Rabatt zu OSDM hinzufügen",
+    landing_feat3_desc: "Fügen Sie rabattierte Tarife direkt zu einer vorhandenen OSDM-Datei für bestimmte Strecken, Betreiber und Fahrgastkategorien hinzu.",
   },
 
   // ---------------------------------------------------------------------------
@@ -1025,6 +1058,17 @@ const translations = {
     discount_error_no_passenger:    "❌ Välj minst en passagerarkategori och en serviceklass.",
     discount_success:               "✅ {fares} nya tariffer och {prices} nya priser tillagda.",
     discount_success_filename:      "Filen laddas ned som {filename}",
+
+    // Landningssida
+    landing_tagline:    "Automatiserad prissättning för europeiska järnvägsoperatörer",
+    landing_desc:       "OSDMTools hjälper dig att generera, konvertera och anpassa OSDM fareDelivery-filer — snabbt och utan manuellt arbete.",
+    landing_login_btn:  "Logga in",
+    landing_feat1_title:"Uppdatera OSDM-priser",
+    landing_feat1_desc: "Ladda upp en avståndsfil och en OSDM-fil. Priserna beräknas automatiskt från tabellen och växelkursen.",
+    landing_feat2_title:"OSDM → Excel",
+    landing_feat2_desc: "Konvertera en fareDelivery-fil till ett tydligt Excel-ark med alla stationsrelationer och priser per biljettkategori.",
+    landing_feat3_title:"Lägg till rabatt i OSDM",
+    landing_feat3_desc: "Lägg till rabatterade tariffer direkt i en befintlig OSDM-fil för specifika sträckningar, operatörer och passagerarkategorier.",
   },
 
   // ---------------------------------------------------------------------------
@@ -1280,6 +1324,17 @@ const translations = {
     discount_error_no_passenger:    "❌ Sélectionnez au moins une catégorie de passagers et une classe de service.",
     discount_success:               "✅ {fares} nouveaux tarifs et {prices} nouveaux prix ajoutés.",
     discount_success_filename:      "Le fichier est téléchargé sous le nom {filename}",
+
+    // Page d'accueil
+    landing_tagline:    "Tarification automatisée pour les opérateurs ferroviaires européens",
+    landing_desc:       "OSDMTools vous aide à générer, convertir et personnaliser des fichiers OSDM fareDelivery — rapidement et sans travail manuel.",
+    landing_login_btn:  "Se connecter",
+    landing_feat1_title:"Mettre à jour les prix OSDM",
+    landing_feat1_desc: "Téléchargez un fichier de distances et un fichier OSDM. Les prix sont recalculés automatiquement à partir du tableau et du taux de change.",
+    landing_feat2_title:"OSDM → Excel",
+    landing_feat2_desc: "Convertissez un fichier fareDelivery en tableau Excel clair avec toutes les relations de gare et les prix par catégorie de billet.",
+    landing_feat3_title:"Ajouter une remise à OSDM",
+    landing_feat3_desc: "Ajoutez des tarifs réduits directement à un fichier OSDM existant pour des itinéraires, transporteurs et catégories de passagers spécifiques.",
   },
 };
 
