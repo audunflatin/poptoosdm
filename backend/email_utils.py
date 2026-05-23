@@ -134,6 +134,20 @@ def send_reset_link_email(to: str, reset_url: str) -> None:
     _send(to=to, subject="Reset your OSDMTools password", html=_email_html("Reset password", body))
 
 
+def send_access_request_email(name: str, from_email: str, org: str) -> None:
+    s = _STYLE
+    body = f"""
+    <p style="{s['p']}">New access request from the landing page on osdmtools.com.</p>
+    {_cred_row("Name", name)}
+    {_cred_row("Email", from_email)}
+    {_cred_row("Railway operator", org)}"""
+    _send(
+        to=CONTACT_EMAIL,
+        subject=f"OSDMTools - tilgangsforespørsel fra {name}",
+        html=_email_html('Tilgangsforespørsel fra <span style="color:#ff5959;">OSDMTools</span>', body),
+    )
+
+
 def send_reset_email(to: str, password: str) -> None:
     s = _STYLE
     email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'

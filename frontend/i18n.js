@@ -271,6 +271,18 @@ const translations = {
     landing_feat2_desc: "Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.",
     landing_feat3_title:"Legg til rabatt i OSDM",
     landing_feat3_desc: "Legg til rabatterte farer direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
+
+    // Tilgangsforespørsel
+    access_section_title: "Be om tilgang",
+    access_section_desc:  "OSDMTools er tilgjengelig for europeiske jernbaneoperatører. Send en forespørsel, så tar jeg kontakt.",
+    access_name:          "Navn",
+    access_email:         "E-post",
+    access_org:           "Jernbaneoperatør",
+    access_org_placeholder: "Hvilken operatør representerer du?",
+    access_btn:           "Send forespørsel",
+    access_sent:          "Takk! Jeg tar kontakt med deg så snart som mulig.",
+    access_error:         "Noe gikk galt. Prøv igjen eller send e-post direkte.",
+    access_rate_limited:  "Du har allerede sendt en forespørsel. Ta kontakt på e-post om nødvendig.",
   },
 
   // ---------------------------------------------------------------------------
@@ -537,6 +549,18 @@ const translations = {
     landing_feat2_desc: "Convert a fareDelivery file into a clear Excel sheet with all station relations and prices per ticket category.",
     landing_feat3_title:"Add discount to OSDM",
     landing_feat3_desc: "Add discounted fares directly to an existing OSDM file for specific routes, carriers and passenger categories.",
+
+    // Request access
+    access_section_title: "Request access",
+    access_section_desc:  "OSDMTools is available for European railway operators. Send a request and I'll get back to you.",
+    access_name:          "Name",
+    access_email:         "Email",
+    access_org:           "Railway operator",
+    access_org_placeholder: "Which operator do you represent?",
+    access_btn:           "Submit request",
+    access_sent:          "Thank you! I'll get back to you as soon as possible.",
+    access_error:         "Something went wrong. Please try again or send an email directly.",
+    access_rate_limited:  "You have already submitted a request. Please email directly if urgent.",
   },
 
   // ---------------------------------------------------------------------------
@@ -803,6 +827,18 @@ const translations = {
     landing_feat2_desc: "Konvertieren Sie eine fareDelivery-Datei in eine übersichtliche Excel-Tabelle mit allen Stationsbeziehungen und Preisen.",
     landing_feat3_title:"Rabatt zu OSDM hinzufügen",
     landing_feat3_desc: "Fügen Sie rabattierte Tarife direkt zu einer vorhandenen OSDM-Datei für bestimmte Strecken, Betreiber und Fahrgastkategorien hinzu.",
+
+    // Zugriffsanfrage
+    access_section_title: "Zugang beantragen",
+    access_section_desc:  "OSDMTools steht europäischen Eisenbahnbetreibern zur Verfügung. Senden Sie eine Anfrage und ich melde mich bei Ihnen.",
+    access_name:          "Name",
+    access_email:         "E-Mail",
+    access_org:           "Eisenbahnbetreiber",
+    access_org_placeholder: "Welchen Betreiber vertreten Sie?",
+    access_btn:           "Anfrage senden",
+    access_sent:          "Vielen Dank! Ich melde mich so bald wie möglich bei Ihnen.",
+    access_error:         "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut oder senden Sie eine E-Mail.",
+    access_rate_limited:  "Sie haben bereits eine Anfrage gesendet. Schreiben Sie uns bei Bedarf eine E-Mail.",
   },
 
   // ---------------------------------------------------------------------------
@@ -1069,6 +1105,18 @@ const translations = {
     landing_feat2_desc: "Konvertera en fareDelivery-fil till ett tydligt Excel-ark med alla stationsrelationer och priser per biljettkategori.",
     landing_feat3_title:"Lägg till rabatt i OSDM",
     landing_feat3_desc: "Lägg till rabatterade tariffer direkt i en befintlig OSDM-fil för specifika sträckningar, operatörer och passagerarkategorier.",
+
+    // Åtkomstbegäran
+    access_section_title: "Begär åtkomst",
+    access_section_desc:  "OSDMTools är tillgängligt för europeiska järnvägsoperatörer. Skicka en förfrågan, så kontaktar jag dig.",
+    access_name:          "Namn",
+    access_email:         "E-post",
+    access_org:           "Järnvägsoperatör",
+    access_org_placeholder: "Vilken operatör representerar du?",
+    access_btn:           "Skicka förfrågan",
+    access_sent:          "Tack! Jag återkommer till dig så snart som möjligt.",
+    access_error:         "Något gick fel. Försök igen eller skicka e-post direkt.",
+    access_rate_limited:  "Du har redan skickat en förfrågan. Kontakta oss via e-post om det är brådskande.",
   },
 
   // ---------------------------------------------------------------------------
@@ -1335,6 +1383,18 @@ const translations = {
     landing_feat2_desc: "Convertissez un fichier fareDelivery en tableau Excel clair avec toutes les relations de gare et les prix par catégorie de billet.",
     landing_feat3_title:"Ajouter une remise à OSDM",
     landing_feat3_desc: "Ajoutez des tarifs réduits directement à un fichier OSDM existant pour des itinéraires, transporteurs et catégories de passagers spécifiques.",
+
+    // Demande d'accès
+    access_section_title: "Demander l'accès",
+    access_section_desc:  "OSDMTools est disponible pour les opérateurs ferroviaires européens. Envoyez une demande et je vous recontacterai.",
+    access_name:          "Nom",
+    access_email:         "E-mail",
+    access_org:           "Opérateur ferroviaire",
+    access_org_placeholder: "Quel opérateur représentez-vous ?",
+    access_btn:           "Envoyer la demande",
+    access_sent:          "Merci ! Je vous recontacterai dès que possible.",
+    access_error:         "Une erreur s'est produite. Réessayez ou envoyez un e-mail directement.",
+    access_rate_limited:  "Vous avez déjà envoyé une demande. Contactez-nous par e-mail si nécessaire.",
   },
 };
 

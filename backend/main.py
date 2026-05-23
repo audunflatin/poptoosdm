@@ -18,7 +18,7 @@ import requests
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET
-from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email
+from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email, send_access_request_email
 
 import logging
 logger = logging.getLogger(__name__)
@@ -77,6 +77,17 @@ def _rate_limit_check(ip: str):
 
 def _rate_limit_reset(ip: str):
     _login_attempts.pop(ip, None)
+
+_access_requests: dict[str, list[float]] = defaultdict(list)
+_ACCESS_WINDOW = 86400  # 24 timer
+_ACCESS_MAX    = 3      # maks forespørsler per dag per IP
+
+def _check_access_rate_limit(ip: str):
+    now = time.time()
+    _access_requests[ip] = [t for t in _access_requests[ip] if now - t < _ACCESS_WINDOW]
+    if len(_access_requests[ip]) >= _ACCESS_MAX:
+        raise HTTPException(status_code=429, detail="rate_limited")
+    _access_requests[ip].append(now)
 
 # ---------------------------------------------------------------------
 # State
@@ -1617,6 +1628,26 @@ def contact(
         logger.error("Kunne ikke sende kontakt-e-post: %s", exc)
         log_event(email, "contact_sent", "error", {"name": name})
         return {"ok": False}
+
+@app.post("/request-access")
+def request_access(
+    request: Request,
+    name: str = Form(...),
+    email: str = Form(...),
+    org: str = Form(...),
+    website: str = Form(""),
+):
+    if website:
+        return {"ok": True}
+    ip = _get_client_ip(request)
+    _check_access_rate_limit(ip)
+    try:
+        send_access_request_email(name.strip(), email.strip(), org.strip())
+        log_event(None, "access_request", detail={"name": name, "email": email, "org": org})
+        return {"ok": True}
+    except Exception as exc:
+        logger.error("Kunne ikke sende tilgangsforespørsel: %s", exc)
+        raise HTTPException(status_code=500, detail="send_error")
 
 @app.get("/fare-discount/rics")
 def fare_discount_rics(request: Request):

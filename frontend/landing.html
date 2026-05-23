@@ -112,6 +112,81 @@
       text-decoration: none;
     }
     .login-footer a:hover { color: white; }
+
+    .access-section {
+      margin-top: 5rem;
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    .access-section::before {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 2px;
+      background: rgba(255,255,255,0.12);
+      margin: 0 auto 3rem;
+    }
+
+    .access-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 2.25rem 2rem;
+      text-align: left;
+    }
+
+    .access-card h2 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+
+    .access-card > p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .access-card button[type="submit"] {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      background: #ff5959;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .access-card button[type="submit"]:hover { background: #e04444; }
+
+    .access-success {
+      background: rgba(90,195,154,0.12);
+      border-left: 4px solid #5ac39a;
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      color: #5ac39a;
+      font-size: 0.875rem;
+    }
+
+    .access-error {
+      background: rgba(255,89,89,0.15);
+      border-left: 4px solid #ff5959;
+      border-radius: 4px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 1rem;
+      color: #ff5959;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
   </style>
 </head>
 <body>
@@ -158,10 +233,66 @@
   </div>
 </div>
 
+<div class="access-section">
+  <div class="access-card">
+    <h2 data-i18n="access_section_title">Be om tilgang</h2>
+    <p data-i18n="access_section_desc">OSDMTools er tilgjengelig for europeiske jernbaneoperatører. Send en forespørsel, så tar jeg kontakt.</p>
+
+    <div id="accessSuccess" class="access-success" style="display:none;"></div>
+    <div id="accessError" class="access-error" style="display:none;"></div>
+
+    <form id="accessForm">
+      <input type="text" name="website" id="accessWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none;" />
+      <label for="accessName" data-i18n="access_name">Navn</label>
+      <input id="accessName" name="name" type="text" required autocomplete="name" />
+      <label for="accessEmail" data-i18n="access_email">E-post</label>
+      <input id="accessEmail" name="email" type="email" required autocomplete="email" />
+      <label for="accessOrg" data-i18n="access_org">Jernbaneoperatør</label>
+      <input id="accessOrg" name="org" type="text" required data-i18n-placeholder="access_org_placeholder" />
+      <button type="submit" data-i18n="access_btn">Send forespørsel</button>
+    </form>
+  </div>
+</div>
+
 <div class="login-footer">
   <a href="/login" data-i18n="landing_login_btn">Logg inn</a>
 </div>
 
-<script src="/static/i18n.js?v=34"></script>
+<script src="/static/i18n.js?v=35"></script>
+<script>
+  const accessForm = document.getElementById("accessForm");
+  const accessSuccess = document.getElementById("accessSuccess");
+  const accessError = document.getElementById("accessError");
+
+  accessForm.onsubmit = async e => {
+    e.preventDefault();
+    accessSuccess.style.display = "none";
+    accessError.style.display = "none";
+
+    const fd = new FormData();
+    fd.append("name", document.getElementById("accessName").value);
+    fd.append("email", document.getElementById("accessEmail").value);
+    fd.append("org", document.getElementById("accessOrg").value);
+    fd.append("website", document.getElementById("accessWebsite").value);
+
+    const btn = accessForm.querySelector("button[type='submit']");
+    btn.disabled = true;
+
+    const r = await fetch("/request-access", { method: "POST", body: fd });
+    btn.disabled = false;
+
+    if (r.ok) {
+      accessForm.style.display = "none";
+      accessSuccess.textContent = t("access_sent");
+      accessSuccess.style.display = "block";
+    } else if (r.status === 429) {
+      accessError.textContent = t("access_rate_limited");
+      accessError.style.display = "block";
+    } else {
+      accessError.textContent = t("access_error");
+      accessError.style.display = "block";
+    }
+  };
+</script>
 </body>
 </html>

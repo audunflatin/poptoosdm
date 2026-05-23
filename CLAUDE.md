@@ -178,7 +178,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=13 |
-| `i18n.js` | v=30 |
+| `i18n.js` | v=35 (landing.html) / v=33 (hovudsider) / v=19 (login-sider) |
 | `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
@@ -188,7 +188,10 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=30:
+HTML-filer som laster `i18n.js` med v=35:
+`landing.html`
+
+HTML-filer som laster `i18n.js` med v=33:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `osdmtoexcel.html`
 
@@ -205,7 +208,7 @@ HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 2. For placeholder-tekst: `data-i18n-placeholder="nøkkel"` på input-elementet
 3. For title-attributter: `data-i18n-title="nøkkel"` på elementet
 4. For toggle-knapper med skjult radio-input: wrap teksten i `<span data-i18n="nøkkel">`
-5. Legg til nøkkelen i **alle fire språk** i `i18n.js` (no, en, de, sv)
+5. Legg til nøkkelen i **alle fem språk** i `i18n.js` (no, en, de, sv, fr)
 6. Bump `i18n.js`-versjon overalt
 
 Dynamiske etiketter (f.eks. valutakurs-label) bruker `data-i18n`-attributten
