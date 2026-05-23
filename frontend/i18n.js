@@ -50,7 +50,7 @@ const translations = {
     rate_eur_no_conversion: "1 EUR = 1 EUR (ingen konvertering)",
     rate_fetch_failed:   "Kunne ikke hente kurs automatisk",
     label_provider:      "Leverandør",
-    label_fare_count_short:  "Farer",
+    label_fare_count_short:  "Priser",
     label_price_count_short: "Priser",
     label_station_count:     "Stasjoner",
     label_delivery_id:   "DeliveryId",
@@ -94,7 +94,7 @@ const translations = {
     fix_osdm_success:    "Filen er fikset og lastet ned",
     fix_osdm_nothing:    "Ingen endringer nødvendig — filen var allerede OK",
     fix_stat_bad_rcs:    "RC-er med ugyldig stasjonskryss fjernet",
-    fix_stat_bad_fares:  "farer med manglende referanser fjernet",
+    fix_stat_bad_fares:  "priser med manglende referanser fjernet",
     fix_stat_unused_prices: "ubrukte priser fjernet",
     fix_stat_unused_pcs: "ubrukte passasjerkategorier fjernet",
     fix_stat_unused_rcs: "ubrukte RC-er fjernet",
@@ -258,7 +258,7 @@ const translations = {
     discount_error_no_carrier:      "❌ Velg minst én transportør, eller velg «Ingen begrensning».",
     discount_error_bad_pct:         "❌ Rabattprosent må være mellom 1 og 99.",
     discount_error_no_passenger:    "❌ Velg minst én passasjerkategori og én serviceklasse.",
-    discount_success:               "✅ {fares} nye farer og {prices} nye priser lagt til.",
+    discount_success:               "✅ {fares} nye priser lagt til.",
     discount_success_filename:      "Filen lastes ned som {filename}",
 
     // Landingsside
@@ -270,7 +270,7 @@ const translations = {
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.",
     landing_feat3_title:"Legg til rabatt i OSDM",
-    landing_feat3_desc: "Legg til rabatterte farer direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
+    landing_feat3_desc: "Legg til rabatterte priser direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
 
     // Tilgangsforespørsel
     access_trigger:       "Ikke aktiv bruker? Be om tilgang",

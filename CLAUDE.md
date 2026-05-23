@@ -87,7 +87,7 @@ Ingenting skrives til disk under generering.
 - `carrierCodes[]` — valgfri liste med RICS-koder (tom = ingen begrensning)
 - `passengerRefs[]`, `serviceClassIds[]` — hvilke kategorier og klasser rabatten gjelder
 
-Backend samler RC-er fra **alle** par og lager farer for samtlige kombinasjoner av RC × passasjerkategori × serviceklasse.
+Backend samler RC-er fra **alle** par og lager priser for samtlige kombinasjoner av RC × passasjerkategori × serviceklasse.
 
 ---
 
@@ -135,7 +135,7 @@ Neste ledige: `C__5` → skal brukes til DSB (1186).
 ### FareConstraintBundles
 | ID (v7.0) | Beskrivelse |
 |---|---|
-| `1076_7.0_S__1` | Primær bundle for alle ordinære farer |
+| `1076_7.0_S__1` | Primær bundle for alle ordinære priser |
 | `1076_7.0_S__2` | Sekundær bundle |
 
 ### Passasjerkategorier og ratio

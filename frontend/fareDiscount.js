@@ -1,4 +1,4 @@
-// fareDiscount.js – Legg til rabattert fare i OSDM JSON
+// fareDiscount.js – Legg til rabatterte priser i OSDM JSON
 
 const SVG_X = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="1" y1="1" x2="8" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="8" y1="1" x2="1" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 

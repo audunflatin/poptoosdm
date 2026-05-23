@@ -264,7 +264,7 @@ Viser alle EventLog-hendelser med filtrering og paginering.
 
 ---
 
-## Fare-discount – legg til rabatterte farer
+## Fare-discount – legg til rabatterte priser
 
 | Kall | Handling |
 |---|---|
@@ -328,7 +328,7 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - ✅ E-postinvitasjon via Resend
 - ✅ Tvungen passordbytte ved første innlogging
 - ✅ OSDM til Excel-konvertering (alle land/operatører, metadata-boks, RICS-navn)
-- ✅ Legg til rabatterte farer i eksisterende OSDM-fil
+- ✅ Legg til rabatterte priser i eksisterende OSDM-fil
 - ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk, fransk)
 - ✅ Ingen øvre filstørrelsesgrense
 
