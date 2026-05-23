@@ -114,44 +114,71 @@
     .login-footer a:hover { color: white; }
 
     .access-section {
-      margin-top: 5rem;
+      margin-top: 4rem;
       width: 100%;
       max-width: 480px;
       text-align: center;
     }
 
-    .access-section::before {
-      content: "";
+    .access-trigger {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0;
+      transition: color 0.15s;
+    }
+    .access-trigger:hover { color: rgba(255,255,255,0.75); }
+
+    .trigger-chevron {
+      transition: transform 0.4s ease;
       display: block;
-      width: 40px;
-      height: 2px;
-      background: rgba(255,255,255,0.12);
-      margin: 0 auto 3rem;
+    }
+    .access-trigger.is-open .trigger-chevron {
+      transform: rotate(180deg);
     }
 
     .access-card {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+      transition: max-height 0.5s ease, opacity 0.35s ease, margin-top 0.5s ease;
+      text-align: left;
+    }
+    .access-card.is-open {
+      max-height: 700px;
+      opacity: 1;
+      margin-top: 1.5rem;
+    }
+
+    .access-card-inner {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 2.25rem 2rem;
-      text-align: left;
     }
 
-    .access-card h2 {
-      font-size: 1.2rem;
+    .access-card-inner h2 {
+      font-size: 1.1rem;
       font-weight: 800;
       color: white;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
     }
 
-    .access-card > p {
-      font-size: 0.9rem;
+    .access-card-inner > p {
+      font-size: 0.88rem;
       color: rgba(255,255,255,0.5);
       line-height: 1.6;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
     }
 
-    .access-card button[type="submit"] {
+    .access-card-inner button[type="submit"] {
       width: 100%;
       margin-top: 1.5rem;
       padding: 0.75rem;
@@ -165,7 +192,7 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .access-card button[type="submit"]:hover { background: #e04444; }
+    .access-card-inner button[type="submit"]:hover { background: #e04444; }
 
     .access-success {
       background: rgba(90,195,154,0.12);
@@ -234,23 +261,32 @@
 </div>
 
 <div class="access-section">
-  <div class="access-card">
-    <h2 data-i18n="access_section_title">Be om tilgang</h2>
-    <p data-i18n="access_section_desc">OSDMTools er tilgjengelig for europeiske jernbaneoperatører. Send en forespørsel, så tar jeg kontakt.</p>
+  <button class="access-trigger" id="accessTrigger" onclick="toggleAccessForm()">
+    <span data-i18n="access_trigger">Ikke aktiv bruker? Be om tilgang</span>
+    <svg class="trigger-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2.5 5L7 9.5L11.5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
-    <div id="accessSuccess" class="access-success" style="display:none;"></div>
-    <div id="accessError" class="access-error" style="display:none;"></div>
+  <div class="access-card" id="accessCard">
+    <div class="access-card-inner">
+      <h2 data-i18n="access_section_title">Be om tilgang</h2>
+      <p data-i18n="access_section_desc">OSDMTools er tilgjengelig for europeiske jernbaneoperatører. Send en forespørsel, så tar jeg kontakt.</p>
 
-    <form id="accessForm">
-      <input type="text" name="website" id="accessWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none;" />
-      <label for="accessName" data-i18n="access_name">Navn</label>
-      <input id="accessName" name="name" type="text" required autocomplete="name" />
-      <label for="accessEmail" data-i18n="access_email">E-post</label>
-      <input id="accessEmail" name="email" type="email" required autocomplete="email" />
-      <label for="accessOrg" data-i18n="access_org">Jernbaneoperatør</label>
-      <input id="accessOrg" name="org" type="text" required data-i18n-placeholder="access_org_placeholder" />
-      <button type="submit" data-i18n="access_btn">Send forespørsel</button>
-    </form>
+      <div id="accessSuccess" class="access-success" style="display:none;"></div>
+      <div id="accessError" class="access-error" style="display:none;"></div>
+
+      <form id="accessForm">
+        <input type="text" name="website" id="accessWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none;" />
+        <label for="accessName" data-i18n="access_name">Navn</label>
+        <input id="accessName" name="name" type="text" required autocomplete="name" />
+        <label for="accessEmail" data-i18n="access_email">E-post</label>
+        <input id="accessEmail" name="email" type="email" required autocomplete="email" />
+        <label for="accessOrg" data-i18n="access_org">Jernbaneoperatør</label>
+        <input id="accessOrg" name="org" type="text" required data-i18n-placeholder="access_org_placeholder" />
+        <button type="submit" data-i18n="access_btn">Send forespørsel</button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -258,11 +294,19 @@
   <a href="/login" data-i18n="landing_login_btn">Logg inn</a>
 </div>
 
-<script src="/static/i18n.js?v=35"></script>
+<script src="/static/i18n.js?v=36"></script>
 <script>
   const accessForm = document.getElementById("accessForm");
   const accessSuccess = document.getElementById("accessSuccess");
   const accessError = document.getElementById("accessError");
+  const accessCard = document.getElementById("accessCard");
+  const accessTrigger = document.getElementById("accessTrigger");
+
+  function toggleAccessForm() {
+    const isOpen = accessCard.classList.contains("is-open");
+    accessCard.classList.toggle("is-open", !isOpen);
+    accessTrigger.classList.toggle("is-open", !isOpen);
+  }
 
   accessForm.onsubmit = async e => {
     e.preventDefault();

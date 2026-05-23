@@ -273,6 +273,7 @@ const translations = {
     landing_feat3_desc: "Legg til rabatterte farer direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
 
     // Tilgangsforespørsel
+    access_trigger:       "Ikke aktiv bruker? Be om tilgang",
     access_section_title: "Be om tilgang",
     access_section_desc:  "OSDMTools er tilgjengelig for europeiske jernbaneoperatører. Send en forespørsel, så tar jeg kontakt.",
     access_name:          "Navn",
@@ -551,6 +552,7 @@ const translations = {
     landing_feat3_desc: "Add discounted fares directly to an existing OSDM file for specific routes, carriers and passenger categories.",
 
     // Request access
+    access_trigger:       "Don't have access? Request it",
     access_section_title: "Request access",
     access_section_desc:  "OSDMTools is available for European railway operators. Send a request and I'll get back to you.",
     access_name:          "Name",
@@ -829,6 +831,7 @@ const translations = {
     landing_feat3_desc: "Fügen Sie rabattierte Tarife direkt zu einer vorhandenen OSDM-Datei für bestimmte Strecken, Betreiber und Fahrgastkategorien hinzu.",
 
     // Zugriffsanfrage
+    access_trigger:       "Noch kein Zugang? Zugang beantragen",
     access_section_title: "Zugang beantragen",
     access_section_desc:  "OSDMTools steht europäischen Eisenbahnbetreibern zur Verfügung. Senden Sie eine Anfrage und ich melde mich bei Ihnen.",
     access_name:          "Name",
@@ -1107,6 +1110,7 @@ const translations = {
     landing_feat3_desc: "Lägg till rabatterade tariffer direkt i en befintlig OSDM-fil för specifika sträckningar, operatörer och passagerarkategorier.",
 
     // Åtkomstbegäran
+    access_trigger:       "Ingen åtkomst? Begär åtkomst",
     access_section_title: "Begär åtkomst",
     access_section_desc:  "OSDMTools är tillgängligt för europeiska järnvägsoperatörer. Skicka en förfrågan, så kontaktar jag dig.",
     access_name:          "Namn",
@@ -1385,6 +1389,7 @@ const translations = {
     landing_feat3_desc: "Ajoutez des tarifs réduits directement à un fichier OSDM existant pour des itinéraires, transporteurs et catégories de passagers spécifiques.",
 
     // Demande d'accès
+    access_trigger:       "Pas encore d'accès ? Faire une demande",
     access_section_title: "Demander l'accès",
     access_section_desc:  "OSDMTools est disponible pour les opérateurs ferroviaires européens. Envoyez une demande et je vous recontacterai.",
     access_name:          "Nom",
