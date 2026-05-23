@@ -16,7 +16,9 @@ Rask referanse for Claude. Detaljert arkitektur og kontekst: `CONTEXT_PopToOSDM.
 
 | URL | HTML | JS | Funksjon |
 |---|---|---|---|
-| `/` | `index.html` | `app.js` | Oppdater OSDM-priser (hovedflyt) |
+| `/` (uinnlogget) | `landing.html` | — | Landingsside med info og tilgangsforespørsel |
+| `/login` | `login.html` | — | Innlogging |
+| `/` (innlogget) | `index.html` | `app.js` | Oppdater OSDM-priser (hovedflyt) |
 | `/osdmtoexcel` | `osdmtoexcel.html` | `osdmtoExcel.js` | OSDM JSON → Excel |
 | `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte farer i eksisterende OSDM |
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
@@ -162,14 +164,13 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 ---
 
-## Pågående oppgave
+## Tilgangsforespørsel – endepunkt
 
-**DSB-rabatt på Kornsjø gr ↔ Oslo S** — klar til å kjøres via `/fare-discount`:
-- Fra: Kornsjø grense (UIC 7600551), Til: Oslo S (UIC 7600100)
-- Transportør: DSB (RICS 1186) – velg «Spesifikke transportører»
-- Rabatt: 20 %
-- Passasjerkategorier: Voksen 2. kl. = G__1 og G__2
-- Farnavn: f.eks. «DSB reduction Adult 2nd class»
+`POST /request-access` (åpent, ingen innlogging nødvendig):
+- Rate limiting: maks 3 forespørsler per IP per 24 timer (`_access_requests` i `main.py`)
+- Honeypot-felt (`website`) — bots avvises stille med 200 OK
+- Sender e-post til admin via `send_access_request_email()` i `email_utils.py`
+- Krever `CONTACT_EMAIL`-miljøvariabel
 
 ---
 
@@ -178,7 +179,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=13 |
-| `i18n.js` | v=35 (landing.html) / v=33 (hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=36 (landing.html) / v=33 (hovudsider) / v=19 (login-sider) |
 | `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
@@ -188,7 +189,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=35:
+HTML-filer som laster `i18n.js` med v=36:
 `landing.html`
 
 HTML-filer som laster `i18n.js` med v=33:
