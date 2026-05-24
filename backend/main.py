@@ -516,7 +516,7 @@ async def validate_osdm(request: Request, osdmFile: UploadFile = File(...)):
         "warnings": warnings,
         "deliveryId": delivery.get("deliveryId", ""),
         "fareProvider": delivery.get("fareProvider", ""),
-        "fareCount": len(fs.get("fares", [])),
+        "fareCount": len(fs.get("regionalConstraints", [])),
         "priceCount": len(price_ids),
         "stationCount": station_count,
     }
