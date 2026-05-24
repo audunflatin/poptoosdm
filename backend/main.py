@@ -1772,7 +1772,7 @@ async def price_adjust(
 
     log_event(
         request.session.get("user_email"), "price_adjust",
-        detail={"factor": factor, "filename": osdm_file.filename, "prices_updated": len(new_amounts), "delivery_id": delivery_id},
+        detail={"factor": factor, "filename": osdm_file.filename, "prices_updated": len(new_eur_amounts), "delivery_id": delivery_id},
     )
 
     return Response(
