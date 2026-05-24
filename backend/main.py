@@ -390,6 +390,90 @@ def validate_ten(request: Request, tenFile: UploadFile = File(...)):
 
 
 # ---------------------------------------------------------------------
+# JSON byte-level utilities (avoids creating full Python object tree)
+# ---------------------------------------------------------------------
+
+def _find_json_value_end(content: bytes, start: int) -> int:
+    """Return end index of the JSON value whose first byte is at start."""
+    c = content[start]
+    if c in (ord('{'), ord('[')):
+        depth = 0
+        i = start
+        in_string = False
+        while i < len(content):
+            b = content[i]
+            if in_string:
+                if b == ord('\\'):
+                    i += 2
+                    continue
+                if b == ord('"'):
+                    in_string = False
+            else:
+                if b == ord('"'):
+                    in_string = True
+                elif b in (ord('{'), ord('[')):
+                    depth += 1
+                elif b in (ord('}'), ord(']')):
+                    depth -= 1
+                    if depth == 0:
+                        return i + 1
+            i += 1
+    elif c == ord('"'):
+        i = start + 1
+        while i < len(content):
+            b = content[i]
+            if b == ord('\\'):
+                i += 2
+                continue
+            if b == ord('"'):
+                return i + 1
+            i += 1
+    else:
+        i = start
+        while i < len(content) and content[i:i+1] not in (b',', b'}', b']', b' ', b'\n', b'\r', b'\t'):
+            i += 1
+        return i
+    return len(content)
+
+
+def _find_section_span(content: bytes, key: str) -> tuple[int, int]:
+    """
+    Find (value_start, value_end) byte offsets for the first "key":VALUE in content.
+    Raises KeyError if not found.
+    """
+    search = f'"{key}":'.encode()
+    idx = content.find(search)
+    if idx == -1:
+        raise KeyError(key)
+    val_start = idx + len(search)
+    while val_start < len(content) and content[val_start:val_start+1] in (b' ', b'\t', b'\n', b'\r'):
+        val_start += 1
+    return val_start, _find_json_value_end(content, val_start)
+
+
+def _apply_byte_replacements(content: bytes, replacements: list) -> bytes:
+    """Apply multiple (start, end, new_bytes) replacements at once (must be non-overlapping)."""
+    replacements = sorted(replacements)
+    parts: list[bytes] = []
+    pos = 0
+    for start, end, new_bytes in replacements:
+        parts.append(content[pos:start])
+        parts.append(new_bytes)
+        pos = end
+    parts.append(content[pos:])
+    return b"".join(parts)
+
+
+def _append_to_json_array(content: bytes, key: str, new_items: list) -> bytes:
+    """Append new_items to a JSON array identified by key in content bytes."""
+    if not new_items:
+        return content
+    val_start, val_end = _find_section_span(content, key)
+    new_bytes = (b", " + b", ".join(json.dumps(item, ensure_ascii=False).encode() for item in new_items))
+    return content[:val_end - 1] + new_bytes + content[val_end - 1:]
+
+
+# ---------------------------------------------------------------------
 # OSDM validation
 # ---------------------------------------------------------------------
 
@@ -931,10 +1015,20 @@ def excel_from_generated(request: Request):
     require_login(request)
     if not OSDM_OUT:
         raise HTTPException(status_code=400, detail="Ingen generert OSDM-fil tilgjengelig")
+
+    osdm_bytes = OSDM_OUT["content"].encode("utf-8") if isinstance(OSDM_OUT["content"], str) else OSDM_OUT["content"]
+
+    # Extract delivery info for filename (quick ijson scan, no full parse)
+    delivery_info: dict = {}
     try:
-        data = json.loads(OSDM_OUT["content"])
+        for item in ijson.items(io.BytesIO(osdm_bytes), "fareDelivery.delivery"):
+            delivery_info = item
+            break
     except Exception:
         raise HTTPException(status_code=500, detail="Kunne ikke lese generert OSDM-fil")
+
+    env_suffix = "test" if delivery_info.get("usage") == "TEST_ONLY" else "prod"
+    gen_filename = f"{delivery_info.get('fareProvider', '')}_{delivery_info.get('deliveryId', 'osdm')}_{env_suffix}.xlsx"
 
     job_id = str(uuid.uuid4())
     XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
@@ -943,12 +1037,9 @@ def excel_from_generated(request: Request):
 
     def run():
         try:
-            xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
-            delivery   = data.get("fareDelivery", {}).get("delivery", {})
-            env_suffix = "test" if delivery.get("usage") == "TEST_ONLY" else "prod"
-            filename   = f"{delivery.get('fareProvider', '')}_{delivery.get('deliveryId', 'osdm')}_{env_suffix}.xlsx"
-            XLSX_JOBS[job_id].update({"status": "done", "result": xlsx_bytes, "filename": filename, "rows": row_count, "percent": 100})
-            log_event(caller_email, "excel_exported", detail={"filename": filename, "rows": row_count})
+            xlsx_bytes, row_count = osdm_to_xlsx_bytes(osdm_bytes, job_id, XLSX_JOBS)
+            XLSX_JOBS[job_id].update({"status": "done", "result": xlsx_bytes, "filename": gen_filename, "rows": row_count, "percent": 100})
+            log_event(caller_email, "excel_exported", detail={"filename": gen_filename, "rows": row_count})
         except Exception as e:
             import traceback; traceback.print_exc()
             XLSX_JOBS[job_id].update({"status": "error", "error": str(e)})
@@ -1143,7 +1234,7 @@ def suffix(id_str: str) -> str:
 from backend.rics_codes import RICS_CODES as RICS_CARRIER_NAMES, RICS_COUNTRIES
 
 
-def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> bytes:
+def osdm_to_xlsx_bytes(file_bytes: bytes, job_id: str = None, jobs: dict = None) -> tuple[bytes, int]:
     import io as _io
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -1154,34 +1245,46 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
         if job_id and jobs and job_id in jobs:
             jobs[job_id]["percent"] = percent
 
-    fs = data["fareDelivery"]["fareStructure"]
-    delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
+    def _s():
+        return _io.BytesIO(file_bytes)
 
-    text_map = {
-        t["id"]: t.get("textUtf8", t.get("text", ""))
-        for t in fs.get("texts", [])
-    }
-    price_map = {
-        p["id"]: p["price"][0]["amount"]
-        for p in fs.get("prices", [])
-    }
-    station_map = {
-        sn["code"]: sn.get("nameUtf8", sn.get("name", ""))
-        for sn in fs.get("stationNames", [])
-    }
-    service_class_map = {
-        sc["id"]: text_map.get(sc.get("textRef", ""), sc["id"])
-        for sc in fs.get("serviceClassDefinitions", [])
-    }
-    pc_map = {pc["id"]: pc for pc in fs.get("passengerConstraints", [])}
-    svc_constraint_map = {
-        sc["id"]: text_map.get(sc.get("textRef", ""), sc["id"])
-        for sc in fs.get("serviceConstraints", [])
-    }
+    # --- Build lookup maps via ijson (no full parse) ---
+    delivery: dict = {}
+    for item in ijson.items(_s(), "fareDelivery.delivery"):
+        delivery = item
+        break
+    delivery_id = delivery.get("deliveryId", "")
+
+    text_map: dict[str, str] = {}
+    for t in ijson.items(_s(), "fareDelivery.fareStructure.texts.item"):
+        text_map[t["id"]] = t.get("textUtf8", t.get("text", ""))
+
+    price_map: dict[str, int] = {}
+    for p in ijson.items(_s(), "fareDelivery.fareStructure.prices.item"):
+        if p.get("price"):
+            price_map[p["id"]] = p["price"][0]["amount"]
+
+    station_map: dict[str, str] = {}
+    for sn in ijson.items(_s(), "fareDelivery.fareStructure.stationNames.item"):
+        code = sn.get("code") or sn.get("uicCode")
+        if code:
+            station_map[str(code)] = sn.get("nameUtf8", sn.get("name", ""))
+
+    service_class_map: dict[str, str] = {}
+    for sc in ijson.items(_s(), "fareDelivery.fareStructure.serviceClassDefinitions.item"):
+        service_class_map[sc["id"]] = text_map.get(sc.get("textRef", ""), sc["id"])
+
+    pc_map: dict[str, dict] = {}
+    for pc in ijson.items(_s(), "fareDelivery.fareStructure.passengerConstraints.item"):
+        pc_map[pc["id"]] = pc
+
+    svc_constraint_map: dict[str, str] = {}
+    for sc in ijson.items(_s(), "fareDelivery.fareStructure.serviceConstraints.item"):
+        svc_constraint_map[sc["id"]] = text_map.get(sc.get("textRef", ""), sc["id"])
 
     # Reduction-oppslag: id -> korteste representative kortnavn
-    reduction_map = {}
-    for rc in fs.get("reductionConstraints", []):
+    reduction_map: dict[str, str] = {}
+    for rc in ijson.items(_s(), "fareDelivery.fareStructure.reductionConstraints.item"):
         cards = rc.get("requiredCards", [])
         if cards:
             name = min(cards, key=lambda c: len(c.get("cardName", "")))
@@ -1195,18 +1298,18 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
     }
 
     # CP-id -> beste UIC-kode og stasjonsnavn
-    cp_to_uic = {}
-    cp_to_name = {}
-    for cp in fs["connectionPoints"]:
+    cp_to_uic: dict[str, str] = {}
+    cp_to_name: dict[str, str] = {}
+    for cp in ijson.items(_s(), "fareDelivery.fareStructure.connectionPoints.item"):
         best_code = None
         all_codes = []
         for ss in cp.get("stationSets", []):
             for s in ss:
                 if s.get("codeList") == "UIC":
                     code = s["code"]
-                    all_codes.append(code)
+                    all_codes.append(str(code))
                     if best_code is None or s.get("country") == "NO":
-                        best_code = code
+                        best_code = str(code)
         best_name = None
         for code in all_codes:
             name = station_map.get(code)
@@ -1216,22 +1319,38 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
         cp_to_uic[cp["id"]] = best_code or ""
         cp_to_name[cp["id"]] = best_name or best_code or ""
 
-    rc_map = {rc["id"]: rc for rc in fs["regionalConstraints"]}
+    rc_map: dict[str, dict] = {}
+    for rc in ijson.items(_s(), "fareDelivery.fareStructure.regionalConstraints.item"):
+        rc_map[rc["id"]] = rc
+
+    cal: dict = {}
+    for item in ijson.items(_s(), "fareDelivery.fareStructure.calendars.item"):
+        cal = item
+        break
+
+    carriers_set: set[str] = set()
+    for cc in ijson.items(_s(), "fareDelivery.fareStructure.carrierConstraints.item"):
+        for c in cc.get("includedCarrier", []):
+            carriers_set.add(c)
 
     set_progress(20)
 
-    # Pass 1: bygg kolonnenavn uten passasjertype
-    # Nøkkel: (nameRef, passengerConstraintRef, serviceClassRef, reductionConstraintRef, serviceConstraintRef)
-    seen_categories = {}
-    category_order = []
+    # Single pass through fares: build seen_categories AND rc_prices simultaneously
+    seen_categories: dict = {}
+    category_order: list = []
+    rc_prices: dict = {}
+    fare_count = 0
 
-    for fare in fs["fares"]:
+    for fare in ijson.items(_s(), "fareDelivery.fareStructure.fares.item"):
+        fare_count += 1
         nr = fare.get("nameRef", "")
         pc_ref = fare.get("passengerConstraintRef", "")
         sc = fare.get("serviceClassRef", "")
         red = fare.get("reductionConstraintRef", "")
         svc = fare.get("serviceConstraintRef", "")
         key = (nr, pc_ref, sc, red, svc)
+
+        # Category discovery (pass 1 logic)
         if key not in seen_categories:
             parts = [text_map.get(nr, nr)]
             sc_name = service_class_map.get(sc, "")
@@ -1246,9 +1365,19 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
             seen_categories[key] = " ".join(parts)
             category_order.append(key)
 
-    set_progress(35)
+        # Price collection (pass 2 logic)
+        rc_ref = fare.get("regionalConstraintRef")
+        price_ref = fare.get("priceRef")
+        amount = price_map.get(price_ref)
+        if amount is not None and rc_ref:
+            rc_prices.setdefault(rc_ref, {})[key] = amount
 
-    # Pass 2: legg til passasjertype kun for duplikater
+        if fare_count % 100000 == 0:
+            set_progress(20 + min(40, int(fare_count / 10000)))
+
+    set_progress(60)
+
+    # Pass 2 (in-memory): legg til passasjertype kun for duplikater
     name_counts: dict = {}
     for name in seen_categories.values():
         name_counts[name] = name_counts.get(name, 0) + 1
@@ -1273,25 +1402,6 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
             if svc_name:
                 parts.append(svc_name)
             seen_categories[key] = " ".join(parts)
-
-    set_progress(40)
-
-    # Samle priser per RC
-    rc_prices: dict = {}
-    total_fares = len(fs["fares"])
-    for i, fare in enumerate(fs["fares"]):
-        rc_ref = fare.get("regionalConstraintRef")
-        nr = fare.get("nameRef", "")
-        pc = fare.get("passengerConstraintRef", "")
-        sc = fare.get("serviceClassRef", "")
-        red = fare.get("reductionConstraintRef", "")
-        svc = fare.get("serviceConstraintRef", "")
-        price_ref = fare.get("priceRef")
-        amount = price_map.get(price_ref)
-        if amount is not None and rc_ref:
-            rc_prices.setdefault(rc_ref, {})[(nr, pc, sc, red, svc)] = amount
-        if i % 50000 == 0:
-            set_progress(40 + int(i / total_fares * 30))
 
     set_progress(70)
 
@@ -1359,8 +1469,6 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
     price_col_start = 6
 
     # --- Metadata-seksjon øverst ---
-    delivery = data["fareDelivery"]["delivery"]
-    cal = fs.get("calendars", [{}])[0]
     utc_offset = cal.get("utcOffset", 0)
     tz = timezone(timedelta(minutes=utc_offset))
 
@@ -1375,10 +1483,7 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
 
     valid_from  = parse_osdm_date(cal.get("fromDate", ""))
     valid_until = parse_osdm_date(cal.get("untilDate", ""))
-    carriers = sorted({
-        c for cc in fs.get("carrierConstraints", [])
-        for c in cc.get("includedCarrier", [])
-    })
+    carriers = sorted(carriers_set)
     carriers_display = ", ".join(
         f"{RICS_CARRIER_NAMES[c]} ({c})" if c in RICS_CARRIER_NAMES else c
         for c in carriers
@@ -1417,7 +1522,7 @@ def osdm_to_xlsx_bytes(data: dict, job_id: str = None, jobs: dict = None) -> byt
         ("Usage",         usage,
          "Route pairs",   str(len(pair_data))),
         ("Optional",      "Yes" if delivery.get("optionalDelivery") else "No",
-         "Fares",         f"{len(fs['fares']):,}"),
+         "Fares",         f"{fare_count:,}"),
     ]
 
     for r_off, (lbl1, val1, lbl2, val2) in enumerate(info_rows, start=2):
@@ -1497,17 +1602,31 @@ async def osdm_to_csv(
 
     content = await osdmFile.read()
     print(f"Mottok fil: {osdmFile.filename}, størrelse: {len(content)} bytes")
-    
+
+    # Quick structure check with ijson (no full parse)
+    has_fd = False
     try:
-        data = json.loads(content.decode("utf-8"))
-        print("JSON parset OK")
+        for prefix, event, _ in ijson.parse(io.BytesIO(content)):
+            if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                has_fd = True
+                break
     except Exception as e:
         print(f"JSON-feil: {e}")
         raise HTTPException(status_code=400, detail="Ugyldig JSON-fil")
-
-    if "fareDelivery" not in data or "fareStructure" not in data.get("fareDelivery", {}):
+    if not has_fd:
         print("Struktursjekk feilet")
         raise HTTPException(status_code=400, detail="Filen ser ikke ut som en gyldig OSDM fareDelivery")
+
+    # Extract delivery info for filename (before starting thread)
+    delivery_info: dict = {}
+    for item in ijson.items(io.BytesIO(content), "fareDelivery.delivery"):
+        delivery_info = item
+        break
+    fare_provider = delivery_info.get("fareProvider", "")
+    delivery_id_str = delivery_info.get("deliveryId", "osdm")
+    usage_str = delivery_info.get("usage", "")
+    env_suffix = "test" if usage_str == "TEST_ONLY" else "prod"
+    filename = f"{fare_provider}_{delivery_id_str}_{env_suffix}.xlsx"
 
     job_id = str(uuid.uuid4())
     print(f"Starter jobb: {job_id}")
@@ -1517,13 +1636,7 @@ async def osdm_to_csv(
     def run():
         try:
             print(f"run() starter for jobb {job_id}")
-            xlsx_bytes, row_count = osdm_to_xlsx_bytes(data, job_id, XLSX_JOBS)
-            delivery = data.get("fareDelivery", {}).get("delivery", {})
-            fare_provider = delivery.get("fareProvider", "")
-            delivery_id = delivery.get("deliveryId", "osdm")
-            usage = delivery.get("usage", "")
-            env_suffix = "test" if usage == "TEST_ONLY" else "prod"
-            filename = f"{fare_provider}_{delivery_id}_{env_suffix}.xlsx"
+            xlsx_bytes, row_count = osdm_to_xlsx_bytes(content, job_id, XLSX_JOBS)
             XLSX_JOBS[job_id]["result"] = xlsx_bytes
             XLSX_JOBS[job_id]["rows"] = row_count
             XLSX_JOBS[job_id]["filename"] = filename
@@ -1537,7 +1650,7 @@ async def osdm_to_csv(
             XLSX_JOBS[job_id]["status"] = "error"
             XLSX_JOBS[job_id]["error"] = str(e)
             log_event(caller_email, "excel_exported", "error", {"error": str(e)})
-            
+
     threading.Thread(target=run, daemon=True).start()
     print(f"Returnerer jobId: {job_id}")
     return {"jobId": job_id}
@@ -1743,18 +1856,27 @@ async def price_adjust(
 
     try:
         content = await osdm_file.read()
-        data = json.loads(content)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen kunne ikke leses")
+
+    # Quick structure check
+    has_fs = False
+    try:
+        for prefix, event, _ in ijson.parse(io.BytesIO(content)):
+            if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                has_fs = True
+                break
     except Exception:
         raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+    if not has_fs:
+        raise HTTPException(status_code=400, detail="Mangler fareDelivery.fareStructure")
 
-    try:
-        fs = data["fareDelivery"]["fareStructure"]
-        prices: list = fs["prices"]
-        fares: list  = fs["fares"]
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Mangler felt i OSDM-strukturen: {e}")
+    # Load prices list via ijson
+    prices: list = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.prices.item"))
+    if not prices:
+        raise HTTPException(status_code=400, detail="Mangler felt i OSDM-strukturen: 'prices'")
 
-    # Indeks: price_id → list-posisjon, hjelper for å slå opp EUR-beløp
+    # Indeks: price_id → list-posisjon
     price_idx = {p["id"]: i for i, p in enumerate(prices)}
 
     def get_eur(price_id: str) -> float:
@@ -1764,9 +1886,8 @@ async def price_adjust(
         return entry["amount"] / (10 ** scale)
 
     # Grupper farer etter (RC, carrier, bundle) → finn voksenpris per gruppe
-    from collections import defaultdict
     groups: dict[tuple, list] = defaultdict(list)
-    for fare in fares:
+    for fare in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.fares.item"):
         key = (
             fare.get("regionalConstraintRef"),
             fare.get("carrierConstraintRef"),
@@ -1801,16 +1922,16 @@ async def price_adjust(
             scale = entry.get("scale", 2)
             entry["amount"] = int(round(new_eur_amounts[price["id"]] * (10 ** scale)))
 
-    # Oppdater delivery-felt
-    delivery = data["fareDelivery"]["delivery"]
-    old_id = delivery.get("deliveryId", "")
-    if old_id and old_id != delivery_id:
-        raw = json.dumps(data)
-        raw = raw.replace(f"_{old_id}_", f"_{delivery_id}_")
-        data = json.loads(raw)
-        delivery = data["fareDelivery"]["delivery"]
-        fs = data["fareDelivery"]["fareStructure"]
+    # Load delivery and calendars via ijson
+    delivery: dict = {}
+    for item in ijson.items(io.BytesIO(content), "fareDelivery.delivery"):
+        delivery = item
+        break
+    calendars: list = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.calendars.item"))
 
+    old_id = delivery.get("deliveryId", "")
+
+    # Oppdater delivery-felt
     delivery["deliveryId"] = delivery_id
     if previous_delivery_id.strip():
         delivery["previousDeliveryId"] = previous_delivery_id.strip()
@@ -1824,13 +1945,30 @@ async def price_adjust(
     utc_offset = int(from_dt.utcoffset().total_seconds() / 60)
     from_date = f"{valid_from}T00:00:00+0000"
     until_date = f"{valid_to}T23:59:59+0000"
-    for cal in fs.get("calendars", []):
+    for cal in calendars:
         cal["fromDate"] = from_date
         cal["untilDate"] = until_date
         cal["utcOffset"] = utc_offset
 
-    result = json.dumps(data, ensure_ascii=False, indent=2)
-    fare_provider = data["fareDelivery"]["delivery"].get("fareProvider", "")
+    # If deliveryId changed, do byte-level string-replace first
+    if old_id and old_id != delivery_id:
+        content = content.replace(f"_{old_id}_".encode(), f"_{delivery_id}_".encode())
+
+    # Find byte spans and replace sections
+    try:
+        delivery_span = _find_section_span(content, "delivery")
+        prices_span   = _find_section_span(content, "prices")
+        calendars_span = _find_section_span(content, "calendars")
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Mangler felt i OSDM-strukturen: {e}")
+
+    result_bytes = _apply_byte_replacements(content, [
+        (delivery_span[0],  delivery_span[1],  json.dumps(delivery,  ensure_ascii=False).encode("utf-8")),
+        (prices_span[0],    prices_span[1],    json.dumps(prices,    ensure_ascii=False).encode("utf-8")),
+        (calendars_span[0], calendars_span[1], json.dumps(calendars, ensure_ascii=False).encode("utf-8")),
+    ])
+
+    fare_provider = delivery.get("fareProvider", "")
     env_suffix = "test" if environment == "test" else "prod"
     filename = f"{fare_provider}_{delivery_id}_{env_suffix}.json"
 
@@ -1840,7 +1978,7 @@ async def price_adjust(
     )
 
     return Response(
-        content=result.encode("utf-8"),
+        content=result_bytes,
         media_type="application/json",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
@@ -1871,29 +2009,51 @@ def fare_discount_page(request: Request):
 def _run_fare_discount_parse(job_id: str, file_bytes: bytes) -> None:
     job = PARSE_JOBS[job_id]
     try:
+        def _s():
+            return io.BytesIO(file_bytes)
+
+        job["phase"] = "parsing"
+        has_fd = False
         try:
-            data = json.loads(file_bytes)
+            for prefix, event, _ in ijson.parse(_s()):
+                if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                    has_fd = True
+                    break
         except Exception:
             job.update({"status": "error", "error": "Filen er ikke gyldig JSON"})
             return
+        if not has_fd:
+            job.update({"status": "error", "error": "Filen mangler fareDelivery.fareStructure"})
+            return
 
         job["phase"] = "validating"
-        job["percent"] = 30
+        job["percent"] = 20
 
-        fs = data.get("fareDelivery", {}).get("fareStructure", {})
+        delivery: dict = {}
+        for item in ijson.items(_s(), "fareDelivery.delivery"):
+            delivery = item
+            break
 
-        job["percent"] = 40
+        job["percent"] = 25
+
+        texts_map: dict = {}
+        for t in ijson.items(_s(), "fareDelivery.fareStructure.texts.item"):
+            texts_map[t["id"]] = t
+
+        job["percent"] = 35
+
         uic_to_name: dict[str, str] = {}
-        for sn in fs.get("stationNames", []):
+        for sn in ijson.items(_s(), "fareDelivery.fareStructure.stationNames.item"):
             code = sn.get("code") or sn.get("uicCode")
             name = sn.get("nameUtf8") or sn.get("name") or code
             if code:
                 uic_to_name[str(code)] = name
 
-        job["percent"] = 55
+        job["percent"] = 50
+
         stations: list[dict] = []
         seen: set[str] = set()
-        for cp in fs.get("connectionPoints", []):
+        for cp in ijson.items(_s(), "fareDelivery.fareStructure.connectionPoints.item"):
             for station_set in cp.get("stationSets", []):
                 for s in station_set:
                     if s.get("codeList") == "UIC":
@@ -1908,10 +2068,11 @@ def _run_fare_discount_parse(job_id: str, file_bytes: bytes) -> None:
                             })
         stations.sort(key=lambda x: x["name"].lower())
 
-        job["percent"] = 70
+        job["percent"] = 65
+
         carriers: list[dict] = []
         seen_codes: set[str] = set()
-        for cc in fs.get("carrierConstraints", []):
+        for cc in ijson.items(_s(), "fareDelivery.fareStructure.carrierConstraints.item"):
             for code in cc.get("includedCarrier", []):
                 if code not in seen_codes:
                     seen_codes.add(code)
@@ -1921,10 +2082,10 @@ def _run_fare_discount_parse(job_id: str, file_bytes: bytes) -> None:
                         "constraint_id": cc["id"],
                     })
 
-        job["percent"] = 80
-        texts_map = {t["id"]: t for t in fs.get("texts", [])}
+        job["percent"] = 75
+
         seen_refs: dict[str, dict] = {}
-        for pc in fs.get("passengerConstraints", []):
+        for pc in ijson.items(_s(), "fareDelivery.fareStructure.passengerConstraints.item"):
             ref = pc.get("nameRef", "")
             text_obj = texts_map.get(ref, {})
             name = text_obj.get("textUtf8") or text_obj.get("text") or ref
@@ -1933,14 +2094,15 @@ def _run_fare_discount_parse(job_id: str, file_bytes: bytes) -> None:
             seen_refs[ref]["ids"].append(pc["id"])
         passenger_constraints = list(seen_refs.values())
 
-        job["percent"] = 90
+        job["percent"] = 85
+
         service_classes = []
-        for scd in fs.get("serviceClassDefinitions", []):
+        for scd in ijson.items(_s(), "fareDelivery.fareStructure.serviceClassDefinitions.item"):
             text_obj = texts_map.get(scd.get("textRef", ""), {})
             name = text_obj.get("textUtf8") or text_obj.get("text") or scd["id"]
             service_classes.append({"id": scd["id"], "name": name})
 
-        delivery = data.get("fareDelivery", {}).get("delivery", {})
+        job["percent"] = 95
 
         job.update({
             "status": "done", "percent": 100,
@@ -2028,6 +2190,20 @@ def _id_base(data: dict) -> str:
     return f"disc_{did}_" if did else "disc_"
 
 
+def _id_base_from_delivery(delivery: dict, sample_ids: list[str]) -> str:
+    """Utled ID-base fra delivery dict og en liste med eksisterende IDer som fallback."""
+    provider = delivery.get("fareProvider", "")
+    did = delivery.get("deliveryId", "")
+    if provider and did:
+        return f"{provider}_{did}_"
+    for sample in sample_ids:
+        if sample and "_" in sample:
+            parts = sample.split("_")
+            if len(parts) >= 2:
+                return "_".join(parts[:2]) + "_"
+    return f"disc_{did}_" if did else "disc_"
+
+
 def _next_id_num(existing_ids: list[str], prefix: str) -> int:
     """Finn neste ledige nummer for IDer med gitt prefix."""
     import re
@@ -2055,30 +2231,59 @@ async def fare_discount_apply(
     require_login(request)
 
     try:
-        data = json.loads(await osdmFile.read())
+        content = await osdmFile.read()
     except Exception:
-        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+        raise HTTPException(status_code=400, detail="Filen kunne ikke leses")
 
     try:
         station_pairs = json.loads(stationPairsJson)
     except Exception:
         raise HTTPException(status_code=400, detail="Ugyldig stationPairsJson")
 
-    fs = data.get("fareDelivery", {}).get("fareStructure", {})
-    delivery_id = data.get("fareDelivery", {}).get("delivery", {}).get("deliveryId", "")
-    id_base = _id_base(data)
+    # Quick structure check
+    has_fs = False
+    try:
+        for prefix, event, _ in ijson.parse(io.BytesIO(content)):
+            if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                has_fs = True
+                break
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+    if not has_fs:
+        raise HTTPException(status_code=400, detail="Filen mangler fareDelivery.fareStructure")
+
+    # Load small sections via ijson
+    delivery: dict = {}
+    for item in ijson.items(io.BytesIO(content), "fareDelivery.delivery"):
+        delivery = item
+        break
+    delivery_id = delivery.get("deliveryId", "")
+
+    regional_constraints: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.regionalConstraints.item"))
+    passenger_constraints: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.passengerConstraints.item"))
+    prices_list: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.prices.item"))
+    texts_list: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.texts.item"))
+    carrier_constraints_list: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.carrierConstraints.item"))
+
+    # Derive id_base from delivery + sample IDs
+    sample_ids = (
+        [carrier_constraints_list[0]["id"]] if carrier_constraints_list else
+        [texts_list[0]["id"]] if texts_list else
+        [prices_list[0]["id"]] if prices_list else
+        []
+    )
+    id_base = _id_base_from_delivery(delivery, sample_ids)
 
     # Finn relevante RC-er
     if not station_pairs:
-        # Ingen strekningsbegrensning – bruk alle RC-er i filen
-        matching_rc_ids = {rc["id"] for rc in fs.get("regionalConstraints", [])}
+        matching_rc_ids = {rc["id"] for rc in regional_constraints}
         if not matching_rc_ids:
             raise HTTPException(status_code=400, detail="OSDM-filen inneholder ingen regionalConstraints")
     else:
         matching_rc_ids: set[str] = set()
         for pair in station_pairs:
             pair_cps = {pair["fromCpId"], pair["toCpId"]}
-            for rc in fs.get("regionalConstraints", []):
+            for rc in regional_constraints:
                 if {rc.get("entryConnectionPointId"), rc.get("exitConnectionPointId")} == pair_cps:
                     matching_rc_ids.add(rc["id"])
         if not matching_rc_ids:
@@ -2086,7 +2291,7 @@ async def fare_discount_apply(
 
     # nameRef → liste av passengerConstraint-IDer
     nameref_to_pc_ids: dict[str, list[str]] = {}
-    for pc in fs.get("passengerConstraints", []):
+    for pc in passenger_constraints:
         ref = pc.get("nameRef", "")
         if ref in passengerRefs:
             nameref_to_pc_ids.setdefault(ref, []).append(pc["id"])
@@ -2094,7 +2299,7 @@ async def fare_discount_apply(
 
     # Prisoppslag: priceId → første price-element
     price_lookup: dict[str, dict] = {
-        p["id"]: p["price"][0] for p in fs.get("prices", []) if p.get("price")
+        p["id"]: p["price"][0] for p in prices_list if p.get("price")
     }
 
     multiplier = 1 - discountPct / 100
@@ -2104,13 +2309,13 @@ async def fare_discount_apply(
     new_carrier_constraint: dict | None = None
     if carrierCodes:
         cc_prefix = f"{id_base}C__"
-        existing_cc_ids = [c["id"] for c in fs.get("carrierConstraints", [])]
+        existing_cc_ids = [c["id"] for c in carrier_constraints_list]
         new_cc_id = f"{cc_prefix}{_next_id_num(existing_cc_ids, cc_prefix)}"
         new_carrier_constraint = {"id": new_cc_id, "includedCarrier": list(carrierCodes)}
 
     # --- Ny tekst ---
     text_prefix = f"{id_base}P__"
-    existing_text_ids = [t["id"] for t in fs.get("texts", [])]
+    existing_text_ids = [t["id"] for t in texts_list]
     new_text_id = f"{text_prefix}{_next_id_num(existing_text_ids, text_prefix)}"
     new_text = {
         "id": new_text_id,
@@ -2123,7 +2328,7 @@ async def fare_discount_apply(
 
     # --- Nye priser (dedupliser på beløp) ---
     price_prefix = f"{id_base}I__"
-    existing_price_ids = [p["id"] for p in fs.get("prices", [])]
+    existing_price_ids = [p["id"] for p in prices_list]
     next_price_num = _next_id_num(existing_price_ids, price_prefix)
     new_amount_to_price_id: dict[int, str] = {}
     new_prices: list[dict] = []
@@ -2145,11 +2350,11 @@ async def fare_discount_apply(
         new_amount_to_price_id[discounted_int] = new_id
         return new_id
 
-    # --- Nye farer ---
+    # --- Nye farer (stream fares, never load full array) ---
     new_fares: list[dict] = []
     seen_combos: set[tuple] = set()
 
-    for fare in fs.get("fares", []):
+    for fare in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.fares.item"):
         rc_ref = fare.get("regionalConstraintRef")
         pc_ref = fare.get("passengerConstraintRef")
         sc_ref = fare.get("serviceClassRef")
@@ -2192,12 +2397,13 @@ async def fare_discount_apply(
             detail="Ingen eksisterende farer funnet for valgt kombinasjon av stasjoner, passasjerer og serviceklasse",
         )
 
-    # Injer nye elementer i fareStructure
+    # Append new items to arrays using byte-level operations
+    result_bytes = content
+    result_bytes = _append_to_json_array(result_bytes, "fares", new_fares)
+    result_bytes = _append_to_json_array(result_bytes, "prices", new_prices)
+    result_bytes = _append_to_json_array(result_bytes, "texts", [new_text])
     if new_carrier_constraint:
-        fs["carrierConstraints"].append(new_carrier_constraint)
-    fs["texts"].append(new_text)
-    fs["prices"].extend(new_prices)
-    fs["fares"].extend(new_fares)
+        result_bytes = _append_to_json_array(result_bytes, "carrierConstraints", [new_carrier_constraint])
 
     log_event(request.session.get("user_email"), "discount_applied", detail={
         "deliveryId": delivery_id,
@@ -2211,7 +2417,7 @@ async def fare_discount_apply(
 
     filename = f"fareDelivery_{id_base.rstrip('_')}_discount.json"
     return Response(
-        content=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+        content=result_bytes,
         media_type="application/json",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
@@ -2226,66 +2432,121 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
     require_login(request)
 
     try:
-        data = json.loads(await osdmFile.read())
+        content = await osdmFile.read()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen kunne ikke leses")
+
+    # Quick structure check
+    has_fs = False
+    try:
+        for prefix, event, _ in ijson.parse(io.BytesIO(content)):
+            if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                has_fs = True
+                break
     except Exception:
         raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
-
-    fd = data.get("fareDelivery", {})
-    if not fd or "fareStructure" not in fd:
+    if not has_fs:
         raise HTTPException(status_code=400, detail="Filen mangler fareDelivery.fareStructure")
 
-    fs = fd["fareStructure"]
     stats: dict[str, int] = {}
 
-    # Bygg sett med definerte IDer
-    price_ids  = {p["id"] for p in fs.get("prices", [])}
-    pc_ids     = {p["id"] for p in fs.get("passengerConstraints", [])}
-    rc_ids     = {r["id"] for r in fs.get("regionalConstraints", [])}
-    cc_ids     = {c["id"] for c in fs.get("carrierConstraints", [])}
-    bundle_ids = {b["id"] for b in fs.get("fareConstraintBundles", [])}
-    text_ids   = {t["id"] for t in fs.get("texts", [])}
-    cp_ids     = {cp["id"] for cp in fs.get("connectionPoints", [])}
+    # Bygg sett med definerte IDer via ijson
+    price_ids  = {p["id"] for p in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.prices.item")}
+    pc_ids     = {p["id"] for p in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.passengerConstraints.item")}
+    cp_ids     = {cp["id"] for cp in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.connectionPoints.item")}
+    cc_ids     = {c["id"] for c in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.carrierConstraints.item")}
+    bundle_ids = {b["id"] for b in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.fareConstraintBundles.item")}
+    text_ids   = {t["id"] for t in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.texts.item")}
+
+    # Load regionalConstraints list (small)
+    rc_list_orig: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.regionalConstraints.item"))
 
     # 1. Fjern RC-er med ugyldig CP-referanse
-    orig = len(fs.get("regionalConstraints", []))
-    fs["regionalConstraints"] = [
-        rc for rc in fs.get("regionalConstraints", [])
+    rc_list_good = [
+        rc for rc in rc_list_orig
         if rc.get("entryConnectionPointId") in cp_ids
         and rc.get("exitConnectionPointId") in cp_ids
     ]
-    rc_ids = {r["id"] for r in fs["regionalConstraints"]}
-    stats["removed_bad_rcs"] = orig - len(fs["regionalConstraints"])
+    rc_ids = {r["id"] for r in rc_list_good}
+    stats["removed_bad_rcs"] = len(rc_list_orig) - len(rc_list_good)
 
-    # 2. Fjern farer med manglende referanser
-    orig = len(fs.get("fares", []))
-    fs["fares"] = [
-        f for f in fs.get("fares", [])
-        if (not f.get("priceRef")  or f["priceRef"]  in price_ids)
-        and (not f.get("passengerConstraintRef") or f["passengerConstraintRef"] in pc_ids)
-        and (not f.get("regionalConstraintRef") or f["regionalConstraintRef"] in rc_ids)
-        and (not f.get("carrierConstraintRef")  or f["carrierConstraintRef"]  in cc_ids)
-        and (not f.get("bundleRef")             or f["bundleRef"]             in bundle_ids)
-        and (not f.get("nameRef")               or f["nameRef"]               in text_ids)
-    ]
-    stats["removed_bad_fares"] = orig - len(fs["fares"])
+    # 2. Stream fares: find bad fares AND collect used IDs simultaneously
+    fares_count_orig = 0
+    bad_fare_ids: set[str] = set()
+    used_price_ids: set[str] = set()
+    used_pc_ids: set[str] = set()
+    used_rc_ids: set[str] = set()
 
-    # 3. Fjern ubrukte priser
-    used_price_ids = {f.get("priceRef") for f in fs.get("fares", []) if f.get("priceRef")}
-    orig = len(fs.get("prices", []))
-    fs["prices"] = [p for p in fs.get("prices", []) if p["id"] in used_price_ids]
-    stats["removed_unused_prices"] = orig - len(fs["prices"])
+    for fare in ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.fares.item"):
+        fares_count_orig += 1
+        is_bad = (
+            (fare.get("priceRef") and fare["priceRef"] not in price_ids)
+            or (fare.get("passengerConstraintRef") and fare["passengerConstraintRef"] not in pc_ids)
+            or (fare.get("regionalConstraintRef") and fare["regionalConstraintRef"] not in rc_ids)
+            or (fare.get("carrierConstraintRef") and fare["carrierConstraintRef"] not in cc_ids)
+            or (fare.get("bundleRef") and fare["bundleRef"] not in bundle_ids)
+            or (fare.get("nameRef") and fare["nameRef"] not in text_ids)
+        )
+        if is_bad:
+            bad_fare_ids.add(fare.get("id", ""))
+        else:
+            if fare.get("priceRef"):
+                used_price_ids.add(fare["priceRef"])
+            if fare.get("passengerConstraintRef"):
+                used_pc_ids.add(fare["passengerConstraintRef"])
+            if fare.get("regionalConstraintRef"):
+                used_rc_ids.add(fare["regionalConstraintRef"])
 
-    # 4. Fjern ubrukte passengerConstraints
-    used_pc_ids = {f.get("passengerConstraintRef") for f in fs.get("fares", []) if f.get("passengerConstraintRef")}
-    orig = len(fs.get("passengerConstraints", []))
-    fs["passengerConstraints"] = [p for p in fs.get("passengerConstraints", []) if p["id"] in used_pc_ids]
-    stats["removed_unused_pcs"] = orig - len(fs["passengerConstraints"])
+    bad_fare_count = len(bad_fare_ids)
+    stats["removed_bad_fares"] = bad_fare_count
 
-    # 5. Fjern ubrukte regionalConstraints
-    used_rc_ids = {f.get("regionalConstraintRef") for f in fs.get("fares", []) if f.get("regionalConstraintRef")}
-    orig = len(fs.get("regionalConstraints", []))
-    fs["regionalConstraints"] = [r for r in fs.get("regionalConstraints", []) if r["id"] in used_rc_ids]
-    stats["removed_unused_rcs"] = orig - len(fs["regionalConstraints"])
+    # Load small arrays for filtering
+    prices_orig: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.prices.item"))
+    pc_orig: list[dict] = list(ijson.items(io.BytesIO(content), "fareDelivery.fareStructure.passengerConstraints.item"))
+
+    prices_filtered = [p for p in prices_orig if p["id"] in used_price_ids]
+    pc_filtered = [p for p in pc_orig if p["id"] in used_pc_ids]
+    rc_filtered = [r for r in rc_list_good if r["id"] in used_rc_ids]
+
+    stats["removed_unused_prices"] = len(prices_orig) - len(prices_filtered)
+    stats["removed_unused_pcs"] = len(pc_orig) - len(pc_filtered)
+    stats["removed_unused_rcs"] = len(rc_list_good) - len(rc_filtered)
+
+    # Build output bytes
+    if bad_fare_count > 0:
+        # Rebuild fares section by streaming and filtering
+        fares_val_start, fares_val_end = _find_section_span(content, "fares")
+        out = bytearray()
+        out += content[:fares_val_start]
+        out += b"["
+        first = True
+        for fare in ijson.items(io.BytesIO(content[fares_val_start:fares_val_end]), "item"):
+            fare_id = fare.get("id", "")
+            if fare_id in bad_fare_ids:
+                continue
+            if not first:
+                out += b","
+            out += json.dumps(fare, ensure_ascii=False).encode("utf-8")
+            first = False
+        out += b"]"
+        out += content[fares_val_end:]
+        result_bytes = bytes(out)
+    else:
+        result_bytes = content
+
+    # Apply replacements for the small arrays
+    try:
+        prices_span = _find_section_span(result_bytes, "prices")
+        pc_span     = _find_section_span(result_bytes, "passengerConstraints")
+        rc_span     = _find_section_span(result_bytes, "regionalConstraints")
+    except KeyError as e:
+        raise HTTPException(status_code=500, detail=f"Intern feil: mangler nøkkel {e}")
+
+    result_bytes = _apply_byte_replacements(result_bytes, [
+        (prices_span[0], prices_span[1], json.dumps(prices_filtered, ensure_ascii=False).encode("utf-8")),
+        (pc_span[0],     pc_span[1],     json.dumps(pc_filtered,     ensure_ascii=False).encode("utf-8")),
+        (rc_span[0],     rc_span[1],     json.dumps(rc_filtered,     ensure_ascii=False).encode("utf-8")),
+    ])
 
     orig_name = osdmFile.filename or "osdm.json"
     base = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
@@ -2294,7 +2555,7 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
     log_event(request.session.get("user_email"), "osdm_fixed", detail=stats)
 
     return Response(
-        content=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+        content=result_bytes,
         media_type="application/json",
         headers={
             "Content-Disposition": f'attachment; filename="{out_name}"',

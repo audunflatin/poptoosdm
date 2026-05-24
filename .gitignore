@@ -8,3 +8,5 @@ tools/
 frontend/admin_mock.js
 .env
 .env.*
+data/input/*.json
+data/input/*.xlsx
