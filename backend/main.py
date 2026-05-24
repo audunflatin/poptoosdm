@@ -1767,8 +1767,9 @@ async def price_adjust(
         cal["utcOffset"] = utc_offset
 
     result = json.dumps(data, ensure_ascii=False, indent=2)
-    base = Path(osdm_file.filename).stem
-    filename = f"{base}_adjusted.json"
+    fare_provider = data["fareDelivery"]["delivery"].get("fareProvider", "")
+    env_suffix = "test" if environment == "test" else "prod"
+    filename = f"{fare_provider}_{delivery_id}_{env_suffix}.json"
 
     log_event(
         request.session.get("user_email"), "price_adjust",
