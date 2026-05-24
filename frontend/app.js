@@ -23,13 +23,29 @@ function hideOsdmProgress(containerId) {
 function uploadWithProgress(url, formData, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    const startTime = Date.now();
+    let hasRealProgress = false;
+
+    const timer = setInterval(() => {
+      if (!hasRealProgress) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        onProgress(0.48 * (1 - Math.exp(-elapsed / 60)));
+      }
+    }, 500);
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable && e.total > 0) {
+        hasRealProgress = true;
+        onProgress(e.loaded / e.total);
+      }
+    };
     xhr.onload = () => {
+      clearInterval(timer);
       if (xhr.status >= 200 && xhr.status < 300) {
         try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
       } else { reject(new Error(xhr.statusText || `HTTP ${xhr.status}`)); }
     };
-    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.onerror = () => { clearInterval(timer); reject(new Error("Network error")); };
     xhr.open("POST", url);
     xhr.send(formData);
   });
