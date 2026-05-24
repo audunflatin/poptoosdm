@@ -21,6 +21,7 @@ const spinnerAdjust     = document.getElementById("spinnerAdjust");
 async function validateOsdmFile() {
   summaryEl.innerHTML = "";
   hideStatus();
+  document.getElementById("deliveryFields").style.display = "none";
 
   if (!osdmFileInput.files[0]) return;
 
@@ -53,8 +54,9 @@ async function validateOsdmFile() {
         </div>
       </div>`;
 
-    // Autofyll previousDeliveryId med deliveryId fra opplastet fil
+    // Autofyll previousDeliveryId og vis leveransefelt
     if (res.deliveryId) prevDeliveryInput.value = res.deliveryId;
+    document.getElementById("deliveryFields").style.display = "";
 
   } catch {
     spinnerOsdm.style.display = "none";
