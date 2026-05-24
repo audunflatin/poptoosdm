@@ -18,7 +18,7 @@ import ijson
 
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
-from backend.core.settings import SESSION_SECRET
+from backend.core.settings import SESSION_SECRET, ALLOWED_ORIGINS
 from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email, send_access_request_email
 
 import logging
@@ -41,9 +41,9 @@ app.mount("/static", StaticFiles(directory="frontend"), name="static")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="strict")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 # ---------------------------------------------------------------------
@@ -53,6 +53,8 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db()
+    if SESSION_SECRET == "CHANGE_ME_BEFORE_PROD":
+        logger.warning("⚠️  SESSION_SECRET er ikke satt – sesjoner er ikke sikre!")
 
 # ---------------------------------------------------------------------
 # Rate limiting (innlogging)
@@ -97,10 +99,28 @@ def _check_access_rate_limit(ip: str):
 TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
-OSDM_OUT: dict | None = None  # {"filename": str, "content": str}
-XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows}
-VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error}
-PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error}
+OSDM_STORE: dict[str, dict] = {}  # user_email → {"filename": str, "content": str}
+XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows, owner, created_at}
+VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
+PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
+
+_JOB_TTL = 2 * 3600  # 2 timer
+
+def _cleanup_jobs():
+    while True:
+        time.sleep(600)
+        cutoff = time.time() - _JOB_TTL
+        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS):
+            stale = [k for k, v in list(jobs.items()) if v.get("created_at", 0) < cutoff]
+            for k in stale:
+                jobs.pop(k, None)
+
+threading.Thread(target=_cleanup_jobs, daemon=True).start()
+
+
+def _safe_filename(name: str) -> str:
+    """Fjern tegn som kan ødelegge Content-Disposition-headere."""
+    return "".join(c for c in name if c not in '"\\/:*?<>|\r\n').strip() or "osdm.json"
 
 # ---------------------------------------------------------------------
 # Auth helpers
@@ -637,6 +657,7 @@ async def validate_osdm(request: Request, osdmFile: UploadFile = File(...)):
         "status": "running", "percent": 0, "phase": "parsing",
         "start_time": time.time(), "file_size": len(file_bytes),
         "result": None, "error": None,
+        "owner": request.session.get("user_email"), "created_at": time.time(),
     }
     threading.Thread(target=_run_osdm_validation, args=(job_id, file_bytes), daemon=True).start()
     return {"jobId": job_id}
@@ -648,6 +669,8 @@ def validate_osdm_progress(job_id: str, request: Request):
     job = VALIDATION_JOBS.get(job_id)
     if not job:
         return {"status": "error", "error": "Jobb ikke funnet"}
+    if job.get("owner") != request.session.get("user_email"):
+        raise HTTPException(status_code=403, detail="Ikke tilgang")
 
     if job.get("phase") == "parsing":
         elapsed = time.time() - job.get("start_time", time.time())
@@ -977,8 +1000,8 @@ def generate_osdm(
     filename = f"1076_{datasetId}_{environment}.json"
     content = json.dumps(data, indent=2, ensure_ascii=False)
 
-    global OSDM_OUT
-    OSDM_OUT = {"filename": filename, "content": content}
+    user_email = request.session.get("user_email", "")
+    OSDM_STORE[user_email] = {"filename": filename, "content": content}
 
     log_event(request.session.get("user_email"), "osdm_generated", detail={
         "deliveryId": datasetId,
@@ -1013,10 +1036,12 @@ def get_progress():
 @app.post("/ui/excel-from-generated")
 def excel_from_generated(request: Request):
     require_login(request)
-    if not OSDM_OUT:
+    user_email = request.session.get("user_email", "")
+    osdm_entry = OSDM_STORE.get(user_email)
+    if not osdm_entry:
         raise HTTPException(status_code=400, detail="Ingen generert OSDM-fil tilgjengelig")
 
-    osdm_bytes = OSDM_OUT["content"].encode("utf-8") if isinstance(OSDM_OUT["content"], str) else OSDM_OUT["content"]
+    osdm_bytes = osdm_entry["content"].encode("utf-8") if isinstance(osdm_entry["content"], str) else osdm_entry["content"]
 
     # Extract delivery info for filename (quick ijson scan, no full parse)
     delivery_info: dict = {}
@@ -1031,9 +1056,10 @@ def excel_from_generated(request: Request):
     gen_filename = f"{delivery_info.get('fareProvider', '')}_{delivery_info.get('deliveryId', 'osdm')}_{env_suffix}.xlsx"
 
     job_id = str(uuid.uuid4())
-    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
+    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0,
+                         "owner": user_email, "created_at": time.time()}
 
-    caller_email = request.session.get("user_email")
+    caller_email = user_email
 
     def run():
         try:
@@ -1050,13 +1076,17 @@ def excel_from_generated(request: Request):
 
 
 @app.get("/ui/download-osdm/{filename}")
-def download_osdm(filename: str):
-    if not OSDM_OUT or OSDM_OUT["filename"] != filename:
+def download_osdm(filename: str, request: Request):
+    require_login(request)
+    user_email = request.session.get("user_email", "")
+    osdm_entry = OSDM_STORE.get(user_email)
+    if not osdm_entry or osdm_entry["filename"] != filename:
         raise HTTPException(status_code=404, detail="OSDM-fil finnes ikke")
+    safe_name = _safe_filename(filename)
     return Response(
-        content=OSDM_OUT["content"],
+        content=osdm_entry["content"],
         media_type="application/json",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
     )
 
 # ---------------------------------------------------------------------
@@ -1630,8 +1660,9 @@ async def osdm_to_csv(
 
     job_id = str(uuid.uuid4())
     print(f"Starter jobb: {job_id}")
-    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0}
     caller_email = request.session.get("user_email")
+    XLSX_JOBS[job_id] = {"status": "running", "result": None, "error": None, "filename": None, "percent": 0, "rows": 0,
+                         "owner": caller_email, "created_at": time.time()}
 
     def run():
         try:
@@ -1661,13 +1692,15 @@ def osdm_to_csv_status(job_id: str, request: Request):
     job = XLSX_JOBS.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Jobb ikke funnet")
+    if job.get("owner") != request.session.get("user_email"):
+        raise HTTPException(status_code=403, detail="Ikke tilgang")
     return {
         "status": job["status"],
         "percent": job.get("percent", 0),
         "error": job.get("error"),
         "filename": job.get("filename"),
         "rows": job.get("rows", 0),
-}
+    }
 
 @app.get("/frontend/osdm-to-csv-download/{job_id}")
 def osdm_to_csv_download(job_id: str, request: Request):
@@ -1677,14 +1710,15 @@ def osdm_to_csv_download(job_id: str, request: Request):
     job = XLSX_JOBS.get(job_id)
     if not job or job["status"] != "done":
         raise HTTPException(status_code=404, detail="Fil ikke klar")
+    if job.get("owner") != request.session.get("user_email"):
+        raise HTTPException(status_code=403, detail="Ikke tilgang")
     xlsx_bytes = job["result"]
-    filename = job["filename"]
-    # Rydd opp etter nedlasting
+    filename = _safe_filename(job["filename"] or "osdm.xlsx")
     del XLSX_JOBS[job_id]
     return StreamingResponse(
         _io.BytesIO(xlsx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -1970,7 +2004,7 @@ async def price_adjust(
 
     fare_provider = delivery.get("fareProvider", "")
     env_suffix = "test" if environment == "test" else "prod"
-    filename = f"{fare_provider}_{delivery_id}_{env_suffix}.json"
+    filename = _safe_filename(f"{fare_provider}_{delivery_id}_{env_suffix}.json")
 
     log_event(
         request.session.get("user_email"), "price_adjust",
@@ -2128,6 +2162,7 @@ async def fare_discount_parse(request: Request, osdmFile: UploadFile = File(...)
         "status": "running", "percent": 0, "phase": "parsing",
         "start_time": time.time(), "file_size": len(file_bytes),
         "result": None, "error": None,
+        "owner": request.session.get("user_email"), "created_at": time.time(),
     }
     threading.Thread(target=_run_fare_discount_parse, args=(job_id, file_bytes), daemon=True).start()
     return {"jobId": job_id}
@@ -2139,6 +2174,8 @@ def fare_discount_parse_progress(job_id: str, request: Request):
     job = PARSE_JOBS.get(job_id)
     if not job:
         return {"status": "error", "error": "Jobb ikke funnet"}
+    if job.get("owner") != request.session.get("user_email"):
+        raise HTTPException(status_code=403, detail="Ikke tilgang")
 
     if job.get("phase") == "parsing":
         elapsed = time.time() - job.get("start_time", time.time())
@@ -2548,7 +2585,7 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
         (rc_span[0],     rc_span[1],     json.dumps(rc_filtered,     ensure_ascii=False).encode("utf-8")),
     ])
 
-    orig_name = osdmFile.filename or "osdm.json"
+    orig_name = _safe_filename(osdmFile.filename or "osdm.json")
     base = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
     out_name = f"{base}_fixed.json"
 
