@@ -12,6 +12,69 @@ const envSelect         = document.getElementById("environment");
 const optDeliverySelect = document.getElementById("optionalDelivery");
 const validFromInput    = document.getElementById("validFrom");
 const validToInput      = document.getElementById("validTo");
+const summaryEl         = document.getElementById("osdmSummary");
+const warningsEl        = document.getElementById("osdmWarnings");
+const spinnerOsdm       = document.getElementById("spinnerOsdm");
+
+// ── OSDM-validering ───────────────────────────────────────────────────────────
+
+async function validateOsdmFile() {
+  summaryEl.innerHTML  = "";
+  warningsEl.innerHTML = "";
+  hideStatus();
+
+  if (!osdmFileInput.files[0]) return;
+
+  spinnerOsdm.style.display = "block";
+
+  const fd = new FormData();
+  fd.append("osdmFile", osdmFileInput.files[0]);
+
+  try {
+    const r = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
+    const res = await r.json();
+
+    spinnerOsdm.style.display = "none";
+
+    if (!res.ok) {
+      summaryEl.innerHTML = `<pre class="status-error">${res.error || t("unknown_error")}</pre>`;
+      return;
+    }
+
+    summaryEl.innerHTML = `
+      <div class="info-box">
+        <div>
+          <strong>${t("osdm_validated")}</strong>
+          <div class="info-meta">
+            ${t("label_delivery_id")}: <b>${res.deliveryId}</b> &nbsp;·&nbsp;
+            ${t("label_provider")}: <b>${res.fareProvider || "—"}</b> &nbsp;·&nbsp;
+            ${t("label_fare_count_short")}: <b>${res.fareCount.toLocaleString()}</b> &nbsp;·&nbsp;
+            ${t("label_price_count_short")}: <b>${res.priceCount.toLocaleString()}</b>
+          </div>
+        </div>
+      </div>`;
+
+    if (res.warnings && res.warnings.length > 0) {
+      const items = res.warnings.map(w => `<li>${w}</li>`).join("");
+      warningsEl.innerHTML = `
+        <div class="warnings-box" style="margin-top:0.75rem;">
+          <strong>${t("osdm_warnings_title")}</strong>
+          <ul style="margin:0.4rem 0 0 1.2rem; font-size:0.82rem; color:rgba(255,255,255,0.6);">${items}</ul>
+        </div>`;
+    } else {
+      warningsEl.innerHTML = `<div class="check-ok">✓ ${t("osdm_no_warnings")}</div>`;
+    }
+
+    // Autofyll previousDeliveryId med deliveryId fra opplastet fil
+    if (res.deliveryId) prevDeliveryInput.value = res.deliveryId;
+
+  } catch {
+    spinnerOsdm.style.display = "none";
+    summaryEl.innerHTML = `<pre class="status-error">${t("unknown_error")}</pre>`;
+  }
+}
+
+// ── Faktor-visning ────────────────────────────────────────────────────────────
 
 adjustPctInput.addEventListener("input", () => {
   const pct = parseFloat(adjustPctInput.value);
@@ -23,6 +86,22 @@ adjustPctInput.addEventListener("input", () => {
     factorDisplay.style.display = "none";
   }
 });
+
+// ── Flatpickr ─────────────────────────────────────────────────────────────────
+
+flatpickr("#validFrom", {
+  dateFormat: "Y-m-d",
+  locale: "no",
+  onChange: () => hideStatus(),
+});
+
+flatpickr("#validTo", {
+  dateFormat: "Y-m-d",
+  locale: "no",
+  onChange: () => hideStatus(),
+});
+
+// ── Juster og last ned ────────────────────────────────────────────────────────
 
 adjustBtn.addEventListener("click", async () => {
   hideStatus();
@@ -100,6 +179,8 @@ adjustBtn.addEventListener("click", async () => {
     adjustBtn.textContent = t("btn_adjust");
   }
 });
+
+// ── Hjelpefunksjoner ──────────────────────────────────────────────────────────
 
 function showStatus(msg, type) {
   statusMsg.textContent = msg;
