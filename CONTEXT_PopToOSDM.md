@@ -130,7 +130,7 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=14 |
-| `i18n.js` | v=37 (landing.html) / v=34 (hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=38 (landing.html) / v=35 (hovudsider) / v=19 (login-sider) |
 | `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
@@ -139,9 +139,9 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 | `priceAdjust.js` | v=2 |
 | `presentation.js` | v=4 |
 
-HTML-filer som laster `i18n.js` med v=37: `landing.html`
+HTML-filer som laster `i18n.js` med v=38: `landing.html`
 
-HTML-filer som laster `i18n.js` med v=34:
+HTML-filer som laster `i18n.js` med v=35:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
 
