@@ -15,6 +15,7 @@ const validToInput      = document.getElementById("validTo");
 const summaryEl         = document.getElementById("osdmSummary");
 const warningsEl        = document.getElementById("osdmWarnings");
 const spinnerOsdm       = document.getElementById("spinnerOsdm");
+const spinnerAdjust     = document.getElementById("spinnerAdjust");
 
 // ── OSDM-validering ───────────────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ adjustBtn.addEventListener("click", async () => {
 
   adjustBtn.disabled = true;
   adjustBtn.textContent = t("adjust_processing");
+  spinnerAdjust.style.display = "block";
 
   try {
     const fd = new FormData();
@@ -177,6 +179,7 @@ adjustBtn.addEventListener("click", async () => {
   } finally {
     adjustBtn.disabled = false;
     adjustBtn.textContent = t("btn_adjust");
+    spinnerAdjust.style.display = "none";
   }
 });
 

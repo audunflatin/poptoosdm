@@ -1691,8 +1691,14 @@ async def price_adjust(
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Mangler felt i OSDM-strukturen: {e}")
 
-    # Indeks: price_id → list-posisjon
+    # Indeks: price_id → list-posisjon, hjelper for å slå opp EUR-beløp
     price_idx = {p["id"]: i for i, p in enumerate(prices)}
+
+    def get_eur(price_id: str) -> float:
+        p = prices[price_idx[price_id]]
+        entry = p["price"][0]
+        scale = entry.get("scale", 2)
+        return entry["amount"] / (10 ** scale)
 
     # Grupper farer etter (RC, carrier, bundle) → finn voksenpris per gruppe
     from collections import defaultdict
@@ -1705,31 +1711,32 @@ async def price_adjust(
         )
         price_ref = fare.get("priceRef")
         if key[0] and price_ref and price_ref in price_idx:
-            amount = prices[price_idx[price_ref]]["amount"]
-            groups[key].append((price_ref, amount))
+            groups[key].append((price_ref, get_eur(price_ref)))
 
-    # Beregn nye priser
-    new_amounts: dict[str, float] = {}
+    # Beregn nye priser i EUR, lagre som {price_id: ny_eur}
+    new_eur_amounts: dict[str, float] = {}
     for group_fares in groups.values():
         if not group_fares:
             continue
-        max_amount = max(amt for _, amt in group_fares)
-        if max_amount <= 0:
+        max_eur = max(eur for _, eur in group_fares)
+        if max_eur <= 0:
             continue
-        new_adult = math.ceil(max_amount * factor / 0.20) * 0.20
-        for price_ref, amount in group_fares:
-            if amount <= 0:
-                new_amounts[price_ref] = 0.0
-            elif amount == max_amount:
-                new_amounts[price_ref] = round(new_adult, 2)
+        new_adult_eur = math.ceil(max_eur * factor / 0.20) * 0.20
+        for price_ref, eur in group_fares:
+            if eur <= 0:
+                new_eur_amounts[price_ref] = 0.0
+            elif eur == max_eur:
+                new_eur_amounts[price_ref] = new_adult_eur
             else:
-                ratio = amount / max_amount
-                new_amounts[price_ref] = round(math.ceil(new_adult * ratio / 0.20) * 0.20, 2)
+                ratio = eur / max_eur
+                new_eur_amounts[price_ref] = math.ceil(new_adult_eur * ratio / 0.20) * 0.20
 
-    # Oppdater prices-lista
-    for i, price in enumerate(prices):
-        if price["id"] in new_amounts:
-            prices[i] = {**price, "amount": new_amounts[price["id"]]}
+    # Oppdater prices-lista (skriver tilbake som skalert heltall)
+    for price in prices:
+        if price["id"] in new_eur_amounts:
+            entry = price["price"][0]
+            scale = entry.get("scale", 2)
+            entry["amount"] = int(round(new_eur_amounts[price["id"]] * (10 ** scale)))
 
     # Oppdater delivery-felt
     delivery = data["fareDelivery"]["delivery"]
