@@ -3,6 +3,38 @@ let lastGeneratedFile = null;
 function show(id){document.getElementById(id).style.display="block";}
 function hide(id){document.getElementById(id).style.display="none";}
 
+// ── OSDM progress-hjelpere ────────────────────────────────────────────────────
+
+function showOsdmProgress(containerId, pct, stage) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.style.display = "";
+  el.querySelector(".progress-fill").style.width = pct + "%";
+  el.querySelector(".progress-pct").textContent = pct + "%";
+  const stageEl = el.querySelector(".progress-stage");
+  if (stageEl) stageEl.textContent = (stage ? t("validate_stage_" + stage) : "") || "";
+}
+
+function hideOsdmProgress(containerId) {
+  const el = document.getElementById(containerId);
+  if (el) el.style.display = "none";
+}
+
+async function pollOsdmJob(jobId, progressEndpoint, containerId) {
+  while (true) {
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      const r = await fetch(`${progressEndpoint}/${jobId}`);
+      const data = await r.json();
+      if (data.status === "done") return data.result;
+      if (data.status === "error") return { ok: false, error: data.error };
+      showOsdmProgress(containerId, data.percent || 0, data.stage || "validating");
+    } catch {
+      return { ok: false, error: t("unknown_error") };
+    }
+  }
+}
+
 function validateGenerateInputs() {
   const errorEl = document.getElementById("validationError");
   errorEl.style.display = "none";
@@ -83,22 +115,23 @@ async function validateOsdm() {
   if (!fileInput.files.length) return;
 
   const file = fileInput.files[0];
-  const maxMb = window.location.hostname === "localhost" ? 5000 : 100;
+  const maxMb = 5000;
   const sizeMb = (file.size / 1024 / 1024).toFixed(1);
   if (file.size > maxMb * 1024 * 1024) {
     summaryEl.innerHTML = `<pre class="status-error">${t("file_too_large").replace("{size}", sizeMb).replace("{max}", maxMb)}</pre>`;
     return;
   }
 
-  show("spinnerOsdmVal");
+  showOsdmProgress("osdmValProgress", 0, "uploading");
 
   const fd = new FormData();
   fd.append("osdmFile", fileInput.files[0]);
 
-  const r = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
-  const res = await r.json();
+  const startResp = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
+  const { jobId } = await startResp.json();
+  const res = await pollOsdmJob(jobId, "/ui/validate-osdm/progress", "osdmValProgress");
 
-  hide("spinnerOsdmVal");
+  hideOsdmProgress("osdmValProgress");
 
   if (!res.ok) {
     summaryEl.innerHTML = `<pre class="status-error">${res.error || t("unknown_error")}</pre>`;

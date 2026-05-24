@@ -53,11 +53,7 @@ async function convert() {
   spinner.style.display = "block";
   convertBtn.disabled = true;
   const bar = document.getElementById("progressBar");
-  if (bar) {
-      bar.style.display = "block";
-      bar.value = 0;
-      bar.max = 100;
-  }
+  if (bar) bar.style.display = "block";
   const fd = new FormData();
   fd.append("osdmFile", fileInput.files[0]);
 
@@ -91,32 +87,36 @@ async function convert() {
   }
 }
 
-function pollStatus(jobId) {
+function updateExcelProgress(pct) {
   const bar = document.getElementById("progressBar");
-  const pct = document.getElementById("progressPercent");
+  const pctEl = document.getElementById("progressPercent");
   if (bar) {
     bar.style.display = "block";
-    bar.value = 0;
-    bar.max = 100;
+    const fill = bar.querySelector(".progress-fill");
+    if (fill) fill.style.width = pct + "%";
   }
-  if (pct) {
-    pct.style.display = "inline";
-    pct.innerText = "0%";
-  }
+  if (pctEl) pctEl.textContent = pct + "%";
+}
+
+function hideExcelProgress() {
+  const bar = document.getElementById("progressBar");
+  if (bar) bar.style.display = "none";
+}
+
+function pollStatus(jobId) {
+  updateExcelProgress(0);
 
   const interval = setInterval(async () => {
     try {
       const r = await fetch(`/frontend/osdm-to-csv-status/${jobId}`);
       const res = await r.json();
 
-      if (bar) bar.value = res.percent || 0;
-      if (pct) pct.innerText = (res.percent || 0) + "%";
+      updateExcelProgress(res.percent || 0);
 
       if (res.status === "done") {
         clearInterval(interval);
         spinner.style.display = "none";
-        if (bar) bar.style.display = "none";
-        if (pct) pct.style.display = "none";
+        hideExcelProgress();
         resultBox.style.display = "block";
         resultStatus.className = "status-ok";
         resultStatus.innerHTML =
@@ -130,8 +130,7 @@ function pollStatus(jobId) {
       } else if (res.status === "error") {
         clearInterval(interval);
         spinner.style.display = "none";
-        if (bar) bar.style.display = "none";
-        if (pct) pct.style.display = "none";
+        hideExcelProgress();
         resultBox.style.display = "block";
         resultStatus.className = "status-error";
         resultStatus.innerHTML =
@@ -143,7 +142,7 @@ function pollStatus(jobId) {
     } catch (err) {
       clearInterval(interval);
       spinner.style.display = "none";
-      if (bar) bar.style.display = "none";
+      hideExcelProgress();
       convertBtn.disabled = false;
     }
   }, 300);

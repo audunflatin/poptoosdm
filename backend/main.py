@@ -97,7 +97,9 @@ TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
 OSDM_OUT: dict | None = None  # {"filename": str, "content": str}
-XLSX_JOBS: dict = {}  # job_id -> {"status": "running"|"done"|"error", "result": bytes, "error": str}
+XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows}
+VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error}
+PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error}
 
 # ---------------------------------------------------------------------
 # Auth helpers
@@ -390,136 +392,175 @@ def validate_ten(request: Request, tenFile: UploadFile = File(...)):
 # OSDM validation
 # ---------------------------------------------------------------------
 
+def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
+    job = VALIDATION_JOBS[job_id]
+    try:
+        # JSON parse — blocking; poll endpoint estimates progress via elapsed time
+        try:
+            data = json.loads(file_bytes)
+        except Exception:
+            job.update({"status": "error", "error": "Filen er ikke gyldig JSON"})
+            return
+
+        job["phase"] = "validating"
+        job["percent"] = 28
+
+        fd = data.get("fareDelivery", {})
+        if not fd or "fareStructure" not in fd:
+            job.update({"status": "error", "error": "Filen mangler fareDelivery.fareStructure"})
+            return
+
+        delivery = fd.get("delivery", {})
+        fs = fd["fareStructure"]
+        warnings: list[str] = []
+
+        job["percent"] = 32
+        price_ids  = {p["id"] for p in fs.get("prices", [])}
+        pc_ids     = {p["id"] for p in fs.get("passengerConstraints", [])}
+        rc_ids     = {r["id"] for r in fs.get("regionalConstraints", [])}
+        cc_ids     = {c["id"] for c in fs.get("carrierConstraints", [])}
+        bundle_ids = {b["id"] for b in fs.get("fareConstraintBundles", [])}
+        text_ids   = {t["id"] for t in fs.get("texts", [])}
+        cp_ids     = {cp["id"] for cp in fs.get("connectionPoints", [])}
+
+        used_price_ids: set[str] = set()
+        used_pc_ids:    set[str] = set()
+        used_rc_ids:    set[str] = set()
+        missing: dict[str, set[str]] = {
+            "priceRef": set(), "passengerConstraintRef": set(),
+            "regionalConstraintRef": set(), "carrierConstraintRef": set(),
+            "bundleRef": set(), "nameRef": set(),
+        }
+
+        job["percent"] = 38
+        fares = fs.get("fares", [])
+        total_fares = len(fares)
+        for i, fare in enumerate(fares):
+            pr = fare.get("priceRef")
+            if pr:
+                if pr not in price_ids: missing["priceRef"].add(pr)
+                else: used_price_ids.add(pr)
+            pc = fare.get("passengerConstraintRef")
+            if pc:
+                if pc not in pc_ids: missing["passengerConstraintRef"].add(pc)
+                else: used_pc_ids.add(pc)
+            rc = fare.get("regionalConstraintRef")
+            if rc:
+                if rc not in rc_ids: missing["regionalConstraintRef"].add(rc)
+                else: used_rc_ids.add(rc)
+            cc = fare.get("carrierConstraintRef")
+            if cc and cc not in cc_ids: missing["carrierConstraintRef"].add(cc)
+            br = fare.get("bundleRef")
+            if br and br not in bundle_ids: missing["bundleRef"].add(br)
+            nr = fare.get("nameRef")
+            if nr and nr not in text_ids: missing["nameRef"].add(nr)
+            if total_fares and i % 5000 == 0:
+                job["percent"] = 38 + int(i / total_fares * 34)
+
+        job["percent"] = 72
+        rc_bad_cps: list[str] = []
+        for rc in fs.get("regionalConstraints", []):
+            for field in ("entryConnectionPointId", "exitConnectionPointId"):
+                cp_ref = rc.get(field)
+                if cp_ref and cp_ref not in cp_ids:
+                    rc_bad_cps.append(f"{rc['id']}: {field}={cp_ref}")
+
+        job["percent"] = 82
+        label_map = {
+            "priceRef": "prices",
+            "passengerConstraintRef": "passengerConstraints",
+            "regionalConstraintRef": "regionalConstraints",
+            "carrierConstraintRef": "carrierConstraints",
+            "bundleRef": "fareConstraintBundles",
+            "nameRef": "texts",
+        }
+        for field, ids in missing.items():
+            if ids:
+                examples = ", ".join(sorted(ids)[:5])
+                more = f" (+ {len(ids) - 5} til)" if len(ids) > 5 else ""
+                warnings.append(
+                    f"{len(ids)} fare(r) peker på ukjent {field} i {label_map[field]}: {examples}{more}"
+                )
+        if rc_bad_cps:
+            examples = "; ".join(rc_bad_cps[:3])
+            more = f" (+ {len(rc_bad_cps) - 3} til)" if len(rc_bad_cps) > 3 else ""
+            warnings.append(f"RC-er med ugyldig CP-referanse: {examples}{more}")
+
+        unused_prices = price_ids - used_price_ids
+        unused_pcs    = pc_ids - used_pc_ids
+        unused_rcs    = rc_ids - used_rc_ids
+        if unused_prices:
+            warnings.append(f"{len(unused_prices)} pris(er) er definert men ikke referert av noen fare")
+        if unused_pcs:
+            warnings.append(f"{len(unused_pcs)} passengerConstraint(s) er definert men ikke referert av noen fare")
+        if unused_rcs:
+            warnings.append(f"{len(unused_rcs)} regionalConstraint(s) er definert men ikke referert av noen fare")
+
+        job["percent"] = 92
+        station_count = len({
+            s["code"]
+            for cp in fs.get("connectionPoints", [])
+            for ss in cp.get("stationSets", [])
+            for s in ss
+            if s.get("codeList") == "UIC"
+        })
+
+        job.update({
+            "status": "done", "percent": 100,
+            "result": {
+                "ok": True,
+                "warnings": warnings,
+                "deliveryId": delivery.get("deliveryId", ""),
+                "fareProvider": delivery.get("fareProvider", ""),
+                "fareCount": len(fs.get("regionalConstraints", [])),
+                "priceCount": len(price_ids),
+                "stationCount": station_count,
+            }
+        })
+
+    except Exception as e:
+        job.update({"status": "error", "error": str(e)})
+
+
 @app.post("/ui/validate-osdm")
 async def validate_osdm(request: Request, osdmFile: UploadFile = File(...)):
     require_login(request)
-
-    try:
-        data = json.loads(await osdmFile.read())
-    except Exception:
-        return {"ok": False, "error": "Filen er ikke gyldig JSON"}
-
-    fd = data.get("fareDelivery", {})
-    if not fd or "fareStructure" not in fd:
-        return {"ok": False, "error": "Filen mangler fareDelivery.fareStructure"}
-
-    delivery = fd.get("delivery", {})
-    fs = fd["fareStructure"]
-    warnings: list[str] = []
-
-    # Build defined-ID sets
-    price_ids      = {p["id"] for p in fs.get("prices", [])}
-    pc_ids         = {p["id"] for p in fs.get("passengerConstraints", [])}
-    rc_ids         = {r["id"] for r in fs.get("regionalConstraints", [])}
-    cc_ids         = {c["id"] for c in fs.get("carrierConstraints", [])}
-    bundle_ids     = {b["id"] for b in fs.get("fareConstraintBundles", [])}
-    text_ids       = {t["id"] for t in fs.get("texts", [])}
-    cp_ids         = {cp["id"] for cp in fs.get("connectionPoints", [])}
-
-    # Track which IDs are actually used
-    used_price_ids: set[str] = set()
-    used_pc_ids:    set[str] = set()
-    used_rc_ids:    set[str] = set()
-
-    missing: dict[str, set[str]] = {
-        "priceRef": set(), "passengerConstraintRef": set(),
-        "regionalConstraintRef": set(), "carrierConstraintRef": set(),
-        "bundleRef": set(), "nameRef": set(),
+    file_bytes = await osdmFile.read()
+    job_id = str(uuid.uuid4())
+    VALIDATION_JOBS[job_id] = {
+        "status": "running", "percent": 0, "phase": "parsing",
+        "start_time": time.time(), "file_size": len(file_bytes),
+        "result": None, "error": None,
     }
+    threading.Thread(target=_run_osdm_validation, args=(job_id, file_bytes), daemon=True).start()
+    return {"jobId": job_id}
 
-    for fare in fs.get("fares", []):
-        pr = fare.get("priceRef")
-        if pr:
-            if pr not in price_ids:
-                missing["priceRef"].add(pr)
-            else:
-                used_price_ids.add(pr)
 
-        pc = fare.get("passengerConstraintRef")
-        if pc:
-            if pc not in pc_ids:
-                missing["passengerConstraintRef"].add(pc)
-            else:
-                used_pc_ids.add(pc)
+@app.get("/ui/validate-osdm/progress/{job_id}")
+def validate_osdm_progress(job_id: str, request: Request):
+    require_login(request)
+    job = VALIDATION_JOBS.get(job_id)
+    if not job:
+        return {"status": "error", "error": "Jobb ikke funnet"}
 
-        rc = fare.get("regionalConstraintRef")
-        if rc:
-            if rc not in rc_ids:
-                missing["regionalConstraintRef"].add(rc)
-            else:
-                used_rc_ids.add(rc)
+    if job.get("phase") == "parsing":
+        elapsed = time.time() - job.get("start_time", time.time())
+        file_mb = job.get("file_size", 0) / (1024 * 1024)
+        estimated_s = max(2.0, file_mb / 20)  # assume ~20 MB/s for json.loads
+        pct = min(26, int(elapsed / estimated_s * 26))
+        return {"status": "running", "percent": pct, "stage": "reading"}
 
-        cc = fare.get("carrierConstraintRef")
-        if cc and cc not in cc_ids:
-            missing["carrierConstraintRef"].add(cc)
+    if job["status"] in ("done", "error"):
+        result = {
+            "status": job["status"],
+            "percent": job.get("percent", 100),
+            "result": job.get("result"),
+            "error": job.get("error"),
+        }
+        VALIDATION_JOBS.pop(job_id, None)
+        return result
 
-        br = fare.get("bundleRef")
-        if br and br not in bundle_ids:
-            missing["bundleRef"].add(br)
-
-        nr = fare.get("nameRef")
-        if nr and nr not in text_ids:
-            missing["nameRef"].add(nr)
-
-    # Check RC consistency (entry/exit CPs must exist)
-    rc_bad_cps: list[str] = []
-    for rc in fs.get("regionalConstraints", []):
-        for field in ("entryConnectionPointId", "exitConnectionPointId"):
-            cp = rc.get(field)
-            if cp and cp not in cp_ids:
-                rc_bad_cps.append(f"{rc['id']}: {field}={cp}")
-
-    # Emit warnings for missing refs (capped at 5 examples each)
-    label_map = {
-        "priceRef": "prices",
-        "passengerConstraintRef": "passengerConstraints",
-        "regionalConstraintRef": "regionalConstraints",
-        "carrierConstraintRef": "carrierConstraints",
-        "bundleRef": "fareConstraintBundles",
-        "nameRef": "texts",
-    }
-    for field, ids in missing.items():
-        if ids:
-            examples = ", ".join(sorted(ids)[:5])
-            more = f" (+ {len(ids) - 5} til)" if len(ids) > 5 else ""
-            warnings.append(
-                f"{len(ids)} fare(r) peker på ukjent {field} i {label_map[field]}: {examples}{more}"
-            )
-
-    if rc_bad_cps:
-        examples = "; ".join(rc_bad_cps[:3])
-        more = f" (+ {len(rc_bad_cps) - 3} til)" if len(rc_bad_cps) > 3 else ""
-        warnings.append(f"RC-er med ugyldig CP-referanse: {examples}{more}")
-
-    # Warn about unused definitions
-    unused_prices = price_ids - used_price_ids
-    unused_pcs    = pc_ids - used_pc_ids
-    unused_rcs    = rc_ids - used_rc_ids
-
-    if unused_prices:
-        warnings.append(f"{len(unused_prices)} pris(er) er definert men ikke referert av noen fare")
-    if unused_pcs:
-        warnings.append(f"{len(unused_pcs)} passengerConstraint(s) er definert men ikke referert av noen fare")
-    if unused_rcs:
-        warnings.append(f"{len(unused_rcs)} regionalConstraint(s) er definert men ikke referert av noen fare")
-
-    station_count = len({
-        s["code"]
-        for cp in fs.get("connectionPoints", [])
-        for ss in cp.get("stationSets", [])
-        for s in ss
-        if s.get("codeList") == "UIC"
-    })
-
-    return {
-        "ok": True,
-        "warnings": warnings,
-        "deliveryId": delivery.get("deliveryId", ""),
-        "fareProvider": delivery.get("fareProvider", ""),
-        "fareCount": len(fs.get("regionalConstraints", [])),
-        "priceCount": len(price_ids),
-        "stationCount": station_count,
-    }
+    return {"status": "running", "percent": job.get("percent", 0), "stage": "validating"}
 
 
 # ---------------------------------------------------------------------
@@ -1805,83 +1846,134 @@ def fare_discount_page(request: Request):
     )
     return HTMLResponse(html)
 
+def _run_fare_discount_parse(job_id: str, file_bytes: bytes) -> None:
+    job = PARSE_JOBS[job_id]
+    try:
+        try:
+            data = json.loads(file_bytes)
+        except Exception:
+            job.update({"status": "error", "error": "Filen er ikke gyldig JSON"})
+            return
+
+        job["phase"] = "validating"
+        job["percent"] = 30
+
+        fs = data.get("fareDelivery", {}).get("fareStructure", {})
+
+        job["percent"] = 40
+        uic_to_name: dict[str, str] = {}
+        for sn in fs.get("stationNames", []):
+            code = sn.get("code") or sn.get("uicCode")
+            name = sn.get("nameUtf8") or sn.get("name") or code
+            if code:
+                uic_to_name[str(code)] = name
+
+        job["percent"] = 55
+        stations: list[dict] = []
+        seen: set[str] = set()
+        for cp in fs.get("connectionPoints", []):
+            for station_set in cp.get("stationSets", []):
+                for s in station_set:
+                    if s.get("codeList") == "UIC":
+                        uic = str(s["code"])
+                        if uic not in seen:
+                            seen.add(uic)
+                            stations.append({
+                                "cp_id": cp["id"],
+                                "uic": uic,
+                                "name": uic_to_name.get(uic, uic),
+                                "country": s.get("country", ""),
+                            })
+        stations.sort(key=lambda x: x["name"].lower())
+
+        job["percent"] = 70
+        carriers: list[dict] = []
+        seen_codes: set[str] = set()
+        for cc in fs.get("carrierConstraints", []):
+            for code in cc.get("includedCarrier", []):
+                if code not in seen_codes:
+                    seen_codes.add(code)
+                    carriers.append({
+                        "code": code,
+                        "name": RICS_CARRIER_NAMES.get(code, code),
+                        "constraint_id": cc["id"],
+                    })
+
+        job["percent"] = 80
+        texts_map = {t["id"]: t for t in fs.get("texts", [])}
+        seen_refs: dict[str, dict] = {}
+        for pc in fs.get("passengerConstraints", []):
+            ref = pc.get("nameRef", "")
+            text_obj = texts_map.get(ref, {})
+            name = text_obj.get("textUtf8") or text_obj.get("text") or ref
+            if ref not in seen_refs:
+                seen_refs[ref] = {"nameRef": ref, "name": name, "ids": []}
+            seen_refs[ref]["ids"].append(pc["id"])
+        passenger_constraints = list(seen_refs.values())
+
+        job["percent"] = 90
+        service_classes = []
+        for scd in fs.get("serviceClassDefinitions", []):
+            text_obj = texts_map.get(scd.get("textRef", ""), {})
+            name = text_obj.get("textUtf8") or text_obj.get("text") or scd["id"]
+            service_classes.append({"id": scd["id"], "name": name})
+
+        delivery = data.get("fareDelivery", {}).get("delivery", {})
+
+        job.update({
+            "status": "done", "percent": 100,
+            "result": {
+                "deliveryId": delivery.get("deliveryId", ""),
+                "stations": stations,
+                "carriers": carriers,
+                "passengerConstraints": passenger_constraints,
+                "serviceClasses": service_classes,
+            }
+        })
+
+    except Exception as e:
+        job.update({"status": "error", "error": str(e)})
+
+
 @app.post("/fare-discount/parse")
 async def fare_discount_parse(request: Request, osdmFile: UploadFile = File(...)):
     require_login(request)
-    try:
-        data = json.loads(await osdmFile.read())
-    except Exception:
-        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
-
-    fs = data.get("fareDelivery", {}).get("fareStructure", {})
-
-    # UIC → navn fra stationNames (bruker nameUtf8 for norske tegn)
-    uic_to_name: dict[str, str] = {}
-    for sn in fs.get("stationNames", []):
-        code = sn.get("code") or sn.get("uicCode")
-        name = sn.get("nameUtf8") or sn.get("name") or code
-        if code:
-            uic_to_name[str(code)] = name
-
-    # Stasjonsliste fra connectionPoints
-    stations: list[dict] = []
-    seen: set[str] = set()
-    for cp in fs.get("connectionPoints", []):
-        for station_set in cp.get("stationSets", []):
-            for s in station_set:
-                if s.get("codeList") == "UIC":
-                    uic = str(s["code"])
-                    if uic not in seen:
-                        seen.add(uic)
-                        stations.append({
-                            "cp_id": cp["id"],
-                            "uic": uic,
-                            "name": uic_to_name.get(uic, uic),
-                            "country": s.get("country", ""),
-                        })
-    stations.sort(key=lambda x: x["name"].lower())
-
-    # Carriers fra carrierConstraints
-    carriers: list[dict] = []
-    seen_codes: set[str] = set()
-    for cc in fs.get("carrierConstraints", []):
-        for code in cc.get("includedCarrier", []):
-            if code not in seen_codes:
-                seen_codes.add(code)
-                carriers.append({
-                    "code": code,
-                    "name": RICS_CARRIER_NAMES.get(code, code),
-                    "constraint_id": cc["id"],
-                })
-
-    # Passasjerkategorier (deduplisert per nameRef)
-    texts_map = {t["id"]: t for t in fs.get("texts", [])}
-    seen_refs: dict[str, dict] = {}
-    for pc in fs.get("passengerConstraints", []):
-        ref = pc.get("nameRef", "")
-        text_obj = texts_map.get(ref, {})
-        name = text_obj.get("textUtf8") or text_obj.get("text") or ref
-        if ref not in seen_refs:
-            seen_refs[ref] = {"nameRef": ref, "name": name, "ids": []}
-        seen_refs[ref]["ids"].append(pc["id"])
-    passenger_constraints = list(seen_refs.values())
-
-    # Serviceklasser
-    service_classes = []
-    for scd in fs.get("serviceClassDefinitions", []):
-        text_obj = texts_map.get(scd.get("textRef", ""), {})
-        name = text_obj.get("textUtf8") or text_obj.get("text") or scd["id"]
-        service_classes.append({"id": scd["id"], "name": name})
-
-    delivery = data.get("fareDelivery", {}).get("delivery", {})
-
-    return {
-        "deliveryId": delivery.get("deliveryId", ""),
-        "stations": stations,
-        "carriers": carriers,
-        "passengerConstraints": passenger_constraints,
-        "serviceClasses": service_classes,
+    file_bytes = await osdmFile.read()
+    job_id = str(uuid.uuid4())
+    PARSE_JOBS[job_id] = {
+        "status": "running", "percent": 0, "phase": "parsing",
+        "start_time": time.time(), "file_size": len(file_bytes),
+        "result": None, "error": None,
     }
+    threading.Thread(target=_run_fare_discount_parse, args=(job_id, file_bytes), daemon=True).start()
+    return {"jobId": job_id}
+
+
+@app.get("/fare-discount/parse/progress/{job_id}")
+def fare_discount_parse_progress(job_id: str, request: Request):
+    require_login(request)
+    job = PARSE_JOBS.get(job_id)
+    if not job:
+        return {"status": "error", "error": "Jobb ikke funnet"}
+
+    if job.get("phase") == "parsing":
+        elapsed = time.time() - job.get("start_time", time.time())
+        file_mb = job.get("file_size", 0) / (1024 * 1024)
+        estimated_s = max(2.0, file_mb / 20)
+        pct = min(26, int(elapsed / estimated_s * 26))
+        return {"status": "running", "percent": pct, "stage": "reading"}
+
+    if job["status"] in ("done", "error"):
+        result = {
+            "status": job["status"],
+            "percent": job.get("percent", 100),
+            "result": job.get("result"),
+            "error": job.get("error"),
+        }
+        PARSE_JOBS.pop(job_id, None)
+        return result
+
+    return {"status": "running", "percent": job.get("percent", 0), "stage": "validating"}
 
 
 # ---------------------------------------------------------------------------

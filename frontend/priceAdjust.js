@@ -13,8 +13,39 @@ const optDeliverySelect = document.getElementById("optionalDelivery");
 const validFromInput    = document.getElementById("validFrom");
 const validToInput      = document.getElementById("validTo");
 const summaryEl         = document.getElementById("osdmSummary");
-const spinnerOsdm       = document.getElementById("spinnerOsdm");
 const spinnerAdjust     = document.getElementById("spinnerAdjust");
+
+// ── Progress-hjelpere ─────────────────────────────────────────────────────────
+
+function showProgress(containerId, pct, stage) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.style.display = "";
+  el.querySelector(".progress-fill").style.width = pct + "%";
+  el.querySelector(".progress-pct").textContent = pct + "%";
+  const stageEl = el.querySelector(".progress-stage");
+  if (stageEl) stageEl.textContent = (stage ? t("validate_stage_" + stage) : "") || "";
+}
+
+function hideProgress(containerId) {
+  const el = document.getElementById(containerId);
+  if (el) el.style.display = "none";
+}
+
+async function pollJob(jobId, progressEndpoint, containerId) {
+  while (true) {
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      const r = await fetch(`${progressEndpoint}/${jobId}`);
+      const data = await r.json();
+      if (data.status === "done") return data.result;
+      if (data.status === "error") return { ok: false, error: data.error };
+      showProgress(containerId, data.percent || 0, data.stage || "validating");
+    } catch {
+      return { ok: false, error: t("unknown_error") };
+    }
+  }
+}
 
 // ── OSDM-validering ───────────────────────────────────────────────────────────
 
@@ -25,19 +56,21 @@ async function validateOsdmFile() {
 
   if (!osdmFileInput.files[0]) return;
 
-  spinnerOsdm.style.display = "block";
+  showProgress("osdmProgress", 0, "uploading");
 
   const fd = new FormData();
   fd.append("osdmFile", osdmFileInput.files[0]);
 
   try {
     const r = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
-    const res = await r.json();
+    const { jobId } = await r.json();
 
-    spinnerOsdm.style.display = "none";
+    const res = await pollJob(jobId, "/ui/validate-osdm/progress", "osdmProgress");
 
-    if (!res.ok) {
-      summaryEl.innerHTML = `<pre class="status-error">${res.error || t("unknown_error")}</pre>`;
+    hideProgress("osdmProgress");
+
+    if (!res || !res.ok) {
+      summaryEl.innerHTML = `<pre class="status-error">${(res && res.error) || t("unknown_error")}</pre>`;
       return;
     }
 
@@ -54,12 +87,11 @@ async function validateOsdmFile() {
         </div>
       </div>`;
 
-    // Autofyll previousDeliveryId og vis leveransefelt
     if (res.deliveryId) prevDeliveryInput.value = res.deliveryId;
     document.getElementById("deliveryFields").style.display = "";
 
   } catch {
-    spinnerOsdm.style.display = "none";
+    hideProgress("osdmProgress");
     summaryEl.innerHTML = `<pre class="status-error">${t("unknown_error")}</pre>`;
   }
 }

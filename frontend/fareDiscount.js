@@ -213,6 +213,40 @@ function onRouteModeChange() {
 }
 
 // ---------------------------------------------------------------------------
+// Progress-hjelpere
+// ---------------------------------------------------------------------------
+
+function showParseProgress(pct, stage) {
+  const el = document.getElementById("parseProgress");
+  if (!el) return;
+  el.style.display = "";
+  el.querySelector(".progress-fill").style.width = pct + "%";
+  el.querySelector(".progress-pct").textContent = pct + "%";
+  const stageEl = el.querySelector(".progress-stage");
+  if (stageEl) stageEl.textContent = (stage ? t("validate_stage_" + stage) : "") || "";
+}
+
+function hideParseProgress() {
+  const el = document.getElementById("parseProgress");
+  if (el) el.style.display = "none";
+}
+
+async function pollParseJob(jobId) {
+  while (true) {
+    await new Promise(r => setTimeout(r, 600));
+    try {
+      const r = await fetch(`/fare-discount/parse/progress/${jobId}`);
+      const data = await r.json();
+      if (data.status === "done") return data.result;
+      if (data.status === "error") return null;
+      showParseProgress(data.percent || 0, data.stage || "validating");
+    } catch {
+      return null;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Fil-opplasting og parsing
 // ---------------------------------------------------------------------------
 
@@ -231,12 +265,12 @@ async function onFileChange() {
   stepForm.style.display = "none";
   result.innerText = "";
   result.className = "";
+  hideParseProgress();
 
   if (!file) { fileInfo.style.display = "none"; return; }
 
   const sizeMb = (file.size / 1024 / 1024).toFixed(1);
-  const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-  const maxMb = isLocal ? 5000 : 100;
+  const maxMb = 5000;
 
   if (file.size > maxMb * 1024 * 1024) {
     fileInfo.innerText = t("file_too_large").replace("{size}", sizeMb).replace("{max}", maxMb);
@@ -249,19 +283,24 @@ async function onFileChange() {
   fileInfo.style.display = "block";
   fileInfo.style.color = "";
 
-  result.innerText = t("discount_reading");
+  showParseProgress(0, "uploading");
 
   const fd = new FormData();
   fd.append("osdmFile", file);
 
   try {
     const r = await fetch("/fare-discount/parse", { method: "POST", body: fd });
-    const res = await r.json();
-    if (!r.ok) {
-      result.innerText = `❌ ${res.detail || t("unknown_error")}`;
+    const { jobId } = await r.json();
+    const res = await pollParseJob(jobId);
+
+    hideParseProgress();
+
+    if (!res) {
+      result.innerText = `❌ ${t("unknown_error")}`;
       result.className = "status-error";
       return;
     }
+
     osdmStations       = res.stations;
     osdmPassengers     = res.passengerConstraints;
     osdmServiceClasses = res.serviceClasses;
@@ -275,6 +314,7 @@ async function onFileChange() {
     result.innerText = "";
     stepForm.style.display = "block";
   } catch (err) {
+    hideParseProgress();
     result.innerText = `${t("err_network")}: ${err.message}`;
     result.className = "status-error";
   }
