@@ -13,7 +13,8 @@ const translations = {
   no: {
     // Felles
     logout:              "Logg ut",
-    nav_generate:        "Oppdater OSDM-priser",
+    nav_price_adjust:    "Prisregulering",
+    nav_generate:        "Priser fra avstandsfil",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -271,6 +272,21 @@ const translations = {
     landing_feat2_desc: "Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.",
     landing_feat3_title:"Legg til rabatt i OSDM",
     landing_feat3_desc: "Legg til rabatterte priser direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
+    landing_feat4_title:"Prisregulering",
+    landing_feat4_desc: "Juster alle priser i en OSDM-fil med en fast prosentsats. Voksenprisen skaleres og alle andre kategorier beregnes automatisk.",
+
+    // Prisregulering
+    heading_price_adjust:   "Prisregulering",
+    price_adjust_desc:      "Last opp en OSDM-fil og juster prisene med en fast prosentsats. Voksenprisen skaleres, og alle andre kategorier beregnes automatisk basert på forholdstallet mot voksen.",
+    label_adjust_pct:       "Prisendring (%)",
+    placeholder_adjust_pct: "F.eks. 4 for +4 %",
+    btn_adjust:             "Juster og last ned",
+    adjust_processing:      "Justerer priser…",
+    adjust_error_no_file:   "❌ Velg en OSDM-fil.",
+    adjust_error_no_pct:    "❌ Oppgi en prisendring.",
+    adjust_error_pct_zero:  "❌ Prisendringen kan ikke være 0 %.",
+    adjust_error_failed:    "❌ Noe gikk galt. Sjekk at filen er gyldig OSDM JSON.",
+    adjust_success:         "✅ Priser justert — filen lastes ned.",
 
     // Tilgangsforespørsel
     access_trigger:       "Ikke aktiv bruker? Be om tilgang",
@@ -292,7 +308,8 @@ const translations = {
   en: {
     // Felles
     logout:              "Log out",
-    nav_generate:        "Update OSDM prices",
+    nav_price_adjust:    "Price adjustment",
+    nav_generate:        "Prices from distance file",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -550,6 +567,21 @@ const translations = {
     landing_feat2_desc: "Convert a fareDelivery file into a clear Excel sheet with all station relations and prices per ticket category.",
     landing_feat3_title:"Add discount to OSDM",
     landing_feat3_desc: "Add discounted fares directly to an existing OSDM file for specific routes, carriers and passenger categories.",
+    landing_feat4_title:"Price adjustment",
+    landing_feat4_desc: "Adjust all prices in an OSDM file by a fixed percentage. The adult price is scaled and all other categories are recalculated automatically.",
+
+    // Price adjustment
+    heading_price_adjust:   "Price adjustment",
+    price_adjust_desc:      "Upload an OSDM file and adjust prices by a fixed percentage. The adult price is scaled, and all other categories are recalculated automatically based on their ratio to the adult price.",
+    label_adjust_pct:       "Price change (%)",
+    placeholder_adjust_pct: "E.g. 4 for +4%",
+    btn_adjust:             "Adjust and download",
+    adjust_processing:      "Adjusting prices…",
+    adjust_error_no_file:   "❌ Please select an OSDM file.",
+    adjust_error_no_pct:    "❌ Please enter a price change.",
+    adjust_error_pct_zero:  "❌ Price change cannot be 0%.",
+    adjust_error_failed:    "❌ Something went wrong. Check that the file is valid OSDM JSON.",
+    adjust_success:         "✅ Prices adjusted — file is downloading.",
 
     // Request access
     access_trigger:       "Don't have access? Request it",
@@ -571,7 +603,8 @@ const translations = {
   de: {
     // Felles
     logout:              "Abmelden",
-    nav_generate:        "OSDM-Preise aktualisieren",
+    nav_price_adjust:    "Preisregulierung",
+    nav_generate:        "Preise aus Entfernungsdatei",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -829,6 +862,21 @@ const translations = {
     landing_feat2_desc: "Konvertieren Sie eine fareDelivery-Datei in eine übersichtliche Excel-Tabelle mit allen Stationsbeziehungen und Preisen.",
     landing_feat3_title:"Rabatt zu OSDM hinzufügen",
     landing_feat3_desc: "Fügen Sie rabattierte Tarife direkt zu einer vorhandenen OSDM-Datei für bestimmte Strecken, Betreiber und Fahrgastkategorien hinzu.",
+    landing_feat4_title:"Preisregulierung",
+    landing_feat4_desc: "Passen Sie alle Preise in einer OSDM-Datei um einen festen Prozentsatz an. Der Erwachsenenpreis wird skaliert, alle anderen Kategorien werden automatisch neu berechnet.",
+
+    // Preisregulierung
+    heading_price_adjust:   "Preisregulierung",
+    price_adjust_desc:      "Laden Sie eine OSDM-Datei hoch und passen Sie die Preise um einen festen Prozentsatz an. Der Erwachsenenpreis wird skaliert, alle anderen Kategorien automatisch neu berechnet.",
+    label_adjust_pct:       "Preisänderung (%)",
+    placeholder_adjust_pct: "Z.B. 4 für +4 %",
+    btn_adjust:             "Anpassen und herunterladen",
+    adjust_processing:      "Preise werden angepasst…",
+    adjust_error_no_file:   "❌ Bitte wählen Sie eine OSDM-Datei.",
+    adjust_error_no_pct:    "❌ Bitte geben Sie eine Preisänderung ein.",
+    adjust_error_pct_zero:  "❌ Die Preisänderung darf nicht 0 % sein.",
+    adjust_error_failed:    "❌ Etwas ist schiefgelaufen. Prüfen Sie, ob die Datei gültiges OSDM JSON ist.",
+    adjust_success:         "✅ Preise angepasst — Datei wird heruntergeladen.",
 
     // Zugriffsanfrage
     access_trigger:       "Noch kein Zugang? Zugang beantragen",
@@ -850,7 +898,8 @@ const translations = {
   sv: {
     // Felles
     logout:              "Logga ut",
-    nav_generate:        "Uppdatera OSDM-priser",
+    nav_price_adjust:    "Prisreglering",
+    nav_generate:        "Priser från avståndsfil",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -1108,6 +1157,21 @@ const translations = {
     landing_feat2_desc: "Konvertera en fareDelivery-fil till ett tydligt Excel-ark med alla stationsrelationer och priser per biljettkategori.",
     landing_feat3_title:"Lägg till rabatt i OSDM",
     landing_feat3_desc: "Lägg till rabatterade tariffer direkt i en befintlig OSDM-fil för specifika sträckningar, operatörer och passagerarkategorier.",
+    landing_feat4_title:"Prisreglering",
+    landing_feat4_desc: "Justera alla priser i en OSDM-fil med en fast procentsats. Vuxenpriset skalas och alla andra kategorier beräknas automatiskt.",
+
+    // Prisreglering
+    heading_price_adjust:   "Prisreglering",
+    price_adjust_desc:      "Ladda upp en OSDM-fil och justera priserna med en fast procentsats. Vuxenpriset skalas och alla andra kategorier beräknas automatiskt.",
+    label_adjust_pct:       "Prisändring (%)",
+    placeholder_adjust_pct: "T.ex. 4 för +4 %",
+    btn_adjust:             "Justera och ladda ner",
+    adjust_processing:      "Justerar priser…",
+    adjust_error_no_file:   "❌ Välj en OSDM-fil.",
+    adjust_error_no_pct:    "❌ Ange en prisändring.",
+    adjust_error_pct_zero:  "❌ Prisändringen kan inte vara 0 %.",
+    adjust_error_failed:    "❌ Något gick fel. Kontrollera att filen är giltig OSDM JSON.",
+    adjust_success:         "✅ Priser justerade — filen laddas ner.",
 
     // Åtkomstbegäran
     access_trigger:       "Ingen åtkomst? Begär åtkomst",
@@ -1129,7 +1193,8 @@ const translations = {
   fr: {
     // Felles
     logout:              "Se déconnecter",
-    nav_generate:        "Mettre à jour les prix OSDM",
+    nav_price_adjust:    "Régulation tarifaire",
+    nav_generate:        "Prix depuis fichier de distances",
     nav_osdm_excel:      "OSDM → Excel",
     nav_admin:           "Admin",
     heading_admin:       "Admin",
@@ -1387,6 +1452,21 @@ const translations = {
     landing_feat2_desc: "Convertissez un fichier fareDelivery en tableau Excel clair avec toutes les relations de gare et les prix par catégorie de billet.",
     landing_feat3_title:"Ajouter une remise à OSDM",
     landing_feat3_desc: "Ajoutez des tarifs réduits directement à un fichier OSDM existant pour des itinéraires, transporteurs et catégories de passagers spécifiques.",
+    landing_feat4_title:"Régulation tarifaire",
+    landing_feat4_desc: "Ajustez tous les prix d'un fichier OSDM d'un pourcentage fixe. Le prix adulte est mis à l'échelle et toutes les autres catégories sont recalculées automatiquement.",
+
+    // Régulation tarifaire
+    heading_price_adjust:   "Régulation tarifaire",
+    price_adjust_desc:      "Téléchargez un fichier OSDM et ajustez les prix d'un pourcentage fixe. Le prix adulte est mis à l'échelle, toutes les autres catégories sont recalculées automatiquement.",
+    label_adjust_pct:       "Modification de prix (%)",
+    placeholder_adjust_pct: "Ex. 4 pour +4 %",
+    btn_adjust:             "Ajuster et télécharger",
+    adjust_processing:      "Ajustement des prix…",
+    adjust_error_no_file:   "❌ Veuillez sélectionner un fichier OSDM.",
+    adjust_error_no_pct:    "❌ Veuillez entrer une modification de prix.",
+    adjust_error_pct_zero:  "❌ La modification de prix ne peut pas être 0 %.",
+    adjust_error_failed:    "❌ Une erreur s'est produite. Vérifiez que le fichier est un OSDM JSON valide.",
+    adjust_success:         "✅ Prix ajustés — le fichier est en cours de téléchargement.",
 
     // Demande d'accès
     access_trigger:       "Pas encore d'accès ? Faire une demande",

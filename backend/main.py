@@ -1649,6 +1649,98 @@ def request_access(
         logger.error("Kunne ikke sende tilgangsforespørsel: %s", exc)
         raise HTTPException(status_code=500, detail="send_error")
 
+@app.get("/price-adjust", response_class=HTMLResponse)
+@app.head("/price-adjust")
+def price_adjust_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/price-adjust.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+    return HTMLResponse(html)
+
+
+@app.post("/price-adjust")
+async def price_adjust(
+    request: Request,
+    osdm_file: UploadFile = File(...),
+    pct: float = Form(...),
+):
+    require_login(request)
+    factor = 1 + pct / 100
+
+    try:
+        content = await osdm_file.read()
+        data = json.loads(content)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Filen er ikke gyldig JSON")
+
+    try:
+        fs = data["fareDelivery"]["fareStructure"]
+        prices: list = fs["prices"]
+        fares: list  = fs["fares"]
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Mangler felt i OSDM-strukturen: {e}")
+
+    # Indeks: price_id → list-posisjon
+    price_idx = {p["id"]: i for i, p in enumerate(prices)}
+
+    # Grupper farer etter (RC, carrier, bundle) → finn voksenpris per gruppe
+    from collections import defaultdict
+    groups: dict[tuple, list] = defaultdict(list)
+    for fare in fares:
+        key = (
+            fare.get("regionalConstraintRef"),
+            fare.get("carrierConstraintRef"),
+            fare.get("fareConstraintBundleRef"),
+        )
+        price_ref = fare.get("priceRef")
+        if key[0] and price_ref and price_ref in price_idx:
+            amount = prices[price_idx[price_ref]]["amount"]
+            groups[key].append((price_ref, amount))
+
+    # Beregn nye priser
+    new_amounts: dict[str, float] = {}
+    for group_fares in groups.values():
+        if not group_fares:
+            continue
+        max_amount = max(amt for _, amt in group_fares)
+        if max_amount <= 0:
+            continue
+        new_adult = math.ceil(max_amount * factor / 0.20) * 0.20
+        for price_ref, amount in group_fares:
+            if amount <= 0:
+                new_amounts[price_ref] = 0.0
+            elif amount == max_amount:
+                new_amounts[price_ref] = round(new_adult, 2)
+            else:
+                ratio = amount / max_amount
+                new_amounts[price_ref] = round(math.ceil(new_adult * ratio / 0.20) * 0.20, 2)
+
+    # Oppdater prices-lista
+    for i, price in enumerate(prices):
+        if price["id"] in new_amounts:
+            prices[i] = {**price, "amount": new_amounts[price["id"]]}
+
+    result = json.dumps(data, ensure_ascii=False, indent=2)
+    base = Path(osdm_file.filename).stem
+    filename = f"{base}_adjusted.json"
+
+    log_event(
+        request.session.get("user_email"), "price_adjust",
+        detail={"factor": factor, "filename": osdm_file.filename, "prices_updated": len(new_amounts)},
+    )
+
+    return Response(
+        content=result.encode("utf-8"),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.get("/fare-discount/rics")
 def fare_discount_rics(request: Request):
     require_login(request)
