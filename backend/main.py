@@ -14,6 +14,7 @@ import base64
 import threading
 import uuid
 import requests
+import ijson
 
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
@@ -395,34 +396,56 @@ def validate_ten(request: Request, tenFile: UploadFile = File(...)):
 def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
     job = VALIDATION_JOBS[job_id]
     try:
-        # JSON parse — blocking; poll endpoint estimates progress via elapsed time
+        def _s():
+            return io.BytesIO(file_bytes)
+
+        # --- Check basic structure (stop at first key, no large objects) ---
+        job["phase"] = "parsing"
+        has_fd = False
         try:
-            data = json.loads(file_bytes)
+            for prefix, event, _ in ijson.parse(_s()):
+                if prefix == "fareDelivery.fareStructure" and event == "start_map":
+                    has_fd = True
+                    break
         except Exception:
             job.update({"status": "error", "error": "Filen er ikke gyldig JSON"})
+            return
+
+        if not has_fd:
+            job.update({"status": "error", "error": "Filen mangler fareDelivery.fareStructure"})
             return
 
         job["phase"] = "validating"
         job["percent"] = 28
 
-        fd = data.get("fareDelivery", {})
-        if not fd or "fareStructure" not in fd:
-            job.update({"status": "error", "error": "Filen mangler fareDelivery.fareStructure"})
-            return
-
-        delivery = fd.get("delivery", {})
-        fs = fd["fareStructure"]
-        warnings: list[str] = []
+        # --- Delivery info (small object) ---
+        delivery: dict = {}
+        for item in ijson.items(_s(), "fareDelivery.delivery"):
+            delivery = item
+            break
 
         job["percent"] = 32
-        price_ids  = {p["id"] for p in fs.get("prices", [])}
-        pc_ids     = {p["id"] for p in fs.get("passengerConstraints", [])}
-        rc_ids     = {r["id"] for r in fs.get("regionalConstraints", [])}
-        cc_ids     = {c["id"] for c in fs.get("carrierConstraints", [])}
-        bundle_ids = {b["id"] for b in fs.get("fareConstraintBundles", [])}
-        text_ids   = {t["id"] for t in fs.get("texts", [])}
-        cp_ids     = {cp["id"] for cp in fs.get("connectionPoints", [])}
 
+        # --- Collect constraint IDs (streaming, one pass per array) ---
+        price_ids  = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.prices.item") if "id" in item}
+        pc_ids     = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.passengerConstraints.item") if "id" in item}
+        cc_ids     = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.carrierConstraints.item") if "id" in item}
+        bundle_ids = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.fareConstraintBundles.item") if "id" in item}
+        text_ids   = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.texts.item") if "id" in item}
+        cp_ids     = {item["id"] for item in ijson.items(_s(), "fareDelivery.fareStructure.connectionPoints.item") if "id" in item}
+
+        rc_ids  = set()
+        rc_list = []
+        for item in ijson.items(_s(), "fareDelivery.fareStructure.regionalConstraints.item"):
+            if "id" in item:
+                rc_ids.add(item["id"])
+                rc_list.append({"id": item["id"],
+                                "entryConnectionPointId": item.get("entryConnectionPointId"),
+                                "exitConnectionPointId":  item.get("exitConnectionPointId")})
+
+        job["percent"] = 38
+
+        # --- Validate fares (streaming, 1.2M+ fares processed one at a time) ---
         used_price_ids: set[str] = set()
         used_pc_ids:    set[str] = set()
         used_rc_ids:    set[str] = set()
@@ -431,11 +454,11 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
             "regionalConstraintRef": set(), "carrierConstraintRef": set(),
             "bundleRef": set(), "nameRef": set(),
         }
+        warnings: list[str] = []
 
-        job["percent"] = 38
-        fares = fs.get("fares", [])
-        total_fares = len(fares)
-        for i, fare in enumerate(fares):
+        fare_num = 0
+        for fare in ijson.items(_s(), "fareDelivery.fareStructure.fares.item"):
+            fare_num += 1
             pr = fare.get("priceRef")
             if pr:
                 if pr not in price_ids: missing["priceRef"].add(pr)
@@ -454,12 +477,15 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
             if br and br not in bundle_ids: missing["bundleRef"].add(br)
             nr = fare.get("nameRef")
             if nr and nr not in text_ids: missing["nameRef"].add(nr)
-            if total_fares and i % 5000 == 0:
-                job["percent"] = 38 + int(i / total_fares * 34)
+            if fare_num % 50000 == 0:
+                # Asymptotic progress: 38 → 72 over ~1M fares
+                job["percent"] = 38 + int(34 * (1 - math.exp(-fare_num / 500000)))
 
         job["percent"] = 72
+
+        # --- RC connection point check ---
         rc_bad_cps: list[str] = []
-        for rc in fs.get("regionalConstraints", []):
+        for rc in rc_list:
             for field in ("entryConnectionPointId", "exitConnectionPointId"):
                 cp_ref = rc.get(field)
                 if cp_ref and cp_ref not in cp_ids:
@@ -467,20 +493,15 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
 
         job["percent"] = 82
         label_map = {
-            "priceRef": "prices",
-            "passengerConstraintRef": "passengerConstraints",
-            "regionalConstraintRef": "regionalConstraints",
-            "carrierConstraintRef": "carrierConstraints",
-            "bundleRef": "fareConstraintBundles",
-            "nameRef": "texts",
+            "priceRef": "prices", "passengerConstraintRef": "passengerConstraints",
+            "regionalConstraintRef": "regionalConstraints", "carrierConstraintRef": "carrierConstraints",
+            "bundleRef": "fareConstraintBundles", "nameRef": "texts",
         }
         for field, ids in missing.items():
             if ids:
                 examples = ", ".join(sorted(ids)[:5])
                 more = f" (+ {len(ids) - 5} til)" if len(ids) > 5 else ""
-                warnings.append(
-                    f"{len(ids)} fare(r) peker på ukjent {field} i {label_map[field]}: {examples}{more}"
-                )
+                warnings.append(f"{len(ids)} fare(r) peker på ukjent {field} i {label_map[field]}: {examples}{more}")
         if rc_bad_cps:
             examples = "; ".join(rc_bad_cps[:3])
             more = f" (+ {len(rc_bad_cps) - 3} til)" if len(rc_bad_cps) > 3 else ""
@@ -497,13 +518,14 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
             warnings.append(f"{len(unused_rcs)} regionalConstraint(s) er definert men ikke referert av noen fare")
 
         job["percent"] = 92
-        station_count = len({
-            s["code"]
-            for cp in fs.get("connectionPoints", [])
-            for ss in cp.get("stationSets", [])
-            for s in ss
-            if s.get("codeList") == "UIC"
-        })
+
+        # --- Station count (small array, load each CP as dict) ---
+        station_count = 0
+        for cp in ijson.items(_s(), "fareDelivery.fareStructure.connectionPoints.item"):
+            for ss in cp.get("stationSets", []):
+                for s in ss if isinstance(ss, list) else [ss]:
+                    if isinstance(s, dict) and s.get("codeList") == "UIC":
+                        station_count += 1
 
         job.update({
             "status": "done", "percent": 100,
@@ -512,7 +534,7 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
                 "warnings": warnings,
                 "deliveryId": delivery.get("deliveryId", ""),
                 "fareProvider": delivery.get("fareProvider", ""),
-                "fareCount": len(fs.get("regionalConstraints", [])),
+                "fareCount": len(rc_ids),
                 "priceCount": len(price_ids),
                 "stationCount": station_count,
             }
