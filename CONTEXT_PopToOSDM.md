@@ -349,3 +349,10 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk, fransk)
 - ✅ Ingen øvre filstørrelsesgrense
 
+---
+
+## Videre arbeid (hvis aktuelt)
+
+- OAuth2 / Azure AD SSO for Entur-intern drift
+- Sorterbar eksempelpristabell
+
