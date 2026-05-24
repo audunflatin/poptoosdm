@@ -13,15 +13,13 @@ const optDeliverySelect = document.getElementById("optionalDelivery");
 const validFromInput    = document.getElementById("validFrom");
 const validToInput      = document.getElementById("validTo");
 const summaryEl         = document.getElementById("osdmSummary");
-const warningsEl        = document.getElementById("osdmWarnings");
 const spinnerOsdm       = document.getElementById("spinnerOsdm");
 const spinnerAdjust     = document.getElementById("spinnerAdjust");
 
 // ── OSDM-validering ───────────────────────────────────────────────────────────
 
 async function validateOsdmFile() {
-  summaryEl.innerHTML  = "";
-  warningsEl.innerHTML = "";
+  summaryEl.innerHTML = "";
   hideStatus();
 
   if (!osdmFileInput.files[0]) return;
@@ -54,17 +52,6 @@ async function validateOsdmFile() {
           </div>
         </div>
       </div>`;
-
-    if (res.warnings && res.warnings.length > 0) {
-      const items = res.warnings.map(w => `<li>${w}</li>`).join("");
-      warningsEl.innerHTML = `
-        <div class="warnings-box" style="margin-top:0.75rem;">
-          <strong>${t("osdm_warnings_title")}</strong>
-          <ul style="margin:0.4rem 0 0 1.2rem; font-size:0.82rem; color:rgba(255,255,255,0.6);">${items}</ul>
-        </div>`;
-    } else {
-      warningsEl.innerHTML = `<div class="check-ok">✓ ${t("osdm_no_warnings")}</div>`;
-    }
 
     // Autofyll previousDeliveryId med deliveryId fra opplastet fil
     if (res.deliveryId) prevDeliveryInput.value = res.deliveryId;
