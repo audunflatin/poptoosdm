@@ -20,7 +20,22 @@ function hideOsdmProgress(containerId) {
   if (el) el.style.display = "none";
 }
 
-async function pollOsdmJob(jobId, progressEndpoint, containerId) {
+function uploadWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+      } else { reject(new Error(xhr.statusText || `HTTP ${xhr.status}`)); }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.open("POST", url);
+    xhr.send(formData);
+  });
+}
+
+async function pollOsdmJob(jobId, progressEndpoint, containerId, base = 0) {
   while (true) {
     await new Promise(r => setTimeout(r, 600));
     try {
@@ -28,7 +43,8 @@ async function pollOsdmJob(jobId, progressEndpoint, containerId) {
       const data = await r.json();
       if (data.status === "done") return data.result;
       if (data.status === "error") return { ok: false, error: data.error };
-      showOsdmProgress(containerId, data.percent || 0, data.stage || "validating");
+      const pct = base + Math.round((data.percent || 0) / 100 * (100 - base));
+      showOsdmProgress(containerId, pct, data.stage || "validating");
     } catch {
       return { ok: false, error: t("unknown_error") };
     }
@@ -127,9 +143,10 @@ async function validateOsdm() {
   const fd = new FormData();
   fd.append("osdmFile", fileInput.files[0]);
 
-  const startResp = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
-  const { jobId } = await startResp.json();
-  const res = await pollOsdmJob(jobId, "/ui/validate-osdm/progress", "osdmValProgress");
+  const { jobId } = await uploadWithProgress("/ui/validate-osdm", fd, frac =>
+    showOsdmProgress("osdmValProgress", Math.round(frac * 50), "uploading")
+  );
+  const res = await pollOsdmJob(jobId, "/ui/validate-osdm/progress", "osdmValProgress", 50);
 
   hideOsdmProgress("osdmValProgress");
 

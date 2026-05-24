@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=14">
+  <link rel="stylesheet" href="/static/styles.css?v=15">
 </head>
 <body>
 
@@ -73,6 +73,7 @@
         <div class="progress-fill" style="height:100%; background:#ff5959; border-radius:3px; transition:width 0.5s ease; width:0%;"></div>
       </div>
       <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:rgba(255,255,255,0.45);">
+        <span class="spinner-sm"></span>
         <span id="progressPercent">0%</span>
       </div>
     </div>
@@ -88,7 +89,7 @@
 </div>
 
 <script src="/static/i18n.js?v=37"></script>
-<script src="/static/osdmtoExcel.js?v=4"></script>
+<script src="/static/osdmtoExcel.js?v=5"></script>
 <script>
   if (window.IS_ADMIN) {
     const el = document.getElementById("adminLink"); if (el) el.style.display = "";

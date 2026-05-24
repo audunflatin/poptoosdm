@@ -43,6 +43,21 @@ fileInput.addEventListener("change", () => {
 
 let currentJobId = null;
 
+function uploadWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+      } else { reject(new Error(xhr.statusText || `HTTP ${xhr.status}`)); }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.open("POST", url);
+    xhr.send(formData);
+  });
+}
+
 async function convert() {
   csvBlob = null;
   downloadBtn.style.display = "none";
@@ -52,32 +67,21 @@ async function convert() {
 
   spinner.style.display = "block";
   convertBtn.disabled = true;
-  const bar = document.getElementById("progressBar");
-  if (bar) bar.style.display = "block";
+  updateExcelProgress(0);
+
   const fd = new FormData();
   fd.append("osdmFile", fileInput.files[0]);
 
   try {
-    const r = await fetch("/frontend/osdm-to-csv", { method: "POST", body: fd });
-
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({ detail: t("unknown_error") }));
-      spinner.style.display = "none";
-      resultBox.style.display = "block";
-      resultStatus.className = "status-error";
-      resultStatus.innerHTML =
-        `<pre style="margin:0; background:transparent; border:none; padding:0.5rem 0;">` +
-        `❌ ${err.detail || t("unknown_error")}</pre>`;
-      convertBtn.disabled = false;
-      return;
-    }
-
-    const { jobId } = await r.json();
+    const { jobId } = await uploadWithProgress("/frontend/osdm-to-csv", fd, frac =>
+      updateExcelProgress(Math.round(frac * 50))
+    );
     currentJobId = jobId;
     pollStatus(jobId);
 
   } catch (err) {
     spinner.style.display = "none";
+    hideExcelProgress();
     resultBox.style.display = "block";
     resultStatus.className = "status-error";
     resultStatus.innerHTML =
@@ -104,14 +108,12 @@ function hideExcelProgress() {
 }
 
 function pollStatus(jobId) {
-  updateExcelProgress(0);
-
   const interval = setInterval(async () => {
     try {
       const r = await fetch(`/frontend/osdm-to-csv-status/${jobId}`);
       const res = await r.json();
 
-      updateExcelProgress(res.percent || 0);
+      updateExcelProgress(50 + Math.round((res.percent || 0) / 100 * 50));
 
       if (res.status === "done") {
         clearInterval(interval);

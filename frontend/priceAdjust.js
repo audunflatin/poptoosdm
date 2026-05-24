@@ -32,7 +32,22 @@ function hideProgress(containerId) {
   if (el) el.style.display = "none";
 }
 
-async function pollJob(jobId, progressEndpoint, containerId) {
+function uploadWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+      } else { reject(new Error(xhr.statusText || `HTTP ${xhr.status}`)); }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.open("POST", url);
+    xhr.send(formData);
+  });
+}
+
+async function pollJob(jobId, progressEndpoint, containerId, base = 0) {
   while (true) {
     await new Promise(r => setTimeout(r, 600));
     try {
@@ -40,7 +55,8 @@ async function pollJob(jobId, progressEndpoint, containerId) {
       const data = await r.json();
       if (data.status === "done") return data.result;
       if (data.status === "error") return { ok: false, error: data.error };
-      showProgress(containerId, data.percent || 0, data.stage || "validating");
+      const pct = base + Math.round((data.percent || 0) / 100 * (100 - base));
+      showProgress(containerId, pct, data.stage || "validating");
     } catch {
       return { ok: false, error: t("unknown_error") };
     }
@@ -62,10 +78,11 @@ async function validateOsdmFile() {
   fd.append("osdmFile", osdmFileInput.files[0]);
 
   try {
-    const r = await fetch("/ui/validate-osdm", { method: "POST", body: fd });
-    const { jobId } = await r.json();
+    const { jobId } = await uploadWithProgress("/ui/validate-osdm", fd, frac =>
+      showProgress("osdmProgress", Math.round(frac * 50), "uploading")
+    );
 
-    const res = await pollJob(jobId, "/ui/validate-osdm/progress", "osdmProgress");
+    const res = await pollJob(jobId, "/ui/validate-osdm/progress", "osdmProgress", 50);
 
     hideProgress("osdmProgress");
 

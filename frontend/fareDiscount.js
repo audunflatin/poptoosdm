@@ -231,7 +231,22 @@ function hideParseProgress() {
   if (el) el.style.display = "none";
 }
 
-async function pollParseJob(jobId) {
+function uploadWithProgress(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); }
+      } else { reject(new Error(xhr.statusText || `HTTP ${xhr.status}`)); }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.open("POST", url);
+    xhr.send(formData);
+  });
+}
+
+async function pollParseJob(jobId, base = 0) {
   while (true) {
     await new Promise(r => setTimeout(r, 600));
     try {
@@ -239,7 +254,8 @@ async function pollParseJob(jobId) {
       const data = await r.json();
       if (data.status === "done") return data.result;
       if (data.status === "error") return null;
-      showParseProgress(data.percent || 0, data.stage || "validating");
+      const pct = base + Math.round((data.percent || 0) / 100 * (100 - base));
+      showParseProgress(pct, data.stage || "validating");
     } catch {
       return null;
     }
@@ -289,9 +305,10 @@ async function onFileChange() {
   fd.append("osdmFile", file);
 
   try {
-    const r = await fetch("/fare-discount/parse", { method: "POST", body: fd });
-    const { jobId } = await r.json();
-    const res = await pollParseJob(jobId);
+    const { jobId } = await uploadWithProgress("/fare-discount/parse", fd, frac =>
+      showParseProgress(Math.round(frac * 50), "uploading")
+    );
+    const res = await pollParseJob(jobId, 50);
 
     hideParseProgress();
 

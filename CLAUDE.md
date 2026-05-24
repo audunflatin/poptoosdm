@@ -12,6 +12,24 @@ Rask referanse for Claude. Detaljert arkitektur og kontekst: `CONTEXT_PopToOSDM.
 
 ---
 
+## Viktig: Når du legger til en ny tjeneste
+
+**Hver gang en ny side/tjeneste legges til, MÅ `presentation.js` oppdateres.**
+Legg til et nytt slide i `getSlides()`-arrayen med beskrivelse av tjenesten på alle 5 språk (no, en, de, sv, fr), og bump `presentation.js`-versjonen i `presentation.html`.
+
+## Designkrav som alltid gjelder
+
+**Progress bar (ikke spinner) på alle filopplastingssider.**
+Nye sider med filopplasting og tung backend-prosessering skal bruke en styled progress bar med prosent og steg-tekst (`.progress-fill`, `.progress-pct`, `.progress-stage`), ikke en spinner. Se `fare-discount.html` / `osdmtoexcel.html` for HTML-mønster og `fareDiscount.js` for JS-mønster.
+
+**Filstørrelsesgrense = 5000 MB overalt.**
+Ikke bruk betingede grenser basert på `localhost` vs. produksjon. Deutsche Bahn har OSDM-filer på ~1,2 GB. Grensen skal alltid være `const maxMb = 5000;`.
+
+**Tung prosessering skal bruke async job-mønster.**
+Nye endepunkter som gjør tung prosessering (JSON-parse av store filer, validering, konvertering) skal starte en bakgrunnstråd og returnere et `jobId` som frontend poller via et eget progress-endepunkt. Se `XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS` i `backend/main.py` for mønster.
+
+---
+
 ## Sider og ansvarlige filer
 
 | URL | HTML | JS | Funksjon |
@@ -191,15 +209,15 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=14 |
-| `i18n.js` | v=39 (landing.html) / v=36 (hovudsider) / v=19 (login-sider) |
-| `app.js` | v=15 |
+| `styles.css` | v=15 |
+| `i18n.js` | v=39 (landing.html) / v=37 (hovudsider) / v=19 (login-sider) |
+| `app.js` | v=17 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
-| `osdmtoExcel.js` | v=3 |
-| `fareDiscount.js` | v=14 |
-| `priceAdjust.js` | v=6 |
-| `presentation.js` | v=5 |
+| `osdmtoExcel.js` | v=5 |
+| `fareDiscount.js` | v=16 |
+| `priceAdjust.js` | v=8 |
+| `presentation.js` | v=6 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
@@ -207,7 +225,7 @@ HTML-filer som laster den aktuelle filen.
 HTML-filer som laster `i18n.js` med v=39:
 `landing.html`
 
-HTML-filer som laster `i18n.js` med v=36:
+HTML-filer som laster `i18n.js` med v=37:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
 

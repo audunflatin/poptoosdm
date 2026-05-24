@@ -215,11 +215,37 @@
       color: rgba(255,255,255,0.15); font-size: 0.68rem;
       letter-spacing: 0.04em; pointer-events: none;
     }
+
+    /* ── Language buttons ── */
+    #langBtns {
+      position: fixed; top: 16px; right: 20px;
+      display: flex; gap: 4px; z-index: 200;
+    }
+    .pres-lang-btn {
+      background: none; border: 1px solid transparent;
+      border-radius: 6px; padding: 3px 5px;
+      font-size: 1.1rem; cursor: pointer; opacity: 0.35;
+      transition: opacity 0.15s, border-color 0.15s;
+      line-height: 1;
+    }
+    .pres-lang-btn:hover { opacity: 0.75; }
+    .pres-lang-btn.active {
+      opacity: 1; border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.07);
+    }
   </style>
 </head>
 <body>
 
 <a id="backBtn" href="/admin/users">← Admin</a>
+
+<div id="langBtns">
+  <button class="pres-lang-btn" data-lang="no" onclick="setLang('no')" title="Norsk">🇳🇴</button>
+  <button class="pres-lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+  <button class="pres-lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+  <button class="pres-lang-btn" data-lang="sv" onclick="setLang('sv')" title="Svenska">🇸🇪</button>
+  <button class="pres-lang-btn" data-lang="fr" onclick="setLang('fr')" title="Français">🇫🇷</button>
+</div>
 
 <div id="slideWrap">
   <div id="slide"></div>
@@ -235,6 +261,6 @@
 
 <div id="keyHint">← → &nbsp;·&nbsp; Home End &nbsp;·&nbsp; F = fullskjerm</div>
 
-<script src="/static/presentation.js?v=5"></script>
+<script src="/static/presentation.js?v=6"></script>
 </body>
 </html>
