@@ -192,6 +192,23 @@
     }
     .nav-btn:disabled { opacity: 0.2; cursor: default; }
 
+    /* ── Code block ── */
+    .code-block {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+      font-size: clamp(0.78rem, 1.3vw, 0.95rem);
+      color: rgba(255,255,255,0.75);
+      line-height: 1.8;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .code-block:first-line {
+      color: rgba(255,89,89,0.8);
+    }
+
     /* ── Key hint ── */
     #keyHint {
       position: fixed; bottom: 26px; left: 24px;
@@ -218,6 +235,6 @@
 
 <div id="keyHint">← → &nbsp;·&nbsp; Home End &nbsp;·&nbsp; F = fullskjerm</div>
 
-<script src="/static/presentation.js?v=3"></script>
+<script src="/static/presentation.js?v=5"></script>
 </body>
 </html>

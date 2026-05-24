@@ -18,9 +18,10 @@ Rask referanse for Claude. Detaljert arkitektur og kontekst: `CONTEXT_PopToOSDM.
 |---|---|---|---|
 | `/` (uinnlogget) | `landing.html` | — | Landingsside med info og tilgangsforespørsel |
 | `/login` | `login.html` | — | Innlogging |
-| `/` (innlogget) | `index.html` | `app.js` | Oppdater OSDM-priser (hovedflyt) |
+| `/` (innlogget) | `index.html` | `app.js` | Priser fra avstandsfil (hovedflyt) |
+| `/price-adjust` | `price-adjust.html` | `priceAdjust.js` | Prisregulering (skaler priser med fast %) |
 | `/osdmtoexcel` | `osdmtoexcel.html` | `osdmtoExcel.js` | OSDM JSON → Excel |
-| `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte farer i eksisterende OSDM |
+| `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte priser i eksisterende OSDM |
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
 | `/admin/log` | `admin-log.html` | `admin-log.js` | Aktivitetslogg (kun admin) |
 | `/kontakt` | `contact.html` | — | Kontaktskjema |
@@ -46,7 +47,19 @@ Ingenting skrives til disk under generering.
 
 ---
 
-## Generer OSDM – flyt og endepunkter
+## Prisregulering – endepunkter
+
+| Kall | Handling |
+|---|---|
+| `GET /price-adjust` | Serverer `price-adjust.html` |
+| `POST /price-adjust` | Mottar OSDM-fil + %, beregner nye priser, oppdaterer delivery-felt, returnerer justert fil |
+
+Parametere: `osdm_file`, `pct`, `delivery_id`, `previous_delivery_id`, `environment`, `optional_delivery`, `valid_from`, `valid_to`.
+Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skaler med `1 + pct/100` → rund opp til 0,20 EUR → beregn øvrige kategorier fra ratio.
+
+---
+
+## Priser fra avstandsfil – flyt og endepunkter
 
 | # | Kall | Handling |
 |---|---|---|
@@ -178,23 +191,25 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=13 |
-| `i18n.js` | v=36 (landing.html) / v=33 (hovudsider) / v=19 (login-sider) |
+| `styles.css` | v=14 |
+| `i18n.js` | v=37 (landing.html) / v=34 (hovudsider) / v=19 (login-sider) |
 | `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=3 |
 | `fareDiscount.js` | v=14 |
+| `priceAdjust.js` | v=2 |
+| `presentation.js` | v=4 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=36:
+HTML-filer som laster `i18n.js` med v=37:
 `landing.html`
 
-HTML-filer som laster `i18n.js` med v=33:
+HTML-filer som laster `i18n.js` med v=34:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `osdmtoexcel.html`
+`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
 
 HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`

@@ -1668,6 +1668,12 @@ async def price_adjust(
     request: Request,
     osdm_file: UploadFile = File(...),
     pct: float = Form(...),
+    delivery_id: str = Form(...),
+    previous_delivery_id: str = Form(""),
+    environment: str = Form("prod"),
+    optional_delivery: str = Form("false"),
+    valid_from: str = Form(...),
+    valid_to: str = Form(...),
 ):
     require_login(request)
     factor = 1 + pct / 100
@@ -1725,13 +1731,41 @@ async def price_adjust(
         if price["id"] in new_amounts:
             prices[i] = {**price, "amount": new_amounts[price["id"]]}
 
+    # Oppdater delivery-felt
+    delivery = data["fareDelivery"]["delivery"]
+    old_id = delivery.get("deliveryId", "")
+    if old_id and old_id != delivery_id:
+        raw = json.dumps(data)
+        raw = raw.replace(f"_{old_id}_", f"_{delivery_id}_")
+        data = json.loads(raw)
+        delivery = data["fareDelivery"]["delivery"]
+        fs = data["fareDelivery"]["fareStructure"]
+
+    delivery["deliveryId"] = delivery_id
+    if previous_delivery_id.strip():
+        delivery["previousDeliveryId"] = previous_delivery_id.strip()
+    else:
+        delivery.pop("previousDeliveryId", None)
+    delivery["optionalDelivery"] = (optional_delivery.lower() == "true")
+    delivery["usage"] = "TEST_ONLY" if environment == "test" else "PRODUCTION"
+
+    oslo_tz = ZoneInfo("Europe/Oslo")
+    from_dt = datetime.fromisoformat(valid_from).replace(tzinfo=oslo_tz)
+    utc_offset = int(from_dt.utcoffset().total_seconds() / 60)
+    from_date = f"{valid_from}T00:00:00+0000"
+    until_date = f"{valid_to}T23:59:59+0000"
+    for cal in fs.get("calendars", []):
+        cal["fromDate"] = from_date
+        cal["untilDate"] = until_date
+        cal["utcOffset"] = utc_offset
+
     result = json.dumps(data, ensure_ascii=False, indent=2)
     base = Path(osdm_file.filename).stem
     filename = f"{base}_adjusted.json"
 
     log_event(
         request.session.get("user_email"), "price_adjust",
-        detail={"factor": factor, "filename": osdm_file.filename, "prices_updated": len(new_amounts)},
+        detail={"factor": factor, "filename": osdm_file.filename, "prices_updated": len(new_amounts), "delivery_id": delivery_id},
     )
 
     return Response(

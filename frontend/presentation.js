@@ -44,12 +44,12 @@ const SLIDES = [
   // ── 4. Flyten ──────────────────────────────────────────────────────────────
   {
     type: "flow",
-    heading: "Løsningen – én flyt",
+    heading: "Prisregulering – flyten",
     steps: [
-      { num: "1", label: "Last opp\nKm-CSV" },
-      { num: "2", label: "Last opp\nOSDM-mal" },
-      { num: "3", label: "Velg valuta\nog periode" },
-      { num: "4", label: "Klikk\nGenerer" },
+      { num: "1", label: "Last opp\nOSDM-fil" },
+      { num: "2", label: "Oppgi\nprosentsats" },
+      { num: "3", label: "Fyll inn\nleveransefelt" },
+      { num: "4", label: "Klikk\nJuster" },
       { num: "5", label: "Last ned\nferdig fil" },
     ],
   },
@@ -57,15 +57,51 @@ const SLIDES = [
   // ── 5. Funksjoner ──────────────────────────────────────────────────────────
   {
     type: "bullets",
-    heading: "Tre verktøy i ett",
+    heading: "Fire verktøy i ett",
     bullets: [
-      "<strong>Oppdater OSDM-priser</strong> – henter valutakurs live, beregner nye priser, genererer komplett leveranse",
+      "<strong>Prisregulering</strong> – juster alle priser med fast prosentsats; voksen skaleres og alle kategorier beregnes automatisk",
+      "<strong>Priser fra avstandsfil</strong> – henter valutakurs live, beregner nye priser, genererer komplett leveranse",
       "<strong>OSDM → Excel</strong> – konverterer leveransen til Excel for kontroll og arkivering",
       "<strong>Legg til rabatt i OSDM</strong> – legger inn rabatterte priser for valgt strekning og transportør",
     ],
   },
 
-  // ── 6. Rabatt-funksjonen ───────────────────────────────────────────────────
+  // ── 6. Prisregulering ──────────────────────────────────────────────────────
+  {
+    type: "bullets",
+    heading: "Prisregulering",
+    bullets: [
+      "Last opp en eksisterende OSDM fareDelivery-fil",
+      "Oppgi ønsket prisendring i prosent (f.eks. +4 %)",
+      "Fyll inn DeliveryId, gyldighetsperiode og miljø",
+      "Voksenprisen skaleres med faktoren og rundes opp til nærmeste 0,20 EUR",
+      "Alle andre kategorier (barn, senior, FIP, hund…) beregnes fra voksenprisen",
+      "Last ned oppdatert OSDM-fil klar for levering",
+    ],
+  },
+
+  // ── 7. Priser fra avstandsfil ─────────────────────────────────────────────
+  {
+    type: "twocol",
+    heading: "Priser fra avstandsfil",
+    left: {
+      label: "Steg",
+      bullets: [
+        "Last opp avstandsfil (TEN-CSV) med priser per strekning",
+        "Last opp eksisterende OSDM-mal for validering",
+        "Velg valuta og hent live valutakurs fra ECB",
+        "Fyll inn DeliveryId, gyldighetsperiode og miljø",
+        "Priser rundes opp til nærmeste 0,20 EUR",
+        "Last ned ferdig OSDM-fil og/eller Excel-oversikt",
+      ],
+    },
+    right: {
+      label: "Eksempel – avstandsfil (fra;til;pris;)",
+      code: "1;2;50;\n2;3;60;\n3;4;70;\n4;5;80;",
+    },
+  },
+
+  // ── 8. Rabatt-funksjonen ───────────────────────────────────────────────────
   {
     type: "bullets",
     heading: "Legg til rabatt i OSDM",
@@ -79,7 +115,7 @@ const SLIDES = [
     ],
   },
 
-  // ── 7. Teknisk ─────────────────────────────────────────────────────────────
+  // ── 8. Teknisk ─────────────────────────────────────────────────────────────
   {
     type: "twocol",
     heading: "Teknisk",
@@ -89,17 +125,17 @@ const SLIDES = [
     },
     right: {
       label: "Frontend",
-      bullets: ["Vanilla JS / HTML / CSS", "Ingen rammeverk", "Flerspråklig (no / en / de / sv)", "Responsivt design"],
+      bullets: ["Vanilla JS / HTML / CSS", "Ingen rammeverk", "Flerspråklig (no / en / de / sv / fr)", "Responsivt design"],
     },
   },
 
-  // ── 8. Status ──────────────────────────────────────────────────────────────
+  // ── 9. Status ──────────────────────────────────────────────────────────────
   {
     type: "stats",
     heading: "Status",
     stats: [
       { num: "14", label: "valutaer\nstøttet" },
-      { num: "4", label: "språk\n(no/en/de/sv)" },
+      { num: "5", label: "språk\n(no/en/de/sv/fr)" },
       { num: "✓", label: "godkjent av\nUIC/DRTF" },
     ],
     bullets: [
@@ -154,11 +190,12 @@ function renderSlide(idx) {
       <div class="flow-row">${steps}</div>`;
   }
   else if (s.type === "twocol") {
-    const col = (c) => `
-      <div>
-        <div class="slide-label" style="margin-bottom:0.75rem;">${c.label}</div>
-        <ul class="bullet-list">${c.bullets.map(b => `<li><span>${b}</span></li>`).join("")}</ul>
-      </div>`;
+    const col = (c) => {
+      const body = c.code != null
+        ? `<pre class="code-block">${c.code}</pre>`
+        : `<ul class="bullet-list">${c.bullets.map(b => `<li><span>${b}</span></li>`).join("")}</ul>`;
+      return `<div><div class="slide-label" style="margin-bottom:0.75rem;">${c.label}</div>${body}</div>`;
+    };
     el.innerHTML = `
       <div class="slide-label">${label}</div>
       <h2 class="slide-heading">${s.heading}</h2>

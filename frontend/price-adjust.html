@@ -9,6 +9,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="/static/styles.css?v=14">
   <style>
     .btn-primary {
@@ -98,12 +99,40 @@
       </div>
     </div>
 
+    <hr class="step-sep">
+
+    <label data-i18n="label_delivery_id">DeliveryId</label>
+    <input id="deliveryId" type="text" required />
+
+    <label data-i18n="label_previous_delivery_id">Previous DeliveryId <span style="opacity:0.5;font-weight:normal;">(valgfri)</span></label>
+    <input id="previousDeliveryId" type="text" data-i18n-placeholder="placeholder_previous_delivery_id" />
+
+    <label data-i18n="label_environment">Miljø</label>
+    <select id="environment">
+      <option value="prod" data-i18n="opt_production">Produksjon</option>
+      <option value="test" data-i18n="opt_test">Test</option>
+    </select>
+
+    <label data-i18n="label_optional_delivery">Optional delivery</label>
+    <select id="optionalDelivery">
+      <option value="false" selected data-i18n="opt_no">Nei</option>
+      <option value="true" data-i18n="opt_yes">Ja</option>
+    </select>
+
+    <label data-i18n="label_valid_from">Gyldig fra</label>
+    <input id="validFrom" type="date" required />
+
+    <label data-i18n="label_valid_to">Gyldig til</label>
+    <input id="validTo" type="date" required />
+
     <div id="statusMsg" style="display:none; margin-top:1.25rem; padding:0.65rem 1rem; border-radius:4px; font-size:0.9rem;"></div>
 
     <button class="btn-primary" id="adjustBtn" data-i18n="btn_adjust">Juster og last ned</button>
   </section>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/no.js"></script>
 <script src="/static/i18n.js?v=34"></script>
 <script>
   if (typeof window.IS_ADMIN !== "undefined" && window.IS_ADMIN) {
@@ -111,6 +140,6 @@
     document.getElementById("adminSubmenu").style.display = "flex";
   }
 </script>
-<script src="/static/priceAdjust.js?v=1"></script>
+<script src="/static/priceAdjust.js?v=2"></script>
 </body>
 </html>

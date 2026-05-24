@@ -34,8 +34,8 @@ const translations = {
     norway_warning_text:  "Dette verktøyet er utelukkende beregnet for norske jernbaneoperatører og håndterer kun norske priser og data.",
 
     // Seksjon 1 – Input
-    section_generate:    "Oppdater OSDM-priser",
-    generate_desc:       "Last opp avstandsfilen (Km-CSV-format) og den eksisterende OSDM-filen. Prisene beregnes på nytt fra avstandsfilen og valutakursen, og du får en oppdatert OSDM-leveranse tilbake.",
+    section_generate:    "Priser fra avstandsfil",
+    generate_desc:       "Last opp avstandsfilen og den eksisterende OSDM-filen. Avstandsfilen er semikolonseparert CSV med format fra;til;pris; — UIC-kodene hentes fra OSDM-filen. Prisene beregnes automatisk fra avstandsfilen og valutakursen.",
     label_ten_csv:       "Avstandsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validert",
@@ -266,7 +266,7 @@ const translations = {
     landing_tagline:    "Automatisert prissetting for europeiske jernbaneoperatører",
     landing_desc:       "OSDMTools hjelper deg med å generere, konvertere og tilpasse OSDM fareDelivery-filer — raskt og uten manuelt arbeid.",
     landing_login_btn:  "Logg inn",
-    landing_feat1_title:"Oppdater OSDM-priser",
+    landing_feat1_title:"Priser fra avstandsfil",
     landing_feat1_desc: "Last opp avstandsfil og OSDM-fil. Prisene beregnes automatisk fra tabellen og valutakursen, og du får en oppdatert leveranse tilbake.",
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.",
@@ -329,8 +329,8 @@ const translations = {
     norway_warning_text:  "This tool is exclusively intended for Norwegian railway operators and handles Norwegian prices and data only.",
 
     // Seksjon 1 – Input
-    section_generate:    "Update OSDM prices",
-    generate_desc:       "Upload the distance file (Km-CSV format) and the existing OSDM file. Prices are recalculated from the distance file and exchange rate, and you get an updated OSDM delivery back.",
+    section_generate:    "Prices from distance file",
+    generate_desc:       "Upload the distance file and the existing OSDM file. The distance file is a semicolon-separated CSV with format from;to;price; — UIC codes are taken from the OSDM file. Prices are calculated automatically from the distance file and exchange rate.",
     label_ten_csv:       "Distance file",
     label_osdm_val_file: "OSDM file (validation)",
     osdm_validated:      "OSDM validated",
@@ -561,7 +561,7 @@ const translations = {
     landing_tagline:    "Automated pricing for European railway operators",
     landing_desc:       "OSDMTools helps you generate, convert and customise OSDM fareDelivery files — quickly and without manual work.",
     landing_login_btn:  "Log in",
-    landing_feat1_title:"Update OSDM prices",
+    landing_feat1_title:"Prices from distance file",
     landing_feat1_desc: "Upload a distance file and an OSDM file. Prices are recalculated automatically from the table and exchange rate, and you get an updated delivery back.",
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Convert a fareDelivery file into a clear Excel sheet with all station relations and prices per ticket category.",
@@ -624,8 +624,8 @@ const translations = {
     norway_warning_text:  "Dieses Tool ist ausschließlich für norwegische Eisenbahnbetreiber gedacht und verarbeitet ausschließlich norwegische Preise und Daten.",
 
     // Seksjon 1 – Eingabe
-    section_generate:    "OSDM-Preise aktualisieren",
-    generate_desc:       "Laden Sie die Entfernungsdatei (Km-CSV-Format) und die vorhandene OSDM-Datei hoch. Die Preise werden anhand der Entfernungsdatei und des Wechselkurses neu berechnet und Sie erhalten eine aktualisierte OSDM-Lieferung zurück.",
+    section_generate:    "Preise aus Entfernungsdatei",
+    generate_desc:       "Laden Sie die Entfernungsdatei und die vorhandene OSDM-Datei hoch. Die Entfernungsdatei ist eine semikolongetrennte CSV mit Format von;bis;Preis; — UIC-Codes werden aus der OSDM-Datei übernommen. Die Preise werden automatisch aus der Entfernungsdatei und dem Wechselkurs berechnet.",
     label_ten_csv:       "Entfernungsdatei",
     label_osdm_val_file: "OSDM-Datei (Validierung)",
     osdm_validated:      "OSDM validiert",
@@ -856,7 +856,7 @@ const translations = {
     landing_tagline:    "Automatisierte Preisgestaltung für europäische Eisenbahnbetreiber",
     landing_desc:       "OSDMTools hilft Ihnen, OSDM fareDelivery-Dateien zu generieren, zu konvertieren und anzupassen — schnell und ohne manuelle Arbeit.",
     landing_login_btn:  "Anmelden",
-    landing_feat1_title:"OSDM-Preise aktualisieren",
+    landing_feat1_title:"Preise aus Entfernungsdatei",
     landing_feat1_desc: "Laden Sie eine Entfernungsdatei und eine OSDM-Datei hoch. Die Preise werden automatisch aus der Tabelle und dem Wechselkurs berechnet.",
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Konvertieren Sie eine fareDelivery-Datei in eine übersichtliche Excel-Tabelle mit allen Stationsbeziehungen und Preisen.",
@@ -919,8 +919,8 @@ const translations = {
     norway_warning_text:  "Det här verktyget är uteslutande avsett för norska järnvägsoperatörer och hanterar endast norska priser och data.",
 
     // Seksjon 1 – Indata
-    section_generate:    "Uppdatera OSDM-priser",
-    generate_desc:       "Ladda upp avståndsfilen (Km-CSV-format) och den befintliga OSDM-filen. Priserna beräknas om utifrån avståndsfilen och växelkursen, och du får en uppdaterad OSDM-leverans tillbaka.",
+    section_generate:    "Priser från avståndsfil",
+    generate_desc:       "Ladda upp avståndsfilen och den befintliga OSDM-filen. Avståndsfilen är en semikolonseparerad CSV med formatet från;till;pris; — UIC-koderna hämtas från OSDM-filen. Priserna beräknas automatiskt från avståndsfilen och växelkursen.",
     label_ten_csv:       "Avståndsfil",
     label_osdm_val_file: "OSDM-fil (validering)",
     osdm_validated:      "OSDM validerad",
@@ -1151,7 +1151,7 @@ const translations = {
     landing_tagline:    "Automatiserad prissättning för europeiska järnvägsoperatörer",
     landing_desc:       "OSDMTools hjälper dig att generera, konvertera och anpassa OSDM fareDelivery-filer — snabbt och utan manuellt arbete.",
     landing_login_btn:  "Logga in",
-    landing_feat1_title:"Uppdatera OSDM-priser",
+    landing_feat1_title:"Priser från avståndsfil",
     landing_feat1_desc: "Ladda upp en avståndsfil och en OSDM-fil. Priserna beräknas automatiskt från tabellen och växelkursen.",
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Konvertera en fareDelivery-fil till ett tydligt Excel-ark med alla stationsrelationer och priser per biljettkategori.",
@@ -1214,8 +1214,8 @@ const translations = {
     norway_warning_text:  "Cet outil est exclusivement destiné aux opérateurs ferroviaires norvégiens et ne traite que les prix et données norvégiens.",
 
     // Section 1 – Saisie
-    section_generate:    "Mettre à jour les prix OSDM",
-    generate_desc:       "Téléchargez le fichier de distances (format Km-CSV) et le fichier OSDM existant. Les prix sont recalculés à partir du fichier de distances et du taux de change, et vous obtenez une livraison OSDM mise à jour.",
+    section_generate:    "Prix depuis fichier de distances",
+    generate_desc:       "Téléchargez le fichier de distances et le fichier OSDM existant. Le fichier de distances est un CSV séparé par des points-virgules au format de;vers;prix; — les codes UIC sont extraits du fichier OSDM. Les prix sont calculés automatiquement à partir du fichier de distances et du taux de change.",
     label_ten_csv:       "Fichier de distances",
     label_osdm_val_file: "Fichier OSDM (validation)",
     osdm_validated:      "OSDM validé",
@@ -1446,7 +1446,7 @@ const translations = {
     landing_tagline:    "Tarification automatisée pour les opérateurs ferroviaires européens",
     landing_desc:       "OSDMTools vous aide à générer, convertir et personnaliser des fichiers OSDM fareDelivery — rapidement et sans travail manuel.",
     landing_login_btn:  "Se connecter",
-    landing_feat1_title:"Mettre à jour les prix OSDM",
+    landing_feat1_title:"Prix depuis fichier de distances",
     landing_feat1_desc: "Téléchargez un fichier de distances et un fichier OSDM. Les prix sont recalculés automatiquement à partir du tableau et du taux de change.",
     landing_feat2_title:"OSDM → Excel",
     landing_feat2_desc: "Convertissez un fichier fareDelivery en tableau Excel clair avec toutes les relations de gare et les prix par catégorie de billet.",

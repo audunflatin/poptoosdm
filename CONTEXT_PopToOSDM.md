@@ -46,8 +46,9 @@ backend/
 frontend/
   landing.html     — landingsside for uinnloggede brukere
   login.html       — innloggingsside
-  index.html       — hoved-GUI (Oppdater OSDM-priser)
-  fare-discount.html — legg til rabatterte farer i eksisterende OSDM
+  index.html       — hoved-GUI (Priser fra avstandsfil)
+  price-adjust.html — Prisregulering (skaler priser med fast %)
+  fare-discount.html — legg til rabatterte priser i eksisterende OSDM
   admin.html       — admin-panel (brukerhåndtering, kun for admins)
   admin-log.html   — aktivitetslogg (kun for admins)
   osdmtoexcel.html — OSDM til Excel-konvertering
@@ -57,6 +58,7 @@ frontend/
   forgot_password.html — glemt passord (be om tilbakestillingslenke)
   reset_password.html  — tilbakestill passord via e-postlenke
   app.js           — JavaScript for index.html
+  priceAdjust.js   — JavaScript for price-adjust.html
   admin.js         — JavaScript for admin.html (paginering, søk)
   admin-log.js     — JavaScript for admin-log.html
   fareDiscount.js  — JavaScript for fare-discount.html
@@ -90,7 +92,7 @@ Procfile           — alternativ startkommando for Railway
 
 `landing.html` vises for alle som ikke er innlogget. Inneholder:
 - Hero med logo, tagline og "Logg inn"-knapp
-- Tre funksjonskort (Oppdater OSDM-priser, OSDM→Excel, Legg til rabatt)
+- Fire funksjonskort (Prisregulering, Priser fra avstandsfil, OSDM→Excel, Legg til rabatt)
 - Tilgangsforespørselsskjema — skjult bak en trigger-knapp med smooth CSS-animasjon
 
 ### Tilgangsforespørsel (`POST /request-access`)
@@ -127,19 +129,21 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=13 |
-| `i18n.js` | v=36 (landing.html) / v=33 (hovudsider) / v=19 (login-sider) |
+| `styles.css` | v=14 |
+| `i18n.js` | v=37 (landing.html) / v=34 (hovudsider) / v=19 (login-sider) |
 | `app.js` | v=15 |
 | `admin.js` | v=12 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=3 |
 | `fareDiscount.js` | v=14 |
+| `priceAdjust.js` | v=2 |
+| `presentation.js` | v=4 |
 
-HTML-filer som laster `i18n.js` med v=36: `landing.html`
+HTML-filer som laster `i18n.js` med v=37: `landing.html`
 
-HTML-filer som laster `i18n.js` med v=33:
+HTML-filer som laster `i18n.js` med v=34:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `osdmtoexcel.html`
+`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
 
 HTML-filer med v=19 (login-sider, endres sjelden):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
@@ -231,7 +235,19 @@ Viser alle EventLog-hendelser med filtrering og paginering.
 
 ---
 
-## Generer OSDM – flyt og endepunkter
+## Prisregulering – endepunkter
+
+| Kall | Handling |
+|---|---|
+| `GET /price-adjust` | Serverer `price-adjust.html` |
+| `POST /price-adjust` | Mottar OSDM-fil + parametere, returnerer justert fil |
+
+Parametere: `osdm_file`, `pct`, `delivery_id`, `previous_delivery_id`, `environment`, `optional_delivery`, `valid_from`, `valid_to`.
+Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skaler med `1 + pct/100` → rund opp til 0,20 EUR → beregn øvrige fra ratio → oppdater delivery-felt og kalenderperiode.
+
+---
+
+## Priser fra avstandsfil – flyt og endepunkter
 
 | # | Kall | Handling |
 |---|---|---|
@@ -329,6 +345,7 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - ✅ Tvungen passordbytte ved første innlogging
 - ✅ OSDM til Excel-konvertering (alle land/operatører, metadata-boks, RICS-navn)
 - ✅ Legg til rabatterte priser i eksisterende OSDM-fil
+- ✅ Prisregulering – skaler OSDM-priser med fast prosentsats
 - ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk, fransk)
 - ✅ Ingen øvre filstørrelsesgrense
 

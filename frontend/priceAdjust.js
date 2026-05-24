@@ -1,11 +1,17 @@
 // priceAdjust.js – Prisregulering: skaler OSDM-priser med fast faktor
 
-const osdmFileInput = document.getElementById("osdmFile");
-const adjustPctInput = document.getElementById("adjustPct");
-const adjustBtn      = document.getElementById("adjustBtn");
-const statusMsg      = document.getElementById("statusMsg");
-const factorDisplay  = document.getElementById("factorDisplay");
-const factorVal      = document.getElementById("factorVal");
+const osdmFileInput     = document.getElementById("osdmFile");
+const adjustPctInput    = document.getElementById("adjustPct");
+const adjustBtn         = document.getElementById("adjustBtn");
+const statusMsg         = document.getElementById("statusMsg");
+const factorDisplay     = document.getElementById("factorDisplay");
+const factorVal         = document.getElementById("factorVal");
+const deliveryIdInput   = document.getElementById("deliveryId");
+const prevDeliveryInput = document.getElementById("previousDeliveryId");
+const envSelect         = document.getElementById("environment");
+const optDeliverySelect = document.getElementById("optionalDelivery");
+const validFromInput    = document.getElementById("validFrom");
+const validToInput      = document.getElementById("validTo");
 
 adjustPctInput.addEventListener("input", () => {
   const pct = parseFloat(adjustPctInput.value);
@@ -36,6 +42,21 @@ adjustBtn.addEventListener("click", async () => {
     return;
   }
 
+  if (!deliveryIdInput.value.trim()) {
+    showStatus(t("err_delivery_id"), "error");
+    return;
+  }
+
+  if (!validFromInput.value || !validToInput.value) {
+    showStatus(t("err_valid_dates"), "error");
+    return;
+  }
+
+  if (validFromInput.value > validToInput.value) {
+    showStatus(t("err_date_order"), "error");
+    return;
+  }
+
   adjustBtn.disabled = true;
   adjustBtn.textContent = t("adjust_processing");
 
@@ -43,6 +64,12 @@ adjustBtn.addEventListener("click", async () => {
     const fd = new FormData();
     fd.append("osdm_file", osdmFileInput.files[0]);
     fd.append("pct", pct);
+    fd.append("delivery_id", deliveryIdInput.value.trim());
+    fd.append("previous_delivery_id", prevDeliveryInput.value.trim());
+    fd.append("environment", envSelect.value);
+    fd.append("optional_delivery", optDeliverySelect.value);
+    fd.append("valid_from", validFromInput.value);
+    fd.append("valid_to", validToInput.value);
 
     const r = await fetch("/price-adjust", { method: "POST", body: fd });
 
