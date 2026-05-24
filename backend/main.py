@@ -198,7 +198,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
         db.commit()
     finally:
         db.close()
-    return RedirectResponse("/", status_code=302)
+    return RedirectResponse("/price-adjust", status_code=302)
 
 @app.get("/logout")
 def logout(request: Request):
