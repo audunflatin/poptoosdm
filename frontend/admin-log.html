@@ -84,7 +84,7 @@
     <!-- Filters -->
     <div style="display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:1rem;">
       <input id="logSearch" type="search" placeholder="Søk e-post…" oninput="onSearch()"
-        style="flex:1; min-width:180px; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:white; font-size:0.95rem;" />
+        style="flex:1; min-width:180px; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-size:0.95rem;" />
       <input id="logDateFrom" type="date" class="log-date" onchange="loadLog()" />
       <input id="logDateTo"   type="date" class="log-date" onchange="loadLog()" />
       <select id="logEventType" class="log-select" onchange="loadLog()">
@@ -132,10 +132,10 @@
     <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
       <div id="logPagination" style="display:none; align-items:center; gap:0.75rem;">
         <button class="btn-table" id="logPrev" onclick="changePage(-1)">&#8592;</button>
-        <span id="logPageInfo" style="color:rgba(255,255,255,0.75); font-size:0.9rem;"></span>
+        <span id="logPageInfo" style="color:var(--list-text); font-size:0.9rem;"></span>
         <button class="btn-table" id="logNext" onclick="changePage(1)">&#8594;</button>
       </div>
-      <span id="logTotal" style="color:rgba(255,255,255,0.45); font-size:0.85rem;"></span>
+      <span id="logTotal" style="color:var(--text-muted); font-size:0.85rem;"></span>
     </div>
 
   </section>

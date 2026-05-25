@@ -84,17 +84,17 @@
 <div class="container">
   <section class="panel">
     <h2 data-i18n="heading_price_adjust">Prisregulering</h2>
-    <p style="color:rgba(255,255,255,0.6); margin-bottom:1.75rem;" data-i18n="price_adjust_desc">
+    <p style="color:var(--text-muted); margin-bottom:1.75rem;" data-i18n="price_adjust_desc">
       Last opp en OSDM-fil og juster prisene med en fast prosentsats.
     </p>
 
     <label for="osdmFile" data-i18n="label_osdm_file">OSDM JSON-fil</label>
     <input type="file" id="osdmFile" accept=".json" onchange="validateOsdmFile()" />
     <div id="osdmProgress" style="display:none; margin-top:0.75rem;">
-      <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+      <div style="height:6px; background:var(--spinner-ring); border-radius:3px; overflow:hidden;">
         <div class="progress-fill" style="height:100%; background:#ff5959; border-radius:3px; transition:width 0.5s ease; width:0%;"></div>
       </div>
-      <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:rgba(255,255,255,0.45);">
+      <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:var(--text-muted);">
         <span class="spinner-sm"></span>
         <span class="progress-pct">0%</span>
         <span class="progress-stage"></span>

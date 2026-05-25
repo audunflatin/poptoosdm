@@ -60,7 +60,7 @@
 
   <section class="panel">
     <h2 data-i18n="section_generate">Priser fra avstandsfil</h2>
-    <p style="margin-top:0; color:rgba(255,255,255,0.6);" data-i18n="generate_desc">
+    <p style="margin-top:0; color:var(--text-muted);" data-i18n="generate_desc">
       Last opp avstandsfilen for å komme i gang.
     </p>
 
@@ -76,10 +76,10 @@
       <label data-i18n="label_osdm_val_file">OSDM-fil</label>
       <input id="osdmValFile" type="file" accept=".json" onchange="validateOsdm()" />
       <div id="osdmValProgress" style="display:none; margin-top:0.75rem;">
-        <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+        <div style="height:6px; background:var(--spinner-ring); border-radius:3px; overflow:hidden;">
           <div class="progress-fill" style="height:100%; background:#ff5959; border-radius:3px; transition:width 0.5s ease; width:0%;"></div>
         </div>
-        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:rgba(255,255,255,0.45);">
+        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:var(--text-muted);">
           <span class="spinner-sm"></span>
           <span class="progress-pct">0%</span>
           <span class="progress-stage"></span>

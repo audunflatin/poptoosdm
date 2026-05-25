@@ -134,7 +134,7 @@
 <div class="container">
   <section class="panel">
     <h2 data-i18n="heading_fare_discount">Legg til rabatt</h2>
-    <p style="color:rgba(255,255,255,0.6); margin-bottom:1.5rem;" data-i18n="fare_discount_desc">
+    <p style="color:var(--text-muted); margin-bottom:1.5rem;" data-i18n="fare_discount_desc">
       Last opp en OSDM fareDelivery JSON-fil for å legge til en ny rabattert fare.
     </p>
 
@@ -142,12 +142,12 @@
     <div id="stepUpload">
       <label data-i18n="label_osdm_file_discount">OSDM JSON-fil</label>
       <input id="discountFile" type="file" accept=".json" onchange="onFileChange()" />
-      <div id="fileInfo" style="display:none; margin-top:0.5rem; color:rgba(255,255,255,0.6); font-size:0.9rem;"></div>
+      <div id="fileInfo" style="display:none; margin-top:0.5rem; color:var(--text-muted); font-size:0.9rem;"></div>
       <div id="parseProgress" style="display:none; margin-top:0.75rem;">
-        <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+        <div style="height:6px; background:var(--spinner-ring); border-radius:3px; overflow:hidden;">
           <div class="progress-fill" style="height:100%; background:#ff5959; border-radius:3px; transition:width 0.5s ease; width:0%;"></div>
         </div>
-        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:rgba(255,255,255,0.45);">
+        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:var(--text-muted);">
           <span class="spinner-sm"></span>
           <span class="progress-pct">0%</span>
           <span class="progress-stage"></span>
@@ -157,7 +157,7 @@
 
     <!-- Steg 2: Skjema (skjult til fil er lastet) -->
     <div id="stepForm" style="display:none; margin-top:2rem;">
-      <p id="parsedInfo" style="color:rgba(255,255,255,0.5); font-size:0.85rem; margin-bottom:1.5rem;"></p>
+      <p id="parsedInfo" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.5rem;"></p>
 
       <!-- Strekningsbegrensning -->
       <div>
