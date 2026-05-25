@@ -1,5 +1,5 @@
 /* =============================================================================
-   Mørkt marineblå tema
+   Mørkt marineblå tema (v=18)
    Farger: --bg: #0d1b2a, --surface: #152535, --coral: #ff5959
    ============================================================================= */
 :root {
@@ -24,7 +24,129 @@
 
   --radius-sm:     4px;
   --radius-md:     8px;
+
+  /* Theme-switchable variables */
+  --sidebar-bg:        #0d1b2a;
+  --panel-bg:          rgba(255, 255, 255, 0.04);
+  --panel-border:      rgba(255, 255, 255, 0.08);
+  --input-bg:          rgba(255, 255, 255, 0.07);
+  --hover-bg:          rgba(255, 255, 255, 0.07);
+  --hover-bg-btn:      rgba(255, 255, 255, 0.08);
+  --btn-border:        rgba(255, 255, 255, 0.4);
+  --btn-sm-border:     rgba(255, 255, 255, 0.25);
+  --btn-sm-bg:         rgba(255, 255, 255, 0.06);
+  --pre-bg:            rgba(255, 255, 255, 0.06);
+  --table-head-bg:     rgba(255, 255, 255, 0.07);
+  --table-even-bg:     rgba(255, 255, 255, 0.03);
+  --header-border:     rgba(255, 255, 255, 0.06);
+  --spinner-ring:      rgba(255, 255, 255, 0.12);
+  --muted-text-alt:    rgba(255, 255, 255, 0.35);
+  --list-text:         rgba(255, 255, 255, 0.75);
 }
+
+/* =============================================================================
+   Lys grå-blå tema (Theme 3 – "Kjølig grå-blå")
+   ============================================================================= */
+[data-theme="light"] {
+  --bg:            #eef2f7;
+  --surface:       #ffffff;
+  --surface-hover: #eef2f7;
+  --border:        #d8e2ed;
+  --border-focus:  #6899c4;
+
+  --text:          #0d1b2a;
+  --text-muted:    rgba(13, 27, 42, 0.55);
+
+  --coral:         #ff5959;
+  --coral-hover:   #e03e3e;
+  --coral-light:   rgba(255, 89, 89, 0.13);
+
+  --success:       #1a7a52;
+  --success-bg:    rgba(26, 122, 82, 0.1);
+  --error-bg:      rgba(255, 89, 89, 0.1);
+  --warning-bg:    rgba(180, 120, 0, 0.1);
+  --warning-text:  #7a4f00;
+
+  --sidebar-bg:        #dce6f0;
+  --panel-bg:          #ffffff;
+  --panel-border:      #d8e2ed;
+  --input-bg:          #eef2f7;
+  --hover-bg:          rgba(13, 27, 42, 0.06);
+  --hover-bg-btn:      rgba(13, 27, 42, 0.06);
+  --btn-border:        rgba(13, 27, 42, 0.3);
+  --btn-sm-border:     rgba(13, 27, 42, 0.2);
+  --btn-sm-bg:         rgba(13, 27, 42, 0.04);
+  --pre-bg:            rgba(13, 27, 42, 0.04);
+  --table-head-bg:     rgba(13, 27, 42, 0.05);
+  --table-even-bg:     rgba(13, 27, 42, 0.02);
+  --header-border:     #d8e2ed;
+  --spinner-ring:      rgba(13, 27, 42, 0.15);
+  --muted-text-alt:    rgba(13, 27, 42, 0.35);
+  --list-text:         rgba(13, 27, 42, 0.75);
+}
+
+[data-theme="light"] .sidebar-link.active,
+[data-theme="light"] .sidebar-sublink.active { color: #c0392b; }
+
+[data-theme="light"] .logo { filter: none; }
+
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #eef2f7 inset;
+  -webkit-text-fill-color: #0d1b2a;
+}
+
+[data-theme="light"] input.flatpickr-input:-webkit-autofill,
+[data-theme="light"] input.flatpickr-input:-webkit-autofill:hover,
+[data-theme="light"] input.flatpickr-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #eef2f7 inset;
+  -webkit-text-fill-color: #0d1b2a;
+}
+
+[data-theme="light"] input.flatpickr-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230d1b2a'%3E%3Cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/%3E%3C/svg%3E");
+}
+
+[data-theme="light"] .flatpickr-calendar {
+  background: #ffffff;
+  border: 1px solid #d8e2ed;
+  color: #0d1b2a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .flatpickr-calendar.arrowTop:before { border-bottom-color: #d8e2ed; }
+[data-theme="light"] .flatpickr-calendar.arrowTop:after  { border-bottom-color: #ffffff; }
+[data-theme="light"] .flatpickr-months .flatpickr-month,
+[data-theme="light"] .flatpickr-current-month,
+[data-theme="light"] .flatpickr-current-month .flatpickr-monthDropdown-months,
+[data-theme="light"] .flatpickr-weekdays,
+[data-theme="light"] span.flatpickr-weekday {
+  background: #ffffff;
+  color: #0d1b2a;
+  fill: #0d1b2a;
+}
+[data-theme="light"] .flatpickr-current-month input.cur-year { color: #0d1b2a; }
+[data-theme="light"] .flatpickr-current-month .flatpickr-monthDropdown-months { color: #0d1b2a; background: #ffffff; }
+[data-theme="light"] .flatpickr-innerContainer,
+[data-theme="light"] .flatpickr-rContainer,
+[data-theme="light"] .dayContainer,
+[data-theme="light"] .flatpickr-days {
+  background: #ffffff;
+  border-color: #d8e2ed;
+}
+[data-theme="light"] .flatpickr-day {
+  color: #0d1b2a;
+}
+[data-theme="light"] .flatpickr-day:hover,
+[data-theme="light"] .flatpickr-day:focus {
+  background: #eef2f7;
+  border-color: transparent;
+  color: #0d1b2a;
+}
+[data-theme="light"] .flatpickr-day.prevMonthDay,
+[data-theme="light"] .flatpickr-day.nextMonthDay,
+[data-theme="light"] .flatpickr-day.flatpickr-disabled,
+[data-theme="light"] .flatpickr-day.flatpickr-disabled:hover { color: rgba(13, 27, 42, 0.25); }
 
 /* =============================================================================
    Base
@@ -54,7 +176,7 @@ body {
   right: 0;
   z-index: 1002;
   background: var(--bg);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--header-border);
   padding: 0.75rem 1.5rem;
   min-height: 3rem;
 }
@@ -88,7 +210,7 @@ body {
   width: 220px;
   height: calc(100vh - 3rem);
   overflow-y: auto;
-  background: var(--bg);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -124,7 +246,7 @@ body {
 
 .sidebar-link:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.07);
+  background: var(--hover-bg);
 }
 
 .sidebar-link.active {
@@ -146,7 +268,7 @@ body {
 
 .sidebar-sublink:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.07);
+  background: var(--hover-bg);
 }
 
 .sidebar-sublink.active {
@@ -157,7 +279,7 @@ body {
 
 /* Separator i lang-selector for å skille logg-ut */
 .lang-sep {
-  color: rgba(255,255,255,0.2);
+  color: var(--muted-text-alt);
   padding: 0 3px;
   font-size: 1rem;
 }
@@ -248,11 +370,11 @@ body {
    Panel / kort
    ============================================================================= */
 .panel {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel-bg);
   border-radius: var(--radius-md);
   padding: 2rem;
   margin-bottom: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
   border-top: 3px solid var(--coral);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -294,7 +416,7 @@ select {
   font-family: inherit;
   font-weight: 500;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   transition: border-color 0.15s, background 0.15s;
@@ -306,7 +428,7 @@ input:not([type="checkbox"]):focus,
 select:focus {
   outline: none;
   border-color: var(--border-focus);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hover-bg-btn);
 }
 
 input[readonly] {
@@ -315,7 +437,7 @@ input[readonly] {
 }
 input[readonly]:focus {
   border-color: var(--border);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--input-bg);
 }
 
 input:-webkit-autofill,
@@ -329,7 +451,7 @@ input:-webkit-autofill:focus {
 input.flatpickr-input,
 input.flatpickr-input:focus,
 input.flatpickr-input:hover {
-  background-color: rgba(255, 255, 255, 0.07);
+  background-color: var(--input-bg);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
@@ -420,7 +542,7 @@ button {
   font-family: inherit;
   font-weight: 700;
   border-radius: var(--radius-sm);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid var(--btn-border);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -430,7 +552,7 @@ button {
 
 button:hover {
   border-color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-bg-btn);
 }
 
 button:active { opacity: 0.85; }
@@ -460,7 +582,7 @@ button[type="submit"]:hover {
   padding: 0.2rem 0.75rem;
   font-size: 0.8rem;
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--btn-border);
 }
 
 .btn-icon {
@@ -469,7 +591,7 @@ button[type="submit"]:hover {
   font-size: 1rem;
   line-height: 1;
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--btn-border);
   cursor: pointer;
 }
 
@@ -491,7 +613,7 @@ button[type="submit"]:hover {
 pre:empty { display: none; }
 
 pre {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--pre-bg);
   padding: 1rem 1.25rem;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -566,7 +688,7 @@ progress {
   background: var(--border);
   overflow: hidden;
 }
-progress::-webkit-progress-bar   { background: rgba(255,255,255,0.1); }
+progress::-webkit-progress-bar   { background: var(--spinner-ring); }
 progress::-webkit-progress-value { background: var(--coral); }
 progress::-moz-progress-bar      { background: var(--coral); }
 
@@ -586,7 +708,7 @@ progress::-moz-progress-bar      { background: var(--coral); }
 .spinner-sm {
   display: inline-block;
   width: 12px; height: 12px;
-  border: 2px solid rgba(255,255,255,0.12);
+  border: 2px solid var(--spinner-ring);
   border-top-color: #ff5959;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -663,7 +785,7 @@ progress::-moz-progress-bar      { background: var(--coral); }
 
 .example-panel td { padding: 5px 8px; }
 
-.example-row-even { background: rgba(255,255,255,0.05); }
+.example-row-even { background: var(--table-head-bg); }
 .example-row-odd  { background: transparent; }
 
 /* =============================================================================
@@ -680,7 +802,7 @@ progress::-moz-progress-bar      { background: var(--coral); }
 .example-table td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; }
 
 .example-table th {
-  background: rgba(255,255,255,0.07);
+  background: var(--table-head-bg);
   font-weight: 700;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -688,7 +810,7 @@ progress::-moz-progress-bar      { background: var(--coral); }
   letter-spacing: 0.06em;
 }
 
-.example-table tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+.example-table tr:nth-child(even) { background: var(--table-even-bg); }
 
 /* =============================================================================
    Steg-separator og hjelpeklasser – generer-OSDM-flow
@@ -733,10 +855,10 @@ progress::-moz-progress-bar      { background: var(--coral); }
   padding: 0;
   font-size: 0.875rem;
 }
-.warnings-list li { margin-bottom: 0.2rem; color: rgba(255,255,255,0.75); }
+.warnings-list li { margin-bottom: 0.2rem; color: var(--list-text); }
 .warnings-note {
   font-size: 0.78rem;
-  color: rgba(255,255,255,0.35);
+  color: var(--muted-text-alt);
   margin-top: 0.5rem;
 }
 
@@ -765,8 +887,8 @@ progress::-moz-progress-bar      { background: var(--coral); }
   font-family: inherit;
   font-weight: 700;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--btn-sm-border);
+  background: var(--btn-sm-bg);
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
@@ -776,8 +898,8 @@ progress::-moz-progress-bar      { background: var(--coral); }
 }
 .btn-sm:hover {
   margin-top: 0;
-  border-color: rgba(255,255,255,0.5);
-  background: rgba(255,255,255,0.1);
+  border-color: var(--btn-border);
+  background: var(--hover-bg-btn);
   color: var(--text);
 }
 
@@ -795,3 +917,21 @@ progress::-moz-progress-bar      { background: var(--coral); }
   color: var(--text-muted);
   min-height: 1.2em;
 }
+
+/* =============================================================================
+   Theme toggle button
+   ============================================================================= */
+.theme-btn {
+  background: none;
+  border: none;
+  margin-top: 0;
+  padding: 2px 5px;
+  cursor: pointer;
+  color: var(--text-muted);
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  line-height: 0;
+  transition: opacity 0.15s;
+}
+.theme-btn:hover { opacity: 1; background: none; border-color: transparent; }
