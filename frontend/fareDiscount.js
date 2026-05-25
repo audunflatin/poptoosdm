@@ -446,7 +446,7 @@ function carrierRemove(code) {
 function renderCarrierChips() {
   document.getElementById("carrierChips").innerHTML = selectedCarriers.map(c =>
     `<div class="picker-chip">
-      <span>${carrierDisplayName(c)} <span style="color:rgba(255,255,255,0.4)">${c.code}</span></span>
+      <span>${carrierDisplayName(c)} <span style="color:var(--muted-text-alt)">${c.code}</span></span>
       <button type="button" onclick="carrierRemove('${c.code}')" title="${t('title_remove')}">${SVG_X}</button>
     </div>`
   ).join("");
@@ -584,7 +584,7 @@ async function applyDiscount() {
 
     result.innerHTML =
       t("discount_success").replace("{fares}", fareCount).replace("{prices}", priceCount) + "<br>" +
-      `<span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">${t("discount_success_filename").replace("{filename}", `<em>${filename}</em>`)}</span>`;
+      `<span style="color:var(--text-muted); font-size:0.85rem;">${t("discount_success_filename").replace("{filename}", `<em>${filename}</em>`)}</span>`;
     result.className = "status-ok";
   } catch (err) {
     result.innerText = `${t("err_network")}: ${err.message}`;

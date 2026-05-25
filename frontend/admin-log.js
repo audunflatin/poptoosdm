@@ -103,22 +103,22 @@ async function loadLog() {
   const totalPages = Math.max(1, Math.ceil(logTotal / LOG_PAGE_SIZE));
 
   if (!data.entries.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:8px; color:rgba(255,255,255,0.5);">Ingen treff.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:8px; color:var(--text-muted);">Ingen treff.</td></tr>`;
   } else {
     tbody.innerHTML = data.entries.map((e, i) => {
       const isError = e.status === "error";
       const rowBg = isError
         ? (i % 2 === 0 ? "rgba(255,89,89,0.13)" : "rgba(255,89,89,0.07)")
-        : (i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent");
+        : (i % 2 === 0 ? "var(--table-even-bg)" : "transparent");
       const badge = isError
         ? `<span class="badge-error">FEIL</span>`
         : `<span class="badge-ok">OK</span>`;
       const label  = EVENT_LABELS[e.event_type] || e.event_type;
       const detail = formatDetail(e.event_type, e.detail);
       return `<tr style="background:${rowBg}">
-        <td style="padding:6px 8px; color:rgba(255,255,255,0.85); white-space:nowrap;">${formatDate(e.logged_at)}</td>
-        <td style="padding:6px 8px; color:white;">${e.user_email}</td>
-        <td style="padding:6px 8px; color:white;">${label}</td>
+        <td style="padding:6px 8px; color:var(--text-muted); white-space:nowrap;">${formatDate(e.logged_at)}</td>
+        <td style="padding:6px 8px; color:var(--text);">${e.user_email}</td>
+        <td style="padding:6px 8px; color:var(--text);">${label}</td>
         <td style="padding:6px 8px; text-align:center;">${badge}</td>
         <td style="padding:6px 8px;" class="detail-text">${detail}</td>
       </tr>`;

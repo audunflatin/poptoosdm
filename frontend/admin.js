@@ -31,10 +31,10 @@ function renderPendingRequests(pending) {
       ? new Date(r.requested_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" })
       : "–";
     return `<tr style="background:${rowBg}">
-      <td style="padding:6px 8px; color:white;">${escapeHtml(r.name)}</td>
-      <td style="padding:6px 8px; color:white;">${escapeHtml(r.email)}</td>
-      <td style="padding:6px 8px; color:rgba(255,255,255,0.7);">${escapeHtml(r.org)}</td>
-      <td style="padding:6px 8px; color:rgba(255,255,255,0.45); font-size:0.83rem;">${date}</td>
+      <td style="padding:6px 8px; color:var(--text);">${escapeHtml(r.name)}</td>
+      <td style="padding:6px 8px; color:var(--text);">${escapeHtml(r.email)}</td>
+      <td style="padding:6px 8px; color:var(--text-muted);">${escapeHtml(r.org)}</td>
+      <td style="padding:6px 8px; color:var(--muted-text-alt); font-size:0.83rem;">${date}</td>
       <td style="padding:6px 8px; text-align:right; white-space:nowrap;">
         <button class="btn-table" style="color:#5ac39a; border-color:rgba(90,195,154,0.35);"
           onclick="approveRequest('${escapeHtml(r.email)}')">${t("btn_approve")}</button>
@@ -112,12 +112,12 @@ function renderUserList() {
 
   if (visible.length === 0) {
     const msg = isSearching ? t("no_search_results") : t("no_users");
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:rgba(255,255,255,0.5);">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:var(--text-muted);">${msg}</td></tr>`;
   } else {
     const SVG_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5ac39a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`;
     const SVG_X     = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
     tbody.innerHTML = visible.map((u, i) => {
-      const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
+      const rowBg = i % 2 === 0 ? "var(--table-even-bg)" : "transparent";
       let activeCell;
       if (!u.is_active) {
         activeCell = SVG_X;
@@ -128,9 +128,9 @@ function renderUserList() {
       }
       return `
         <tr style="background:${rowBg}">
-          <td style="padding:6px 8px; color:white;">${u.email}</td>
-          <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? SVG_CHECK : "-"}</td>
-          <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
+          <td style="padding:6px 8px; color:var(--text);">${u.email}</td>
+          <td style="text-align:center; padding:6px 8px; color:var(--text-muted);">${u.is_admin ? SVG_CHECK : "-"}</td>
+          <td style="text-align:center; padding:6px 8px; color:var(--text-muted);">${activeCell}</td>
           <td style="text-align:right; padding:6px 8px;">
             <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
             <button class="btn-icon" onclick="setAdmin('${u.email}', ${!u.is_admin})" title="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" aria-label="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" style="margin-left:6px;">${u.is_admin ? "★" : "☆"}</button>
