@@ -45,17 +45,17 @@
 }
 
 /* =============================================================================
-   Lys grå-blå tema (Theme 3 – "Kjølig grå-blå")
+   Lys hybrid-tema ("Hybrid" – mørk sidebar, lyst innhold)
    ============================================================================= */
 [data-theme="light"] {
-  --bg:            #eef2f7;
+  --bg:            #f5f7fa;
   --surface:       #ffffff;
-  --surface-hover: #eef2f7;
-  --border:        #d8e2ed;
+  --surface-hover: #f0f4f9;
+  --border:        #dde4ec;
   --border-focus:  #6899c4;
 
   --text:          #0d1b2a;
-  --text-muted:    rgba(13, 27, 42, 0.55);
+  --text-muted:    rgba(13, 27, 42, 0.62);
 
   --coral:         #ff5959;
   --coral-hover:   #e03e3e;
@@ -67,9 +67,9 @@
   --warning-bg:    rgba(180, 120, 0, 0.1);
   --warning-text:  #7a4f00;
 
-  --sidebar-bg:        #dce6f0;
+  --sidebar-bg:        #0d1b2a;   /* hybrid: behold mørk sidebar */
   --panel-bg:          #ffffff;
-  --panel-border:      #d8e2ed;
+  --panel-border:      #dde4ec;
   --input-bg:          #eef2f7;
   --hover-bg:          rgba(13, 27, 42, 0.06);
   --hover-bg-btn:      rgba(13, 27, 42, 0.06);
@@ -79,14 +79,34 @@
   --pre-bg:            rgba(13, 27, 42, 0.04);
   --table-head-bg:     rgba(13, 27, 42, 0.05);
   --table-even-bg:     rgba(13, 27, 42, 0.02);
-  --header-border:     #d8e2ed;
+  --header-border:     #dde4ec;
   --spinner-ring:      rgba(13, 27, 42, 0.15);
   --muted-text-alt:    rgba(13, 27, 42, 0.35);
   --list-text:         rgba(13, 27, 42, 0.75);
 }
 
+/* Hybrid: sidebar er mørk – hold hvit tekst og korrekte aktiv-stiler */
+[data-theme="light"] .sidebar {
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .sidebar-brand {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="light"] .sidebar-link,
+[data-theme="light"] .sidebar-sublink {
+  color: rgba(255, 255, 255, 0.65);
+}
+[data-theme="light"] .sidebar-link:hover,
+[data-theme="light"] .sidebar-sublink:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
 [data-theme="light"] .sidebar-link.active,
-[data-theme="light"] .sidebar-sublink.active { color: #c0392b; }
+[data-theme="light"] .sidebar-sublink.active {
+  color: #ffffff;
+  background: rgba(255, 89, 89, 0.18);
+  box-shadow: inset 3px 0 0 #ff5959;
+}
 
 [data-theme="light"] .logo { filter: none; }
 
@@ -110,11 +130,11 @@
 
 [data-theme="light"] .flatpickr-calendar {
   background: #ffffff;
-  border: 1px solid #d8e2ed;
+  border: 1px solid #dde4ec;
   color: #0d1b2a;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
-[data-theme="light"] .flatpickr-calendar.arrowTop:before { border-bottom-color: #d8e2ed; }
+[data-theme="light"] .flatpickr-calendar.arrowTop:before { border-bottom-color: #dde4ec; }
 [data-theme="light"] .flatpickr-calendar.arrowTop:after  { border-bottom-color: #ffffff; }
 [data-theme="light"] .flatpickr-months .flatpickr-month,
 [data-theme="light"] .flatpickr-current-month,

@@ -215,10 +215,10 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=18 |
-| `i18n.js` | v=40 (landing.html + hovudsider) / v=19 (login-sider) |
+| `styles.css` | v=19 |
+| `i18n.js` | v=41 (landing.html + hovudsider) / v=19 (login-sider) |
 | `app.js` | v=19 |
-| `admin.js` | v=14 |
+| `admin.js` | v=15 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |
