@@ -1594,10 +1594,6 @@ function setLanguage(lang) {
   }
 }
 
-// Init – kjører straks scriptet lastes (DOM er klar siden script er nederst i body)
-currentLang = detectLanguage();
-applyTranslations();
-
 // =============================================================================
 // Theme toggle
 // =============================================================================
@@ -1618,3 +1614,7 @@ function _updateThemeBtn() {
   btn.innerHTML = isLight ? _MOON_SVG : _SUN_SVG;
   btn.title = isLight ? "Mørk modus" : "Lys modus";
 }
+
+// Init – kjører straks scriptet lastes (DOM er klar siden script er nederst i body)
+currentLang = detectLanguage();
+applyTranslations();
