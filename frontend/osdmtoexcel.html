@@ -8,12 +8,19 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=16">
+  <link rel="stylesheet" href="/static/styles.css?v=17">
 </head>
 <body>
 
 <nav class="sidebar">
-  <a href="/" class="sidebar-brand"><span class="sidebar-to">OSDM</span>Tools</a>
+  <a href="/" class="sidebar-brand">
+    <svg width="170" height="34" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="22" r="9" fill="#ff5959"/>
+      <line x1="23" y1="22" x2="35" y2="22" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-dasharray="3 2"/>
+      <circle cx="44" cy="22" r="7" fill="none" stroke="white" stroke-width="2.5"/>
+      <text x="60" y="29" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="21" fill="white"><tspan fill="#ff5959">OSDM</tspan>Tools</text>
+    </svg>
+  </a>
   <div class="sidebar-nav">
     <a href="/price-adjust" class="sidebar-link" data-i18n="nav_price_adjust">Prisregulering</a>
     <a href="/" class="sidebar-link" data-i18n="nav_generate">Priser fra avstandsfil</a>
@@ -40,14 +47,6 @@
     <span class="lang-sep">|</span>
     <a href="/logout" class="logout-button" data-i18n="logout">Logg ut</a>
   </span>
-  <div style="display:flex; justify-content:center; align-items:center; padding:1rem 0 0;">
-    <svg width="440" height="88" viewBox="0 0 220 44" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="14" cy="22" r="9" fill="#ff5959"/>
-      <line x1="23" y1="22" x2="35" y2="22" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" stroke-dasharray="3 2"/>
-      <circle cx="44" cy="22" r="7" fill="none" stroke="white" stroke-width="2.5"/>
-      <text x="60" y="29" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="800" font-size="21" fill="white"><tspan fill="#ff5959">OSDM</tspan>Tools</text>
-    </svg>
-  </div>
 </header>
 
 <div class="container">
