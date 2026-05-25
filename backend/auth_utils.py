@@ -1,4 +1,5 @@
-import uuid
+import secrets
+import string
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(
@@ -6,8 +7,10 @@ pwd_context = CryptContext(
     deprecated="auto"
 )
 
+_CHARS = string.ascii_letters + string.digits
+
 def generate_password() -> str:
-    return str(uuid.uuid4())
+    return "".join(secrets.choice(_CHARS) for _ in range(10))
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
