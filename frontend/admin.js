@@ -131,7 +131,7 @@ function renderUserList() {
           <td style="padding:6px 8px; color:white;">${u.email}</td>
           <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? SVG_CHECK : "-"}</td>
           <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
-          <td style="text-align:center; padding:6px 8px;">
+          <td style="text-align:right; padding:6px 8px;">
             <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
             <button class="btn-icon" onclick="setAdmin('${u.email}', ${!u.is_admin})" title="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" aria-label="${u.is_admin ? t("btn_remove_admin") : t("btn_make_admin")}" style="margin-left:6px;">${u.is_admin ? "★" : "☆"}</button>
             <button class="btn-table btn-danger" onclick="deleteUser('${u.email}')" style="margin-left:6px;">${t("btn_delete")}</button>
