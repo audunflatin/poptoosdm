@@ -54,14 +54,20 @@ Felles styling: `styles.css`. Flerspråklig: `i18n.js` (lastes før side-spesifi
 Definert øverst i `backend/main.py`:
 
 ```python
-TEN_TABLE: list | None      # Lastes ved POST /ui/validate-ten — brukes av generate
-OSDM_OUT:  dict | None      # {"filename": str, "content": str} — generert fil i minnet
-XLSX_JOBS: dict             # job_id → {status, result, percent, ...} for async Excel-jobber
-GENERATION_PROGRESS: dict   # {"status": ..., "percent": ...} for progressbar
+TEN_TABLE: list | None         # Lastes ved POST /ui/validate-ten — brukes av generate
+OSDM_STORE: dict               # user_email → {"filename": str, "content": str} — generert fil per bruker
+XLSX_JOBS: dict                # job_id → {status, result, percent, user_email, ...}
+VALIDATION_JOBS: dict          # job_id → {status, result, percent, user_email, ...}
+PARSE_JOBS: dict               # job_id → {status, result, percent, user_email, ...}
+GENERATION_PROGRESS: dict      # {"status": ..., "percent": ...} for progressbar
 ```
+
+**Viktig:** `OSDM_STORE` er per bruker (keyed på `user_email`) — to brukere kan generere OSDM samtidig uten konflikt. Alle job-dicts lagrer `user_email`; progress- og download-endepunkter sjekker eierskap (403 hvis annen bruker).
 
 **Konsekvens:** TEN-filen og OSDM-filen må valideres i riktig rekkefølge per server-sesjon.
 Ingenting skrives til disk under generering.
+
+En bakgrunnstråd rydder jobber eldre enn 2 timer hvert 10. minutt.
 
 ---
 
@@ -84,10 +90,10 @@ Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skale
 | 1 | `POST /ui/validate-ten` | Parser TEN-CSV, lagrer i `TEN_TABLE` |
 | 2 | `POST /ui/validate-osdm` | Validerer struktur, returnerer warnings + deliveryId |
 | 3 | `GET /ui/exchange-rate?from_=EUR&to=NOK` | Henter kurs fra frankfurter.app (ECB) |
-| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + template, lagrer i `OSDM_OUT` |
+| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + template, lagrer i `OSDM_STORE[user_email]` |
 | 5 | `POST /ui/fix-osdm` | Rydder opp feil og ubrukte elementer i OSDM-fil |
-| 6 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_OUT` |
-| 7 | `POST /ui/excel-from-generated` | Konverterer `OSDM_OUT` til Excel (async) |
+| 6 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_STORE[user_email]` (krever innlogging) |
+| 7 | `POST /ui/excel-from-generated` | Konverterer `OSDM_STORE[user_email]` til Excel (async) |
 
 ### Delivery-felt som settes ved generering
 - `deliveryId` — ny ID (brukes i alle ID-er via string-replace)
@@ -209,23 +215,23 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=15 |
-| `i18n.js` | v=39 (landing.html) / v=37 (hovudsider) / v=19 (login-sider) |
-| `app.js` | v=18 |
-| `admin.js` | v=12 |
+| `styles.css` | v=16 |
+| `i18n.js` | v=40 (landing.html) / v=39 (hovudsider) / v=19 (login-sider) |
+| `app.js` | v=19 |
+| `admin.js` | v=14 |
 | `admin-log.js` | v=1 |
-| `osdmtoExcel.js` | v=6 |
-| `fareDiscount.js` | v=17 |
+| `osdmtoExcel.js` | v=7 |
+| `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=9 |
 | `presentation.js` | v=6 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=39:
+HTML-filer som laster `i18n.js` med v=40:
 `landing.html`
 
-HTML-filer som laster `i18n.js` med v=37:
+HTML-filer som laster `i18n.js` med v=39:
 `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
 
@@ -247,6 +253,19 @@ HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 
 Dynamiske etiketter (f.eks. valutakurs-label) bruker `data-i18n`-attributten
 og oppdateres via JS — se `updateExchangeRateLabel()` i `app.js`.
+
+---
+
+## Sikkerhet – viktige mekanismer
+
+- **SESSION_SECRET**: logger advarsel ved oppstart hvis standardverdi brukes (ikke satt i env).
+- **CORS**: `ALLOWED_ORIGINS` begrenser til `APP_URL` + localhost (settes i `backend/core/settings.py`).
+- **Job-eierskap**: alle job-dicts (`XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS`) lagrer `user_email`. Progress- og download-endepunkter returnerer 403 hvis feil bruker spør.
+- **Job-cleanup**: bakgrunnstråd sletter jobber eldre enn 2 timer hvert 10. minutt.
+- **`_safe_filename()`**: fjerner tegn som kan ødelegge `Content-Disposition`-headere. Brukes i `fix_osdm`, `price_adjust` og `osdm-to-csv-download`.
+- **`OSDM_STORE`**: per-bruker dict — to brukere kan generere OSDM samtidig uten å overskrive hverandres resultat.
+- **Rate limiting**: 10 innloggingsforsøk per IP per 60 sek; 3 tilgangsforespørsler per IP per 24 t.
+- **SameSite=strict** på session-cookie; `CF-Connecting-IP` for korrekt IP bak Cloudflare.
 
 ---
 

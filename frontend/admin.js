@@ -7,6 +7,82 @@ function setResult(el, text, ok) {
   el.className = text ? (ok ? "status-ok" : "status-error") : "";
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderPendingRequests(pending) {
+  const section   = document.getElementById("pendingSection");
+  const tbody     = document.getElementById("pendingTableBody");
+  const badge     = document.getElementById("pendingBadge");
+  const resultEl  = document.getElementById("pendingActionResult");
+  if (resultEl) resultEl.innerText = "";
+
+  if (!pending || pending.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+  badge.textContent = pending.length;
+
+  tbody.innerHTML = pending.map((r, i) => {
+    const rowBg = i % 2 === 0 ? "rgba(255,89,89,0.04)" : "transparent";
+    const date  = r.requested_at
+      ? new Date(r.requested_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" })
+      : "–";
+    return `<tr style="background:${rowBg}">
+      <td style="padding:6px 8px; color:white;">${escapeHtml(r.name)}</td>
+      <td style="padding:6px 8px; color:white;">${escapeHtml(r.email)}</td>
+      <td style="padding:6px 8px; color:rgba(255,255,255,0.7);">${escapeHtml(r.org)}</td>
+      <td style="padding:6px 8px; color:rgba(255,255,255,0.45); font-size:0.83rem;">${date}</td>
+      <td style="padding:6px 8px; text-align:right; white-space:nowrap;">
+        <button class="btn-table" style="color:#5ac39a; border-color:rgba(90,195,154,0.35);"
+          onclick="approveRequest('${escapeHtml(r.email)}')">${t("btn_approve")}</button>
+        <button class="btn-table" style="margin-left:6px; opacity:0.55;"
+          onclick="rejectRequest('${escapeHtml(r.email)}')">${t("btn_reject")}</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+async function loadPendingRequests() {
+  try {
+    const r = await fetch("/admin/pending-requests");
+    if (!r.ok) return;
+    renderPendingRequests(await r.json());
+  } catch { /* pending section stays hidden */ }
+}
+
+async function approveRequest(email) {
+  const resultEl = document.getElementById("pendingActionResult");
+  const fd = new FormData();
+  fd.append("email", email);
+  const r = await fetch("/admin/approve-request", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    setResult(resultEl, t("approved_ok").replace("{email}", email), true);
+    loadPendingRequests();
+    loadUserList();
+  } else {
+    setResult(resultEl, res.detail || t("unknown_error"), false);
+  }
+}
+
+async function rejectRequest(email) {
+  if (!confirm(t("confirm_reject").replace("{email}", email))) return;
+  const resultEl = document.getElementById("pendingActionResult");
+  const fd = new FormData();
+  fd.append("email", email);
+  const r = await fetch("/admin/reject-request", { method: "POST", body: fd });
+  const res = await r.json();
+  if (res.ok) {
+    setResult(resultEl, t("rejected_ok"), true);
+    loadPendingRequests();
+  } else {
+    setResult(resultEl, res.detail || t("unknown_error"), false);
+  }
+}
+
 function getSearchQuery() {
   return (document.getElementById("userSearch")?.value || "").trim().toLowerCase();
 }
@@ -38,20 +114,22 @@ function renderUserList() {
     const msg = isSearching ? t("no_search_results") : t("no_users");
     tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:rgba(255,255,255,0.5);">${msg}</td></tr>`;
   } else {
+    const SVG_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5ac39a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`;
+    const SVG_X     = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
     tbody.innerHTML = visible.map((u, i) => {
       const rowBg = i % 2 === 0 ? "rgba(255,255,255,0.05)" : "transparent";
       let activeCell;
       if (!u.is_active) {
-        activeCell = "❌";
+        activeCell = SVG_X;
       } else if (u.has_logged_in) {
-        activeCell = "✅";
+        activeCell = SVG_CHECK;
       } else {
         activeCell = "-";
       }
       return `
         <tr style="background:${rowBg}">
           <td style="padding:6px 8px; color:white;">${u.email}</td>
-          <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? "✅" : "-"}</td>
+          <td style="text-align:center; padding:6px 8px; color:white;">${u.is_admin ? SVG_CHECK : "-"}</td>
           <td style="text-align:center; padding:6px 8px; color:white;">${activeCell}</td>
           <td style="text-align:center; padding:6px 8px;">
             <button class="btn-table" onclick="resetPassword('${u.email}')">${t("btn_new_password")}</button>
@@ -172,3 +250,4 @@ document.getElementById("addUserForm").onsubmit = async e => {
 };
 
 loadUserList();
+loadPendingRequests();

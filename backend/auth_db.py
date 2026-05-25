@@ -56,6 +56,17 @@ class PasswordResetToken(Base):
     expires_at = Column(DateTime, nullable=False)
 
 
+class AccessRequest(Base):
+    __tablename__ = "access_requests"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    org = Column(String, nullable=False)
+    requested_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    status = Column(String, default="pending")  # "pending" | "approved" | "rejected"
+
+
 def _migrate():
     from sqlalchemy import text, inspect as sa_inspect
     insp = sa_inspect(engine)

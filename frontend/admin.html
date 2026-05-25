@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=15">
+  <link rel="stylesheet" href="/static/styles.css?v=16">
 </head>
 <body>
 
@@ -69,6 +69,27 @@
       </form>
       <pre id="addUserResult"></pre>
 
+      <!-- Ventende tilgangsforespørsler -->
+      <div id="pendingSection" style="display:none; margin-top:2.5rem;">
+        <h2 style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.75rem;">
+          <span data-i18n="pending_title">Ventende tilgangsforespørsler</span>
+          <span id="pendingBadge" style="background:var(--coral); color:white; border-radius:9999px; font-size:0.72rem; font-weight:700; padding:2px 9px; line-height:1.6;"></span>
+        </h2>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:0.5rem;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:5px 8px; border-bottom:1px solid rgba(255,89,89,0.35); font-size:0.82rem; color:rgba(255,255,255,0.5); font-weight:500;" data-i18n="label_name">Navn</th>
+              <th style="text-align:left; padding:5px 8px; border-bottom:1px solid rgba(255,89,89,0.35); font-size:0.82rem; color:rgba(255,255,255,0.5); font-weight:500;" data-i18n="col_email">E-post</th>
+              <th style="text-align:left; padding:5px 8px; border-bottom:1px solid rgba(255,89,89,0.35); font-size:0.82rem; color:rgba(255,255,255,0.5); font-weight:500;" data-i18n="pending_org">Organisasjon</th>
+              <th style="text-align:left; padding:5px 8px; border-bottom:1px solid rgba(255,89,89,0.35); font-size:0.82rem; color:rgba(255,255,255,0.5); font-weight:500;" data-i18n="pending_requested">Forespurt</th>
+              <th style="border-bottom:1px solid rgba(255,89,89,0.35);"></th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody"></tbody>
+        </table>
+        <pre id="pendingActionResult"></pre>
+      </div>
+
       <!-- Brukerliste -->
       <h2 style="margin-top: 3.5rem;" data-i18n="heading_users">Brukere</h2>
       <input id="userSearch" type="search" data-i18n-placeholder="search_users"
@@ -99,7 +120,7 @@
 
 </div>
 
-<script src="/static/i18n.js?v=37"></script>
-<script src="/static/admin.js?v=12"></script>
+<script src="/static/i18n.js?v=39"></script>
+<script src="/static/admin.js?v=14"></script>
 </body>
 </html>

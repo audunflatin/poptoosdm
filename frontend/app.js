@@ -190,7 +190,7 @@ async function validateOsdm() {
   if (res.warnings && res.warnings.length > 0) {
     warningsEl.innerHTML = renderWarnings(res.warnings, t("osdm_warnings_title"), null, true);
   } else {
-    warningsEl.innerHTML = `<div class="check-ok">✓ ${t("osdm_no_warnings")}</div>`;
+    warningsEl.innerHTML = `<div class="check-ok">${t("osdm_no_warnings")}</div>`;
   }
 
   // Distance coverage check (run automatically if TEN file is available)
@@ -210,7 +210,7 @@ async function validateOsdm() {
           distEl.innerHTML = renderWarnings(res2.warnings, t("label_distance_check"),
             `${t("distance_stats").replace("{covered}", res2.osdmRcCount - res2.uncoveredCount).replace("{total}", res2.osdmRcCount)}`);
         } else {
-          distEl.innerHTML = `<div class="check-ok">✓ ${t("distance_ok").replace("{rows}", res2.tenRows).replace("{rc}", res2.osdmRcCount)}</div>`;
+          distEl.innerHTML = `<div class="check-ok">${t("distance_ok").replace("{rows}", res2.tenRows).replace("{rc}", res2.osdmRcCount)}</div>`;
         }
       } else if (res2.error) {
         distEl.innerHTML = `<div style="color:var(--text-muted);font-size:0.82rem;margin-top:0.5rem;">${t("label_distance_check")}: ${res2.error}</div>`;
@@ -261,7 +261,7 @@ function buildFixSuccessHtml(stats) {
   const total = Object.values(stats).reduce((a, b) => a + b, 0);
 
   if (total === 0) {
-    return `<div class="check-ok">✓ ${t("fix_osdm_nothing")}</div>`;
+    return `<div class="check-ok">${t("fix_osdm_nothing")}</div>`;
   }
 
   const items = Object.entries(stats)
@@ -338,7 +338,7 @@ async function fetchExchangeRate() {
 
   if (currency === "EUR") {
     rateInput.value = "1";
-    rateStatus.innerHTML = `<span style="color:var(--success);">✓</span> ${t("rate_eur_no_conversion")}`;
+    rateStatus.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5ac39a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;margin-right:4px"><path d="M20 6 9 17l-5-5"/></svg>${t("rate_eur_no_conversion")}`;
     return;
   }
 
@@ -352,7 +352,7 @@ async function fetchExchangeRate() {
       const eurPerCurr = (1 / currPerEur).toFixed(6);
       rateInput.value  = eurPerCurr;
       rateStatus.innerHTML =
-        `<span style="color:var(--success);">✓</span> ` +
+        `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5ac39a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;margin-right:4px"><path d="M20 6 9 17l-5-5"/></svg>` +
         `${t("rate_fetched")
           .replace("{rate}", currPerEur.toFixed(4))
           .replace("{currency}", currency)
@@ -396,12 +396,13 @@ async function generateOsdm(){
       `${t("label_summer_time")}: ${sommertid}\n` +
       `${t("label_price_count")}: ${res.summary.pricesUpdated}`;
 
-    finalStatus.className = "";
+    finalStatus.className = "result-text";
     document.getElementById("resultBox").style.display = "block";
     downloadBtn.disabled = false;
     document.getElementById("downloadExcelBtn").disabled = false;
     renderExampleTable(res.summary.exampleFares);
   } else {
+    finalStatus.className = "result-text status-error";
     finalStatus.innerText = t("err_osdm_failed");
     document.getElementById("resultBox").style.display = "block";
   }

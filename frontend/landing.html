@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=15">
+  <link rel="stylesheet" href="/static/styles.css?v=16">
   <style>
     body {
       min-height: 100vh;
@@ -84,9 +84,9 @@
     }
 
     .feat-icon {
-      font-size: 1.8rem;
       margin-bottom: 0.9rem;
       display: block;
+      line-height: 0;
     }
 
     .feat-card h3 {
@@ -244,22 +244,22 @@
 
 <div class="features">
   <div class="feat-card">
-    <span class="feat-icon">📈</span>
+    <span class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>
     <h3 data-i18n="landing_feat4_title">Prisregulering</h3>
     <p data-i18n="landing_feat4_desc">Juster alle priser i en OSDM-fil med en fast prosentsats. Voksenprisen skaleres og alle andre kategorier beregnes automatisk.</p>
   </div>
   <div class="feat-card">
-    <span class="feat-icon">⚡</span>
+    <span class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
     <h3 data-i18n="landing_feat1_title">Priser fra avstandsfil</h3>
     <p data-i18n="landing_feat1_desc">Last opp avstandsfil og OSDM-fil. Prisene beregnes automatisk fra tabellen og valutakursen, og du får en oppdatert leveranse tilbake.</p>
   </div>
   <div class="feat-card">
-    <span class="feat-icon">📊</span>
+    <span class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg></span>
     <h3 data-i18n="landing_feat2_title">OSDM → Excel</h3>
     <p data-i18n="landing_feat2_desc">Konverter en fareDelivery-fil til en oversiktlig Excel med alle stasjonsrelasjoner og priser per billettkategori.</p>
   </div>
   <div class="feat-card">
-    <span class="feat-icon">🏷</span>
+    <span class="feat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="#ff5959"/></svg></span>
     <h3 data-i18n="landing_feat3_title">Legg til rabatt i OSDM</h3>
     <p data-i18n="landing_feat3_desc">Legg til rabatterte priser direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.</p>
   </div>
@@ -299,7 +299,7 @@
   <a href="/login" data-i18n="landing_login_btn">Logg inn</a>
 </div>
 
-<script src="/static/i18n.js?v=39"></script>
+<script src="/static/i18n.js?v=40"></script>
 <script>
   const accessForm = document.getElementById("accessForm");
   const accessSuccess = document.getElementById("accessSuccess");

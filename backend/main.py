@@ -16,7 +16,7 @@ import uuid
 import requests
 import ijson
 
-from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, init_db
+from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, AccessRequest, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET, ALLOWED_ORIGINS
 from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email, send_access_request_email
@@ -1203,6 +1203,75 @@ def delete_user(request: Request, email: str = Form(...)):
     finally:
         db.close()
 
+@app.get("/admin/pending-requests")
+def admin_pending_requests(request: Request):
+    require_admin(request)
+    with SessionLocal() as db:
+        rows = (
+            db.query(AccessRequest)
+            .filter(AccessRequest.status == "pending")
+            .order_by(AccessRequest.requested_at.asc())
+            .all()
+        )
+        return [
+            {
+                "email":        r.email,
+                "name":         r.name,
+                "org":          r.org,
+                "requested_at": r.requested_at.isoformat() if r.requested_at else None,
+            }
+            for r in rows
+        ]
+
+
+@app.post("/admin/approve-request")
+def admin_approve_request(request: Request, email: str = Form(...)):
+    require_admin(request)
+    email = email.lower()
+    with SessionLocal() as db:
+        req = db.query(AccessRequest).filter(AccessRequest.email == email).first()
+        if not req or req.status != "pending":
+            raise HTTPException(status_code=404, detail="Forespørsel ikke funnet")
+        existing = db.query(User).filter(User.email == email).first()
+        if existing:
+            req.status = "approved"
+            db.commit()
+            return {"ok": True, "email": email, "already_existed": True}
+        password = generate_password()
+        user = User(
+            email=email,
+            password_hash=hash_password(password),
+            is_admin=False,
+            is_active=True,
+            must_change_password=True,
+        )
+        db.add(user)
+        req.status = "approved"
+        db.commit()
+    email_sent = True
+    try:
+        send_welcome_email(email, password)
+    except Exception as exc:
+        logger.warning("Kunne ikke sende velkomstepost: %s", exc)
+        email_sent = False
+    log_event(request.session.get("user_email"), "admin_request_approved", detail={"email": email})
+    return {"ok": True, "email": email, "email_sent": email_sent}
+
+
+@app.post("/admin/reject-request")
+def admin_reject_request(request: Request, email: str = Form(...)):
+    require_admin(request)
+    email = email.lower()
+    with SessionLocal() as db:
+        req = db.query(AccessRequest).filter(AccessRequest.email == email).first()
+        if not req:
+            raise HTTPException(status_code=404, detail="Forespørsel ikke funnet")
+        req.status = "rejected"
+        db.commit()
+    log_event(request.session.get("user_email"), "admin_request_rejected", detail={"email": email})
+    return {"ok": True, "email": email}
+
+
 @app.get("/admin/login-log")
 def admin_login_log(
     request: Request,
@@ -1851,13 +1920,28 @@ def request_access(
         return {"ok": True}
     ip = _get_client_ip(request)
     _check_access_rate_limit(ip)
+    email_clean = email.strip().lower()
+    name_clean  = name.strip()
+    org_clean   = org.strip()
+    with SessionLocal() as db:
+        existing_user = db.query(User).filter(User.email == email_clean).first()
+        if existing_user:
+            return {"ok": True}
+        existing_req = db.query(AccessRequest).filter(AccessRequest.email == email_clean).first()
+        if existing_req:
+            existing_req.name = name_clean
+            existing_req.org  = org_clean
+            existing_req.status = "pending"
+            existing_req.requested_at = datetime.now(timezone.utc)
+        else:
+            db.add(AccessRequest(email=email_clean, name=name_clean, org=org_clean))
+        db.commit()
     try:
-        send_access_request_email(name.strip(), email.strip(), org.strip())
-        log_event(None, "access_request", detail={"name": name, "email": email, "org": org})
-        return {"ok": True}
+        send_access_request_email(name_clean, email_clean, org_clean)
     except Exception as exc:
-        logger.error("Kunne ikke sende tilgangsforespørsel: %s", exc)
-        raise HTTPException(status_code=500, detail="send_error")
+        logger.warning("Kunne ikke sende tilgangsforespørsel-epost: %s", exc)
+    log_event(None, "access_request", detail={"name": name_clean, "email": email_clean, "org": org_clean})
+    return {"ok": True}
 
 @app.get("/price-adjust", response_class=HTMLResponse)
 @app.head("/price-adjust")

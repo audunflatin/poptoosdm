@@ -35,9 +35,9 @@ fileInput.addEventListener("change", () => {
     return;
   }
 
-  fileInfo.innerText = `📄 ${file.name} (${sizeMb} MB)`;
+  fileInfo.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;opacity:.65;margin-right:5px"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>${file.name.replace(/</g,"&lt;").replace(/>/g,"&gt;")} (${sizeMb} MB)`;
   fileInfo.style.display = "block";
-  fileInfo.style.color = "#555";
+  fileInfo.style.color = "";
   convertBtn.disabled = false;
 });
 
