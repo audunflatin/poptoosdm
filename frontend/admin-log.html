@@ -9,15 +9,15 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=19">
+  <link rel="stylesheet" href="/static/styles.css?v=20">
   <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('poptoosdm_theme')||'dark')</script>
   <style>
     input[type="date"].log-date {
       padding: 0.45rem 0.65rem;
       border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.08);
-      color: white;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
       font-size: 0.95rem;
       color-scheme: dark;
     }
@@ -25,15 +25,18 @@
     select.log-select {
       padding: 0.45rem 0.65rem;
       border-radius: 6px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.08);
-      color: white;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
       font-size: 0.95rem;
       color-scheme: dark;
     }
+    [data-theme="light"] input[type="date"].log-date,
+    [data-theme="light"] select.log-select { color-scheme: light; }
+    [data-theme="light"] input[type="date"].log-date::-webkit-calendar-picker-indicator { filter: none; opacity: 0.6; }
     .badge-ok    { color: #5ac39a; font-weight: 700; font-size: 0.8rem; }
     .badge-error { color: #ff5959; font-weight: 700; font-size: 0.8rem; }
-    .detail-text { color: rgba(255,255,255,0.55); font-size: 0.82rem; font-family: monospace; }
+    .detail-text { color: var(--text-muted); font-size: 0.82rem; font-family: monospace; }
   </style>
 </head>
 <body>

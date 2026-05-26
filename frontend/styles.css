@@ -3,6 +3,7 @@
    Farger: --bg: #0d1b2a, --surface: #152535, --coral: #ff5959
    ============================================================================= */
 :root {
+  color-scheme: dark;
   --bg:            #0d1b2a;   /* mørk marineblå – sidebakgrunn */
   --surface:       #152535;   /* kortbakgrunn */
   --surface-hover: #1d3047;
@@ -48,6 +49,7 @@
    Lys hybrid-tema ("Hybrid" – mørk sidebar, lyst innhold)
    ============================================================================= */
 [data-theme="light"] {
+  color-scheme: light;
   --bg:            #f5f7fa;
   --surface:       #ffffff;
   --surface-hover: #f0f4f9;
