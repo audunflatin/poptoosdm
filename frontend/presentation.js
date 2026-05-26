@@ -21,10 +21,11 @@ const T = {
     s2_b4: "Godkjent fil er grunnlaget for billettdeling mellom operatører i CIT/DRTF",
 
     s3_heading: "Utfordringen",
-    s3_b1: "TEN-tabellen (Excel) med 100+ strekninger måtte oversettes manuelt til JSON",
-    s3_b2: "Valutakurser, avrunding og alle ID-referanser måtte håndteres for hånd",
-    s3_b3: "Én skrivefeil brøt hele leveransen – validering tok lang tid",
-    s3_b4: "Å legge til rabatter krevde dyp kjennskap til OSDM-strukturen",
+    s3_b1: "Utgangspunktet var Legacy 108-filer – posisjonsdefinert tekstformat der ett tegn på feil plass brøt hele datasettet",
+    s3_b2: "Konvertering til OSDM JSON innebar mange steg – prisvalidering, justering og gjentatt feilretting i en krevende arbeidsflyt",
+    s3_b3: "Ferdig OSDM-fil måtte konverteres tilbake til Legacy 108 – som grunnlag for neste år, med risiko for nye feil i hvert ledd",
+    s3_b4: "Feil ble ofte oppdaget sent i prosessen – og å rette dem krevde ofte bistand fra andre",
+    s3_b5: "Tidkrevende prosess med lite rom for feil – særlig krevende tett på innleveringsfristene til UIC",
 
     s4_heading: "Prisregulering – flyten",
     s4_step1: "Last opp\nOSDM-fil",
@@ -102,10 +103,11 @@ const T = {
     s2_b4: "An approved file is the basis for ticket sharing between operators in CIT/DRTF",
 
     s3_heading: "The challenge",
-    s3_b1: "The TEN table (Excel) with 100+ routes had to be manually translated to JSON",
-    s3_b2: "Exchange rates, rounding and all ID references had to be handled manually",
-    s3_b3: "One typo broke the entire delivery – validation took a long time",
-    s3_b4: "Adding discounts required deep knowledge of the OSDM structure",
+    s3_b1: "Starting point was Legacy 108 files – a position-defined text format where one character out of place would break the entire dataset",
+    s3_b2: "Converting to OSDM JSON involved many steps – price validation, adjustments and repeated error correction in a demanding workflow",
+    s3_b3: "The finished OSDM file had to be converted back to Legacy 108 – as a baseline for next year, with risk of new errors at each stage",
+    s3_b4: "Errors were often discovered late in the process – and fixing them often required outside assistance",
+    s3_b5: "Time-consuming process with little margin for error – especially demanding close to UIC submission deadlines",
 
     s4_heading: "Price adjustment – the flow",
     s4_step1: "Upload\nOSDM file",
@@ -183,10 +185,11 @@ const T = {
     s2_b4: "Eine genehmigte Datei ist die Grundlage für die Fahrkartenteilung zwischen Betreibern in CIT/DRTF",
 
     s3_heading: "Die Herausforderung",
-    s3_b1: "Die TEN-Tabelle (Excel) mit 100+ Strecken musste manuell in JSON übersetzt werden",
-    s3_b2: "Wechselkurse, Rundung und alle ID-Referenzen mussten manuell bearbeitet werden",
-    s3_b3: "Ein Tippfehler brach die gesamte Lieferung – Validierung dauerte lange",
-    s3_b4: "Das Hinzufügen von Rabatten erforderte tiefes Wissen über die OSDM-Struktur",
+    s3_b1: "Ausgangspunkt waren Legacy-108-Dateien – ein positionsdefiniertes Textformat, bei dem ein falsch gesetztes Zeichen den gesamten Datensatz zerstören konnte",
+    s3_b2: "Die Konvertierung in OSDM JSON umfasste viele Schritte – Preisvalidierung, Anpassungen und wiederholte Fehlerkorrekturen in einem anspruchsvollen Arbeitsablauf",
+    s3_b3: "Die fertige OSDM-Datei musste zurück in Legacy 108 konvertiert werden – als Grundlage für das nächste Jahr, mit dem Risiko neuer Fehler in jedem Schritt",
+    s3_b4: "Fehler wurden oft erst spät im Prozess entdeckt – und deren Behebung erforderte häufig externe Unterstützung",
+    s3_b5: "Zeitaufwändiger Prozess mit wenig Fehlertoleranz – besonders anspruchsvoll kurz vor den Einreichungsfristen an UIC",
 
     s4_heading: "Preisanpassung – der Ablauf",
     s4_step1: "OSDM-Datei\nhochladen",
@@ -264,10 +267,11 @@ const T = {
     s2_b4: "En godkänd fil är grunden för biljettdelning mellan operatörer i CIT/DRTF",
 
     s3_heading: "Utmaningen",
-    s3_b1: "TEN-tabellen (Excel) med 100+ sträckor behövde översättas manuellt till JSON",
-    s3_b2: "Valutakurser, avrundning och alla ID-referenser behövde hanteras för hand",
-    s3_b3: "Ett skrivfel bröt hela leveransen – validering tog lång tid",
-    s3_b4: "Att lägga till rabatter krävde djup kunskap om OSDM-strukturen",
+    s3_b1: "Utgångspunkten var Legacy 108-filer – ett positionsdefinierat textformat där ett tecken på fel plats kunde förstöra hela datasetet",
+    s3_b2: "Konvertering till OSDM JSON innebar många steg – prisvalidering, justeringar och upprepade felkorrigeringar i ett krävande arbetsflöde",
+    s3_b3: "Den färdiga OSDM-filen behövde konverteras tillbaka till Legacy 108 – som underlag för nästa år, med risk för nya fel i varje led",
+    s3_b4: "Fel upptäcktes ofta sent i processen – och att åtgärda dem krävde ofta extern hjälp",
+    s3_b5: "Tidskrävande process med litet utrymme för fel – särskilt krävande nära inlämningsdeadlinerna till UIC",
 
     s4_heading: "Prisreglering – flödet",
     s4_step1: "Ladda upp\nOSDM-fil",
@@ -345,10 +349,11 @@ const T = {
     s2_b4: "Un fichier approuvé est la base du partage de billets entre opérateurs dans CIT/DRTF",
 
     s3_heading: "Le défi",
-    s3_b1: "La table TEN (Excel) avec 100+ itinéraires devait être traduite manuellement en JSON",
-    s3_b2: "Les taux de change, arrondis et toutes les références d'ID devaient être gérés manuellement",
-    s3_b3: "Une faute de frappe cassait toute la livraison – la validation prenait beaucoup de temps",
-    s3_b4: "L'ajout de réductions nécessitait une connaissance approfondie de la structure OSDM",
+    s3_b1: "Le point de départ était les fichiers Legacy 108 – un format texte positionnel où un caractère mal placé pouvait invalider l'ensemble des données",
+    s3_b2: "La conversion en JSON OSDM impliquait de nombreuses étapes – validation des prix, ajustements et corrections répétées dans un flux de travail exigeant",
+    s3_b3: "Le fichier OSDM finalisé devait être reconverti en Legacy 108 – comme base pour l'année suivante, avec risque d'erreurs à chaque étape",
+    s3_b4: "Les erreurs n'étaient souvent découvertes que tardivement – et les corriger nécessitait fréquemment une assistance externe",
+    s3_b5: "Processus chronophage avec peu de marge d'erreur – particulièrement exigeant à l'approche des délais de soumission à l'UIC",
 
     s4_heading: "Ajustement de prix – le flux",
     s4_step1: "Télécharger\nle fichier OSDM",
@@ -455,7 +460,7 @@ function getSlides() {
     {
       type: "bullets",
       heading: L("s3_heading"),
-      bullets: [L("s3_b1"), L("s3_b2"), L("s3_b3"), L("s3_b4")],
+      bullets: [L("s3_b1"), L("s3_b2"), L("s3_b3"), L("s3_b4"), L("s3_b5")],
     },
     // 4. Flyten
     {
