@@ -95,7 +95,9 @@
   border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 [data-theme="light"] .sidebar-link,
-[data-theme="light"] .sidebar-sublink {
+[data-theme="light"] .sidebar-sublink,
+[data-theme="light"] .sidebar-link span,
+[data-theme="light"] .sidebar-sublink span {
   color: rgba(255, 255, 255, 0.65);
 }
 [data-theme="light"] .sidebar-link:hover,
