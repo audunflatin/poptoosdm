@@ -284,6 +284,8 @@ const translations = {
     landing_feat3_desc: "Legg til rabatterte priser direkte i en eksisterende OSDM-fil for spesifikke strekninger, transportører og passasjerkategorier.",
     landing_feat4_title:"Prisregulering",
     landing_feat4_desc: "Juster alle priser i en OSDM-fil med en fast prosentsats. Voksenprisen skaleres og alle andre kategorier beregnes automatisk.",
+    landing_feat5_title:"Rydd opp i OSDM",
+    landing_feat5_desc: "Fjern ubrukte priser, passasjerkategorier og regionsbegrensninger automatisk, og rett feil stasjonsreferanser i en OSDM fareDelivery-fil.",
 
     // Prisregulering
     heading_price_adjust:   "Prisregulering",
@@ -590,6 +592,8 @@ const translations = {
     landing_feat3_desc: "Add discounted fares directly to an existing OSDM file for specific routes, carriers and passenger categories.",
     landing_feat4_title:"Price adjustment",
     landing_feat4_desc: "Adjust all prices in an OSDM file by a fixed percentage. The adult price is scaled and all other categories are recalculated automatically.",
+    landing_feat5_title:"Clean up OSDM",
+    landing_feat5_desc: "Automatically remove unused prices, passenger constraints and regional constraints, and fix invalid station references in an OSDM fareDelivery file.",
 
     // Price adjustment
     heading_price_adjust:   "Price adjustment",
@@ -895,6 +899,8 @@ const translations = {
     landing_feat3_desc: "Fügen Sie rabattierte Tarife direkt zu einer vorhandenen OSDM-Datei für bestimmte Strecken, Betreiber und Fahrgastkategorien hinzu.",
     landing_feat4_title:"Preisregulierung",
     landing_feat4_desc: "Passen Sie alle Preise in einer OSDM-Datei um einen festen Prozentsatz an. Der Erwachsenenpreis wird skaliert, alle anderen Kategorien werden automatisch neu berechnet.",
+    landing_feat5_title:"OSDM bereinigen",
+    landing_feat5_desc: "Entfernen Sie automatisch ungenutzte Preise, Fahrgastbeschränkungen und Regionalbeschränkungen und korrigieren Sie ungültige Stationsreferenzen in einer OSDM-fareDelivery-Datei.",
 
     // Preisregulierung
     heading_price_adjust:   "Preisregulierung",
@@ -1200,6 +1206,8 @@ const translations = {
     landing_feat3_desc: "Lägg till rabatterade tariffer direkt i en befintlig OSDM-fil för specifika sträckningar, operatörer och passagerarkategorier.",
     landing_feat4_title:"Prisreglering",
     landing_feat4_desc: "Justera alla priser i en OSDM-fil med en fast procentsats. Vuxenpriset skalas och alla andra kategorier beräknas automatiskt.",
+    landing_feat5_title:"Städa upp OSDM",
+    landing_feat5_desc: "Ta automatiskt bort oanvända priser, passagerarbegränsningar och regionala begränsningar och korrigera ogiltiga stationsreferenser i en OSDM fareDelivery-fil.",
 
     // Prisreglering
     heading_price_adjust:   "Prisreglering",
@@ -1506,6 +1514,8 @@ const translations = {
     landing_feat3_desc: "Ajoutez des tarifs réduits directement à un fichier OSDM existant pour des itinéraires, transporteurs et catégories de passagers spécifiques.",
     landing_feat4_title:"Régulation tarifaire",
     landing_feat4_desc: "Ajustez tous les prix d'un fichier OSDM d'un pourcentage fixe. Le prix adulte est mis à l'échelle et toutes les autres catégories sont recalculées automatiquement.",
+    landing_feat5_title:"Nettoyer OSDM",
+    landing_feat5_desc: "Supprimez automatiquement les prix inutilisés, les contraintes passagers et les contraintes régionales, et corrigez les références de gare invalides dans un fichier OSDM fareDelivery.",
 
     // Régulation tarifaire
     heading_price_adjust:   "Régulation tarifaire",
