@@ -6,6 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from pathlib import Path
 import csv
+import decimal
 import io
 import json
 import math
@@ -2548,6 +2549,12 @@ async def fare_discount_apply(
     )
 
 
+def _ijson_default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return int(obj) if obj == obj.to_integral_value() else float(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+
 @app.post("/ui/fix-osdm")
 async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
     require_login(request)
@@ -2647,7 +2654,7 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
                 continue
             if not first:
                 out += b","
-            out += json.dumps(fare, ensure_ascii=False).encode("utf-8")
+            out += json.dumps(fare, ensure_ascii=False, default=_ijson_default).encode("utf-8")
             first = False
         out += b"]"
         out += content[fares_val_end:]
@@ -2664,9 +2671,9 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Intern feil: mangler nøkkel {e}")
 
     result_bytes = _apply_byte_replacements(result_bytes, [
-        (prices_span[0], prices_span[1], json.dumps(prices_filtered, ensure_ascii=False).encode("utf-8")),
-        (pc_span[0],     pc_span[1],     json.dumps(pc_filtered,     ensure_ascii=False).encode("utf-8")),
-        (rc_span[0],     rc_span[1],     json.dumps(rc_filtered,     ensure_ascii=False).encode("utf-8")),
+        (prices_span[0], prices_span[1], json.dumps(prices_filtered, ensure_ascii=False, default=_ijson_default).encode("utf-8")),
+        (pc_span[0],     pc_span[1],     json.dumps(pc_filtered,     ensure_ascii=False, default=_ijson_default).encode("utf-8")),
+        (rc_span[0],     rc_span[1],     json.dumps(rc_filtered,     ensure_ascii=False, default=_ijson_default).encode("utf-8")),
     ])
 
     orig_name = _safe_filename(osdmFile.filename or "osdm.json")
