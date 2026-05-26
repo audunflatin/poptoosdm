@@ -15,15 +15,18 @@ function renderPendingRequests(pending) {
   const section   = document.getElementById("pendingSection");
   const tbody     = document.getElementById("pendingTableBody");
   const badge     = document.getElementById("pendingBadge");
+  const sidebarBadge = document.getElementById("sidebarPendingBadge");
   const resultEl  = document.getElementById("pendingActionResult");
   if (resultEl) resultEl.innerText = "";
 
   if (!pending || pending.length === 0) {
     section.style.display = "none";
+    if (sidebarBadge) sidebarBadge.style.display = "none";
     return;
   }
   section.style.display = "block";
   badge.textContent = pending.length;
+  if (sidebarBadge) { sidebarBadge.textContent = pending.length; sidebarBadge.style.display = ""; }
 
   tbody.innerHTML = pending.map((r, i) => {
     const rowBg = i % 2 === 0 ? "rgba(255,89,89,0.04)" : "transparent";

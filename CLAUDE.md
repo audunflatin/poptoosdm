@@ -40,6 +40,7 @@ Nye endepunkter som gjør tung prosessering (JSON-parse av store filer, valideri
 | `/price-adjust` | `price-adjust.html` | `priceAdjust.js` | Prisregulering (skaler priser med fast %) |
 | `/osdmtoexcel` | `osdmtoexcel.html` | `osdmtoExcel.js` | OSDM JSON → Excel |
 | `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte priser i eksisterende OSDM |
+| `/fix-osdm` | `fix-osdm.html` | `fixOsdm.js` | Rydd opp i OSDM (fjern ubrukte elementer) |
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
 | `/admin/log` | `admin-log.html` | `admin-log.js` | Aktivitetslogg (kun admin) |
 | `/kontakt` | `contact.html` | — | Kontaktskjema |
@@ -215,22 +216,22 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=19 |
-| `i18n.js` | v=41 (landing.html + hovudsider) / v=19 (login-sider) |
-| `app.js` | v=19 |
+| `styles.css` | v=20 |
+| `i18n.js` | v=42 (landing.html + hovudsider) / v=19 (login-sider) |
+| `app.js` | v=20 |
 | `admin.js` | v=15 |
 | `admin-log.js` | v=1 |
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=9 |
-| `presentation.js` | v=6 |
+| `presentation.js` | v=7 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=40:
+HTML-filer som laster `i18n.js` med v=42:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
+`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
 
 HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`

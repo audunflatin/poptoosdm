@@ -188,7 +188,7 @@ async function validateOsdm() {
 
   // Warnings / suggestions
   if (res.warnings && res.warnings.length > 0) {
-    warningsEl.innerHTML = renderWarnings(res.warnings, t("osdm_warnings_title"), null, true);
+    warningsEl.innerHTML = renderWarnings(res.warnings, t("osdm_warnings_title"), null);
   } else {
     warningsEl.innerHTML = `<div class="check-ok">${t("osdm_no_warnings")}</div>`;
   }
@@ -230,89 +230,16 @@ async function validateOsdm() {
   fetchExchangeRate();
 }
 
-function renderWarnings(warnings, title, footer, showFix = false) {
+function renderWarnings(warnings, title, footer) {
   const items = warnings.map(w => `<li>${w}</li>`).join("");
   const footerHtml = footer
     ? `<div class="warnings-note">${footer}</div>`
     : `<div class="warnings-note">${t("osdm_warnings_note")}</div>`;
-  const fixHtml = showFix
-    ? `<div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.75rem;">
-        <button id="fixOsdmBtn" class="btn-sm" onclick="fixOsdmFile()">${t("btn_fix_osdm")}</button>
-        <div id="spinnerFix" class="spinner" style="display:none;margin:0;"></div>
-      </div>`
-    : "";
   return `<div class="warnings-box">
     <div class="warnings-title">⚠ ${title} (${warnings.length})</div>
     <ul class="warnings-list">${items}</ul>
     ${footerHtml}
-    ${fixHtml}
   </div>`;
-}
-
-function buildFixSuccessHtml(stats) {
-  const statLabels = {
-    removed_bad_rcs:       t("fix_stat_bad_rcs"),
-    removed_bad_fares:     t("fix_stat_bad_fares"),
-    removed_unused_prices: t("fix_stat_unused_prices"),
-    removed_unused_pcs:    t("fix_stat_unused_pcs"),
-    removed_unused_rcs:    t("fix_stat_unused_rcs"),
-  };
-
-  const total = Object.values(stats).reduce((a, b) => a + b, 0);
-
-  if (total === 0) {
-    return `<div class="check-ok">${t("fix_osdm_nothing")}</div>`;
-  }
-
-  const items = Object.entries(stats)
-    .filter(([, n]) => n > 0)
-    .map(([key, n]) => `<li><b>${n}</b> ${statLabels[key] || key}</li>`)
-    .join("");
-
-  return `<div class="info-box">
-    <div>
-      <strong style="color:var(--success);">✓ ${t("fix_osdm_success")}</strong>
-      <ul style="margin:0.4rem 0 0;padding-left:1.2rem;font-size:0.85rem;opacity:0.85;">${items}</ul>
-    </div>
-  </div>`;
-}
-
-async function fixOsdmFile() {
-  const fileInput = document.getElementById("osdmValFile");
-  if (!fileInput.files.length) return;
-
-  const btn     = document.getElementById("fixOsdmBtn");
-  const spinner = document.getElementById("spinnerFix");
-
-  if (btn)     btn.disabled = true;
-  if (spinner) spinner.style.display = "block";
-
-  try {
-    const fd = new FormData();
-    fd.append("osdmFile", fileInput.files[0]);
-
-    const r = await fetch("/ui/fix-osdm", { method: "POST", body: fd });
-    if (!r.ok) throw new Error();
-
-    const statsRaw = r.headers.get("X-Fix-Stats");
-    const stats    = statsRaw ? JSON.parse(statsRaw) : {};
-
-    const blob = await r.blob();
-    const cd   = r.headers.get("Content-Disposition") || "";
-    const m    = cd.match(/filename="?([^"]+)"?/);
-    const filename = m ? m[1] : "osdm_fixed.json";
-
-    const url = URL.createObjectURL(blob);
-    const a   = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    document.getElementById("osdmWarnings").innerHTML = buildFixSuccessHtml(stats);
-  } catch {
-    if (spinner) spinner.style.display = "none";
-    if (btn) { btn.disabled = false; }
-  }
 }
 
 function updateExchangeRateLabel() {
@@ -400,7 +327,6 @@ async function generateOsdm(){
     document.getElementById("resultBox").style.display = "block";
     downloadBtn.disabled = false;
     document.getElementById("downloadExcelBtn").disabled = false;
-    renderExampleTable(res.summary.exampleFares);
   } else {
     finalStatus.className = "result-text status-error";
     finalStatus.innerText = t("err_osdm_failed");
@@ -456,55 +382,6 @@ function startProgress(){
   }, 500);
 }
 
-function renderExampleTable(data){
-  const panel = document.getElementById("examplePanel");
-  if(!data){
-    panel.style.display = "none";
-    panel.innerHTML = "";
-    return;
-  }
-
-  const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
-
-  const distCurrency = document.getElementById("distanceCurrency")?.value || "NOK";
-
-  let html =
-    "<div class='example-panel'>" +
-    `<div class='example-panel-title'>${t("example_prices")}</div>` +
-    "<table>" +
-    "<tr>" +
-    `<th align='left'>${t("col_route")}</th>` +
-    `<th align='right'>${t("col_price_eur")}</th>` +
-    `<th align='right'>${distCurrency}</th>` +
-    `<th align='right'>${t("col_km")}</th>` +
-    "</tr>";
-
-  let row = 0;
-
-  for (const v of Object.values(data)) {
-    const [route, rest] = v.split(": ");
-    const [pricePart, kmPart] = rest.split(" (");
-
-    const eur = parseFloat(pricePart.replace(" EUR",""));
-    const nok = eur / exchangeRate;
-    const km  = kmPart.replace(")","");
-
-    const rowClass = row++ % 2 === 0 ? "example-row-even" : "example-row-odd";
-
-    html +=
-      `<tr class="${rowClass}">` +
-      `<td>${route}</td>` +
-      `<td align="right">${eur.toFixed(2)}</td>` +
-      `<td align="right">${nok.toFixed(2)}</td>` +
-      `<td align="right">${km}</td>` +
-      `</tr>`;
-  }
-
-  html += "</table></div>";
-
-  panel.innerHTML = html;
-  panel.style.display = "block";
-}
 
 
 if (window.IS_ADMIN) {

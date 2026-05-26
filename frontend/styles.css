@@ -765,50 +765,6 @@ progress::-moz-progress-bar      { background: var(--coral); }
 
 .norway-warning .norway-warning-body p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
 
-/* =============================================================================
-   Eksempelpriser
-   ============================================================================= */
-.example-panel {
-  margin-top: 1rem;
-  padding: 1.25rem;
-  background: var(--success-bg);
-  border-radius: var(--radius-sm);
-  border-left: 4px solid var(--success);
-}
-
-.example-panel-title {
-  font-weight: 700;
-  font-size: 0.7rem;
-  color: var(--success);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.75rem;
-}
-
-.example-panel table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 2px;
-  font-size: 0.875rem;
-}
-
-.example-panel th {
-  text-align: left;
-  padding: 4px 8px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.example-panel th:nth-child(n+2),
-.example-panel td:nth-child(n+2) { text-align: right; white-space: nowrap; }
-
-.example-panel td { padding: 5px 8px; }
-
-.example-row-even { background: var(--table-head-bg); }
-.example-row-odd  { background: transparent; }
 
 /* =============================================================================
    Tabeller (admin / osdmtoexcel)

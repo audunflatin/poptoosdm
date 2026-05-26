@@ -2,7 +2,7 @@
 <html lang="no" translate="no">
 <head>
   <meta charset="UTF-8" />
-  <title>OSDMTools</title>
+  <title>OSDMTools – Rydd opp i OSDM</title>
 
   <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
@@ -25,9 +25,9 @@
   <div class="sidebar-nav">
     <a href="/price-adjust" class="sidebar-link" data-i18n="nav_price_adjust">Prisregulering</a>
     <a href="/" class="sidebar-link" data-i18n="nav_generate">Priser fra avstandsfil</a>
-    <a href="/osdmtoexcel" class="sidebar-link active" data-i18n="nav_osdm_excel">OSDM → Excel</a>
+    <a href="/osdmtoexcel" class="sidebar-link" data-i18n="nav_osdm_excel">OSDM → Excel</a>
     <a href="/fare-discount" class="sidebar-link" data-i18n="nav_fare_discount">Legg til rabatt i OSDM</a>
-    <a href="/fix-osdm" class="sidebar-link" data-i18n="nav_fix_osdm">Rydd opp i OSDM</a>
+    <a href="/fix-osdm" class="sidebar-link active" data-i18n="nav_fix_osdm">Rydd opp i OSDM</a>
     <a href="/kontakt" class="sidebar-link" data-i18n="nav_contact">Kontakt</a>
     <a href="/endre-passord" class="sidebar-link" data-i18n="nav_change_password">Endre passord</a>
     <a id="adminLink" href="/admin/users" class="sidebar-link" data-i18n="nav_admin" style="display:none;">Admin</a>
@@ -56,43 +56,27 @@
 <div class="container">
 
   <section class="panel">
-    <h2 data-i18n="section_upload">Last opp OSDM-fil</h2>
-    <p style="margin-top:0;" data-i18n="upload_description">
-      Last opp en generert OSDM fareDelivery JSON-fil. Filen konverteres til en Excel-fil med alle stasjonsrelasjoner og priser per billettkategori.
+    <h2 data-i18n="heading_fix_osdm">Rydd opp i OSDM</h2>
+    <p style="margin-top:0;" data-i18n="fix_osdm_desc">
+      Last opp en OSDM fareDelivery JSON-fil for automatisk opprydding.
     </p>
 
     <label data-i18n="label_osdm_file">OSDM JSON-fil</label>
-    <input id="osdmFile" type="file" accept=".json" />
+    <input id="fixOsdmFile" type="file" accept=".json" />
 
-    <div id="fileInfo" style="display:none; margin-top:0.75rem; color:#555; font-size:0.9rem;"></div>
-
-    <button id="convertBtn" onclick="convert()" disabled style="margin-top:1.5rem;" data-i18n="btn_convert">
-      Konverter til Excel
+    <button id="fixBtn" onclick="doFix()" disabled style="margin-top:1.5rem;" data-i18n="btn_fix_osdm">
+      Fiks OSDM-filen automatisk
     </button>
 
-    <div id="spinner" class="spinner"></div>
-    <div id="progressBar" style="display:none; margin-top:0.75rem;">
-      <div style="height:6px; background:var(--spinner-ring); border-radius:3px; overflow:hidden;">
-        <div class="progress-fill" style="height:100%; background:#ff5959; border-radius:3px; transition:width 0.5s ease; width:0%;"></div>
-      </div>
-      <div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.4rem; font-size:0.8rem; color:var(--text-muted);">
-        <span class="spinner-sm"></span>
-        <span id="progressPercent">0%</span>
-      </div>
-    </div>
+    <div id="spinner" class="spinner" style="display:none;"></div>
 
-    <div id="resultBox" style="display:none; margin-top:1.5rem;">
-      <div id="resultStatus"></div>
-      <button id="downloadBtn" onclick="download()" style="margin-top:1rem; display:none;" data-i18n="btn_download_excel">
-        Last ned Excel
-      </button>
-    </div>
+    <div id="fixResult" style="margin-top:1.5rem;"></div>
   </section>
 
 </div>
 
 <script src="/static/i18n.js?v=42"></script>
-<script src="/static/osdmtoExcel.js?v=7"></script>
+<script src="/static/fixOsdm.js?v=1"></script>
 <script>
   if (window.IS_ADMIN) {
     const el = document.getElementById("adminLink"); if (el) el.style.display = "";

@@ -2697,3 +2697,16 @@ def osdmtoexcel_page(request: Request):
         f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
     )
     return HTMLResponse(html)
+
+@app.get("/fix-osdm", response_class=HTMLResponse)
+@app.head("/fix-osdm")
+def fix_osdm_page(request: Request):
+    if "user_email" not in request.session:
+        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/fix-osdm.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+    return HTMLResponse(html)

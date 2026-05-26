@@ -179,12 +179,6 @@ const translations = {
     label_price_count:   "Antall priser",
     err_osdm_failed:     "OSDM kunne ikke genereres",
 
-    // Eksempelpriser – app.js
-    example_prices:      "Eksempelpriser",
-    col_route:           "Strekning",
-    col_price_eur:       "Pris EUR",
-    col_price_nok:       "Pris NOK",
-    col_km:              "Km",
 
     // Brukeradmin – app.js
     err_load_users:      "Kunne ikke hente brukere.",
@@ -242,6 +236,10 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Legg til rabatt i OSDM",
     heading_fare_discount:    "Legg til rabatt i OSDM",
+    // fix-osdm.html
+    nav_fix_osdm:             "Rydd opp i OSDM",
+    heading_fix_osdm:         "Rydd opp i OSDM",
+    fix_osdm_desc:            "Last opp en OSDM fareDelivery JSON-fil for automatisk opprydding. Ubrukte priser, passasjerkategorier og regionsbegrensninger fjernes, og feil stasjonsreferanser rettes.",
     fare_discount_desc:       "Last opp en OSDM fareDelivery JSON-fil for å legge til nye rabatterte priser.",
     label_osdm_file_discount:       "OSDM JSON-fil",
     label_route_constraint:         "Strekningsbegrensning",
@@ -487,11 +485,6 @@ const translations = {
     err_osdm_failed:     "OSDM could not be generated",
 
     // Example prices – app.js
-    example_prices:      "Example prices",
-    col_route:           "Route",
-    col_price_eur:       "Price EUR",
-    col_price_nok:       "Price NOK",
-    col_km:              "Km",
 
     // User admin – app.js
     err_load_users:      "Could not load users.",
@@ -549,6 +542,10 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Add discount to OSDM",
     heading_fare_discount:    "Add discount to OSDM",
+    // fix-osdm.html
+    nav_fix_osdm:             "Clean up OSDM",
+    heading_fix_osdm:         "Clean up OSDM",
+    fix_osdm_desc:            "Upload an OSDM fareDelivery JSON file for automatic cleanup. Unused prices, passenger constraints and regional constraints are removed, and invalid station references are fixed.",
     fare_discount_desc:       "Upload an OSDM fareDelivery JSON file to add a new discounted fare.",
     label_osdm_file_discount:       "OSDM JSON file",
     label_route_constraint:         "Route restriction",
@@ -793,12 +790,6 @@ const translations = {
     label_price_count:   "Anzahl Preise",
     err_osdm_failed:     "OSDM konnte nicht generiert werden",
 
-    // Eksempelpriser – app.js
-    example_prices:      "Beispielpreise",
-    col_route:           "Strecke",
-    col_price_eur:       "Preis EUR",
-    col_price_nok:       "Preis NOK",
-    col_km:              "Km",
 
     // Brukeradmin – app.js
     err_load_users:      "Benutzer konnten nicht geladen werden.",
@@ -856,6 +847,10 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Rabatt zu OSDM hinzufügen",
     heading_fare_discount:    "Rabatt zu OSDM hinzufügen",
+    // fix-osdm.html
+    nav_fix_osdm:             "OSDM bereinigen",
+    heading_fix_osdm:         "OSDM bereinigen",
+    fix_osdm_desc:            "Laden Sie eine OSDM fareDelivery JSON-Datei zur automatischen Bereinigung hoch. Nicht verwendete Preise, Fahrgastgruppen und Regionalbeschränkungen werden entfernt und fehlerhafte Stationsreferenzen korrigiert.",
     fare_discount_desc:       "Laden Sie eine OSDM fareDelivery JSON-Datei hoch, um einen neuen rabattierten Tarif hinzuzufügen.",
     label_osdm_file_discount:       "OSDM JSON-Datei",
     label_route_constraint:         "Streckenbeschränkung",
@@ -1100,12 +1095,6 @@ const translations = {
     label_price_count:   "Antal priser",
     err_osdm_failed:     "OSDM kunde inte genereras",
 
-    // Eksempelpriser – app.js
-    example_prices:      "Exempelpriser",
-    col_route:           "Sträcka",
-    col_price_eur:       "Pris EUR",
-    col_price_nok:       "Pris NOK",
-    col_km:              "Km",
 
     // Brukeradmin – app.js
     err_load_users:      "Kunde inte hämta användare.",
@@ -1163,6 +1152,10 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Lägg till rabatt i OSDM",
     heading_fare_discount:    "Lägg till rabatt i OSDM",
+    // fix-osdm.html
+    nav_fix_osdm:             "Rensa OSDM",
+    heading_fix_osdm:         "Rensa OSDM",
+    fix_osdm_desc:            "Ladda upp en OSDM fareDelivery JSON-fil för automatisk rensning. Oanvända priser, passagerarkategorier och regionalbegränsningar tas bort och ogiltiga stationsreferenser korrigeras.",
     fare_discount_desc:       "Ladda upp en OSDM fareDelivery JSON-fil för att lägga till en ny rabatterad taxa.",
     label_osdm_file_discount:       "OSDM JSON-fil",
     label_route_constraint:         "Sträckningsbegränsning",
@@ -1408,11 +1401,6 @@ const translations = {
     err_osdm_failed:     "L'OSDM n'a pas pu être généré",
 
     // Exemples de prix
-    example_prices:      "Exemples de prix",
-    col_route:           "Trajet",
-    col_price_eur:       "Prix EUR",
-    col_price_nok:       "Prix NOK",
-    col_km:              "Km",
 
     // Administration des utilisateurs
     err_load_users:      "Impossible de charger les utilisateurs.",
@@ -1470,6 +1458,10 @@ const translations = {
     // fare-discount.html
     nav_fare_discount:        "Ajouter une remise à OSDM",
     heading_fare_discount:    "Ajouter une remise à OSDM",
+    // fix-osdm.html
+    nav_fix_osdm:             "Nettoyer OSDM",
+    heading_fix_osdm:         "Nettoyer OSDM",
+    fix_osdm_desc:            "Téléversez un fichier OSDM fareDelivery JSON pour un nettoyage automatique. Les prix, contraintes passagers et contraintes régionales inutilisés sont supprimés, et les références de gare invalides sont corrigées.",
     fare_discount_desc:       "Téléchargez un fichier JSON OSDM fareDelivery pour ajouter de nouveaux tarifs réduits.",
     label_osdm_file_discount:       "Fichier JSON OSDM",
     label_route_constraint:         "Restriction d'itinéraire",

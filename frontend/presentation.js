@@ -65,6 +65,12 @@ const T = {
     s8_b5: "Velg passasjerkategorier og serviceklasse",
     s8_b6: "Generer fil med nye rabatterte priser innlagt",
 
+    s8b_heading: "Rydd opp i OSDM",
+    s8b_b1: "Last opp en OSDM fareDelivery-fil for automatisk opprydding",
+    s8b_b2: "Ubrukte priser, passasjerkategorier og regionsbegrensninger fjernes",
+    s8b_b3: "Feil stasjonsreferanser rettes automatisk",
+    s8b_b4: "Statistikk over fjernede elementer vises etter nedlasting",
+
     s9_heading: "Teknisk",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (brukere + logg)",
@@ -139,6 +145,12 @@ const T = {
     s8_b4: "Enter discount name and percentage (1–99%)",
     s8_b5: "Select passenger categories and service class",
     s8_b6: "Generate file with new discounted prices added",
+
+    s8b_heading: "Clean up OSDM",
+    s8b_b1: "Upload an OSDM fareDelivery file for automatic cleanup",
+    s8b_b2: "Unused prices, passenger constraints and regional constraints are removed",
+    s8b_b3: "Invalid station references are fixed automatically",
+    s8b_b4: "Statistics on removed elements are shown after download",
 
     s9_heading: "Technical",
     s9_left_label: "Backend",
@@ -215,6 +227,12 @@ const T = {
     s8_b5: "Fahrgastkategorien und Serviceklasse wählen",
     s8_b6: "Datei mit neuen rabattierten Preisen generieren",
 
+    s8b_heading: "OSDM bereinigen",
+    s8b_b1: "Eine OSDM fareDelivery-Datei zur automatischen Bereinigung hochladen",
+    s8b_b2: "Nicht verwendete Preise, Fahrgastgruppen und Regionalbeschränkungen werden entfernt",
+    s8b_b3: "Fehlerhafte Stationsreferenzen werden automatisch korrigiert",
+    s8b_b4: "Statistiken über entfernte Elemente werden nach dem Download angezeigt",
+
     s9_heading: "Technisch",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (Benutzer + Protokoll)",
@@ -290,6 +308,12 @@ const T = {
     s8_b5: "Välj passagerarkategorier och serviceklass",
     s8_b6: "Generera fil med nya rabatterade priser inlagda",
 
+    s8b_heading: "Rensa OSDM",
+    s8b_b1: "Ladda upp en OSDM fareDelivery-fil för automatisk rensning",
+    s8b_b2: "Oanvända priser, passagerarkategorier och regionalbegränsningar tas bort",
+    s8b_b3: "Ogiltiga stationsreferenser korrigeras automatiskt",
+    s8b_b4: "Statistik över borttagna element visas efter nedladdning",
+
     s9_heading: "Tekniskt",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (användare + logg)",
@@ -364,6 +388,12 @@ const T = {
     s8_b4: "Saisir le nom et le pourcentage de réduction (1–99 %)",
     s8_b5: "Sélectionner les catégories de passagers et la classe de service",
     s8_b6: "Générer le fichier avec les nouveaux prix réduits ajoutés",
+
+    s8b_heading: "Nettoyer OSDM",
+    s8b_b1: "Téléverser un fichier OSDM fareDelivery pour un nettoyage automatique",
+    s8b_b2: "Les prix, contraintes passagers et contraintes régionales inutilisés sont supprimés",
+    s8b_b3: "Les références de gare invalides sont corrigées automatiquement",
+    s8b_b4: "Les statistiques sur les éléments supprimés sont affichées après le téléchargement",
 
     s9_heading: "Technique",
     s9_left_label: "Backend",
@@ -469,6 +499,12 @@ function getSlides() {
       type: "bullets",
       heading: L("s8_heading"),
       bullets: [L("s8_b1"), L("s8_b2"), L("s8_b3"), L("s8_b4"), L("s8_b5"), L("s8_b6")],
+    },
+    // 8b. Rydd opp i OSDM
+    {
+      type: "bullets",
+      heading: L("s8b_heading"),
+      bullets: [L("s8b_b1"), L("s8b_b2"), L("s8b_b3"), L("s8b_b4")],
     },
     // 9. Teknisk
     {
