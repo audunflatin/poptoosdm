@@ -1610,3 +1610,17 @@ function _updateThemeBtn() {
 // Init – kjører straks scriptet lastes (DOM er klar siden script er nederst i body)
 currentLang = detectLanguage();
 applyTranslations();
+
+// Hent antall ventende tilgangsforespørsler og vis i sidebar-badge (alle sider)
+if (window.IS_ADMIN) {
+  fetch("/admin/pending-requests").then(r => r.ok ? r.json() : []).then(pending => {
+    const badge = document.getElementById("sidebarPendingBadge");
+    if (!badge) return;
+    if (pending && pending.length > 0) {
+      badge.textContent = pending.length;
+      badge.style.display = "";
+    } else {
+      badge.style.display = "none";
+    }
+  }).catch(() => {});
+}
