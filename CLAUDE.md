@@ -239,7 +239,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=10 |
-| `fixOsdm.js` | v=2 |
+| `fixOsdm.js` | v=3 |
 | `presentation.js` | v=7 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**

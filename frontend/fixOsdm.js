@@ -1,5 +1,32 @@
 // fixOsdm.js — Rydd opp i OSDM (to-stegs flyt: analyser → bekreft → last ned)
 
+let _fixProgressTimer = null;
+let _fixPct = 0;
+
+function _startProgress() {
+  _fixPct = 0;
+  document.getElementById("fixProgressFill").style.width = "0%";
+  document.getElementById("fixProgressPct").textContent = "0%";
+  document.getElementById("fixProgressStage").textContent = t("validate_stage_uploading");
+  document.getElementById("fixProgress").style.display = "";
+
+  _fixProgressTimer = setInterval(() => {
+    _fixPct += _fixPct < 15 ? 3 : _fixPct < 50 ? 1.5 : 0.5;
+    if (_fixPct >= 88) _fixPct = 88;
+    document.getElementById("fixProgressFill").style.width = _fixPct + "%";
+    document.getElementById("fixProgressPct").textContent = Math.round(_fixPct) + "%";
+    if (_fixPct >= 50) document.getElementById("fixProgressStage").textContent = t("validate_stage_validating");
+    else if (_fixPct >= 15) document.getElementById("fixProgressStage").textContent = t("validate_stage_reading");
+  }, 300);
+}
+
+function _completeProgress() {
+  clearInterval(_fixProgressTimer);
+  document.getElementById("fixProgressFill").style.width = "100%";
+  document.getElementById("fixProgressPct").textContent = "100%";
+  setTimeout(() => { document.getElementById("fixProgress").style.display = "none"; }, 500);
+}
+
 const _STAT_LABELS = () => ({
   removed_bad_rcs:       t("fix_stat_bad_rcs"),
   removed_bad_fares:     t("fix_stat_bad_fares"),
@@ -37,13 +64,12 @@ async function doAnalyze() {
   const fileInput = document.getElementById("fixOsdmFile");
   if (!fileInput.files.length) return;
 
-  const btn     = document.getElementById("fixBtn");
-  const spinner = document.getElementById("spinner");
-  const result  = document.getElementById("fixResult");
+  const btn    = document.getElementById("fixBtn");
+  const result = document.getElementById("fixResult");
 
   btn.disabled = true;
-  spinner.style.display = "block";
   result.innerHTML = "";
+  _startProgress();
 
   try {
     const fd = new FormData();
@@ -53,11 +79,12 @@ async function doAnalyze() {
     if (!r.ok) throw new Error(await r.text());
 
     const data = await r.json();
+    _completeProgress();
     result.innerHTML = _buildPreviewHtml(data.stats || {});
   } catch (err) {
+    _completeProgress();
     result.innerHTML = `<div class="status-error">${err.message || t("unknown_error")}</div>`;
   } finally {
-    spinner.style.display = "none";
     btn.disabled = false;
   }
 }
