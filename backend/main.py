@@ -179,6 +179,10 @@ def root(request: Request):
     return HTMLResponse(html)
 
 
+@app.get("/personvern", response_class=HTMLResponse)
+def personvern_page():
+    return HTMLResponse(Path("frontend/personvern.html").read_text(encoding="utf-8"))
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     if "user_email" in request.session:
