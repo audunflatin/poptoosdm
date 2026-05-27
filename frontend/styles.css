@@ -112,6 +112,17 @@
   box-shadow: inset 3px 0 0 #ff5959;
 }
 
+[data-theme="light"] .app-header {
+  background: var(--sidebar-bg);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .logout-button,
+[data-theme="light"] .lang-sep,
+[data-theme="light"] .theme-btn {
+  color: rgba(255, 255, 255, 0.65);
+}
+[data-theme="light"] .logout-button:hover { color: var(--coral); }
+
 [data-theme="light"] .logo { filter: none; }
 
 [data-theme="light"] input:-webkit-autofill,
