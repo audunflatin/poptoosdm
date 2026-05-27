@@ -51,6 +51,7 @@ frontend/
   fare-discount.html — legg til rabatterte priser i eksisterende OSDM
   admin.html       — admin-panel (brukerhåndtering, kun for admins)
   admin-log.html   — aktivitetslogg (kun for admins)
+  fix-osdm.html    — rydd opp i OSDM (to-stegs flyt)
   osdmtoexcel.html — OSDM til Excel-konvertering
   contact.html     — kontaktskjema
   endre-passord.html — endre passord (innlogget bruker)
@@ -63,6 +64,7 @@ frontend/
   admin-log.js     — JavaScript for admin-log.html
   fareDiscount.js  — JavaScript for fare-discount.html
   osdmtoExcel.js   — JavaScript for osdmtoexcel.html
+  fixOsdm.js       — JavaScript for fix-osdm.html
   i18n.js          — flerspråklig støtte (no, en, de, sv, fr)
   styles.css       — felles styling (mørk marineblå, Entur-inspirert)
 data/
@@ -129,21 +131,20 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=14 |
-| `i18n.js` | v=38 (landing.html) / v=35 (hovudsider) / v=19 (login-sider) |
-| `app.js` | v=15 |
-| `admin.js` | v=12 |
+| `styles.css` | v=21 |
+| `i18n.js` | v=45 (alle hovudsider) / v=19 (login-sider) |
+| `app.js` | v=20 |
+| `admin.js` | v=15 |
 | `admin-log.js` | v=1 |
-| `osdmtoExcel.js` | v=3 |
-| `fareDiscount.js` | v=14 |
-| `priceAdjust.js` | v=2 |
-| `presentation.js` | v=4 |
+| `osdmtoExcel.js` | v=7 |
+| `fareDiscount.js` | v=18 |
+| `priceAdjust.js` | v=9 |
+| `fixOsdm.js` | v=2 |
+| `presentation.js` | v=7 |
 
-HTML-filer som laster `i18n.js` med v=38: `landing.html`
-
-HTML-filer som laster `i18n.js` med v=35:
-`index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`
+HTML-filer som laster `i18n.js` med v=45:
+`landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
+`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
 
 HTML-filer med v=19 (login-sider, endres sjelden):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
@@ -156,12 +157,18 @@ Definert øverst i `backend/main.py`:
 
 ```python
 TEN_TABLE: list | None      # Lastes ved POST /ui/validate-ten
-OSDM_OUT:  dict | None      # {"filename": str, "content": str}
-XLSX_JOBS: dict             # job_id → {status, result, percent, ...}
+OSDM_STORE: dict            # user_email → {"filename": str, "content": str, "created_at": float}
+FIX_OSDM_STORE: dict        # user_email → {"filename": str, "content": bytes, "created_at": float}
+XLSX_JOBS: dict             # job_id → {status, result, percent, owner, created_at, ...}
+VALIDATION_JOBS: dict       # job_id → {status, percent, phase, result, owner, created_at, ...}
+PARSE_JOBS: dict            # job_id → {status, percent, phase, result, owner, created_at, ...}
 GENERATION_PROGRESS: dict   # {"status": ..., "percent": ...}
 _login_attempts: dict       # IP → [timestamps] — rate limiting innlogging
 _access_requests: dict      # IP → [timestamps] — rate limiting tilgangsforespørsler
 ```
+
+En bakgrunnstråd rydder alle fem stores eldre enn 2 timer hvert 10. minutt.
+`OSDM_STORE` og `FIX_OSDM_STORE` kan inneholde store filer (opp til ~1,2 GB for Deutsche Bahn) — det er viktig at `created_at` alltid settes ved skriving slik at cleanup fungerer.
 
 **Konsekvens:** TEN-filen og OSDM-filen må valideres i riktig rekkefølge per server-sesjon.
 Ingenting skrives til disk under generering.
@@ -255,9 +262,8 @@ Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skale
 | 2 | `POST /ui/validate-osdm` | Validerer struktur, returnerer warnings + deliveryId |
 | 3 | `GET /ui/exchange-rate?from_=EUR&to=NOK` | Henter kurs fra frankfurter.app (ECB) |
 | 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + template, lagrer i `OSDM_OUT` |
-| 5 | `POST /ui/fix-osdm` | Rydder opp feil og ubrukte elementer |
-| 6 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_OUT` |
-| 7 | `POST /ui/excel-from-generated` | Konverterer `OSDM_OUT` til Excel (async) |
+| 5 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_STORE[user_email]` |
+| 6 | `POST /ui/excel-from-generated` | Konverterer `OSDM_STORE[user_email]` til Excel (async) |
 
 ### OSDM-template
 - Template-fil: `data/input/1076-OSDM-template.json`
@@ -276,7 +282,21 @@ Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skale
 - RC-er med ugyldig `entryConnectionPointId` / `exitConnectionPointId`
 - Ubrukte `prices`, `passengerConstraints`, `regionalConstraints`
 
-`POST /ui/fix-osdm` fikser alle disse og returnerer `X-Fix-Stats`-header.
+`POST /ui/fix-osdm` fikser alle disse — se eget avsnitt nedenfor.
+
+---
+
+## Rydd opp i OSDM – to-stegs flyt
+
+| Kall | Handling |
+|---|---|
+| `POST /ui/fix-osdm` | Analyserer filen, lagrer resultat i `FIX_OSDM_STORE[user_email]`, returnerer JSON `{stats, filename}` |
+| `GET /ui/fix-osdm/download` | Serverer lagret resultat fra `FIX_OSDM_STORE[user_email]` |
+
+Brukerflyten: last opp fil → se oppsummering av hva som vil bli fjernet → klikk "Last ned fikset fil".
+Resultatet slettes fra minnet etter 2 timer (cleanup-loopen).
+
+**`ijson` parser tall som `decimal.Decimal`** — alle `json.dumps`-kall bruker `default=_ijson_default` for å konvertere til int/float.
 
 ---
 
@@ -345,6 +365,7 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - ✅ Tvungen passordbytte ved første innlogging
 - ✅ OSDM til Excel-konvertering (alle land/operatører, metadata-boks, RICS-navn)
 - ✅ Legg til rabatterte priser i eksisterende OSDM-fil
+- ✅ Rydd opp i OSDM (to-stegs: analyser → bekreft → last ned)
 - ✅ Prisregulering – skaler OSDM-priser med fast prosentsats
 - ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk, fransk)
 - ✅ Ingen øvre filstørrelsesgrense
