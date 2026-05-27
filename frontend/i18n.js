@@ -112,6 +112,7 @@ const translations = {
     // Seksjon 3 – Admin
     section_admin:       "3. Admin",
     heading_users:       "Brukere",
+    col_name:            "Navn",
     col_email:           "E-post",
     col_admin:           "Admin",
     col_active:          "Aktiv",
@@ -445,6 +446,7 @@ const translations = {
     // Seksjon 3 – Admin
     section_admin:       "3. Admin",
     heading_users:       "Users",
+    col_name:            "Name",
     col_email:           "Email",
     col_admin:           "Admin",
     col_active:          "Active",
@@ -779,6 +781,7 @@ const translations = {
     // Seksjon 3 – Admin
     section_admin:       "3. Admin",
     heading_users:       "Benutzer",
+    col_name:            "Name",
     col_email:           "E-Mail",
     col_admin:           "Admin",
     col_active:          "Aktiv",
@@ -1112,6 +1115,7 @@ const translations = {
     // Seksjon 3 – Admin
     section_admin:       "3. Admin",
     heading_users:       "Användare",
+    col_name:            "Namn",
     col_email:           "E-post",
     col_admin:           "Admin",
     col_active:          "Aktiv",
@@ -1445,6 +1449,7 @@ const translations = {
     // Section 3 – Admin
     section_admin:       "3. Admin",
     heading_users:       "Utilisateurs",
+    col_name:            "Nom",
     col_email:           "E-mail",
     col_admin:           "Admin",
     col_active:          "Actif",

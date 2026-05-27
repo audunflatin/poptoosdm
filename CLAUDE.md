@@ -233,9 +233,9 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=49 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=50 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
-| `admin.js` | v=18 |
+| `admin.js` | v=19 |
 | `admin-log.js` | v=4 |
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |

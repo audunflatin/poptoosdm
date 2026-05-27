@@ -95,7 +95,11 @@ function getSearchQuery() {
 function getFilteredUsers() {
   const q = getSearchQuery();
   if (!q) return allUsers;
-  return allUsers.filter(u => u.email.toLowerCase().includes(q));
+  return allUsers.filter(u =>
+    u.email.toLowerCase().includes(q) ||
+    (u.first_name && u.first_name.toLowerCase().includes(q)) ||
+    (u.last_name && u.last_name.toLowerCase().includes(q))
+  );
 }
 
 function renderUserList() {
@@ -117,7 +121,7 @@ function renderUserList() {
 
   if (visible.length === 0) {
     const msg = isSearching ? t("no_search_results") : t("no_users");
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:8px; color:var(--text-muted);">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:8px; color:var(--text-muted);">${msg}</td></tr>`;
   } else {
     const SVG_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5ac39a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`;
     const SVG_X     = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5959" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
@@ -131,9 +135,11 @@ function renderUserList() {
       } else {
         activeCell = "-";
       }
+      const fullName = [u.first_name, u.last_name].filter(Boolean).join(" ");
       return `
         <tr style="background:${rowBg}">
-          <td style="padding:6px 8px; color:var(--text);">${u.email}</td>
+          <td style="padding:6px 8px; color:var(--text);">${escapeHtml(fullName)}</td>
+          <td style="padding:6px 8px; color:var(--text);">${escapeHtml(u.email)}</td>
           <td style="text-align:center; padding:6px 8px; color:var(--text-muted);">${u.is_admin ? SVG_CHECK : "-"}</td>
           <td style="text-align:center; padding:6px 8px; color:var(--text-muted);">${activeCell}</td>
           <td style="text-align:right; padding:6px 8px;">

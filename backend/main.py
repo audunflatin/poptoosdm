@@ -1164,6 +1164,8 @@ def list_users(request: Request):
         return [
             {
                 "email": u.email,
+                "first_name": u.first_name or "",
+                "last_name": u.last_name or "",
                 "is_admin": u.is_admin,
                 "is_active": u.is_active,
                 "has_logged_in": u.first_login_at is not None,
