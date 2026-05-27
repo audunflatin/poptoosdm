@@ -250,6 +250,11 @@ const translations = {
 
     access_first_name:        "Fornavn",
     access_last_name:         "Etternavn",
+
+    validation_required:      "Vennligst fyll ut dette feltet.",
+    validation_email:         "Vennligst oppgi en gyldig e-postadresse.",
+    validation_min_length:    "Passordet må være minst {min} tegn.",
+
     nav_admin_users:          "Brukere",
     nav_admin_log:            "Logg",
     nav_admin_presentation:   "Presentasjon",
@@ -579,6 +584,11 @@ const translations = {
 
     access_first_name:        "First name",
     access_last_name:         "Last name",
+
+    validation_required:      "Please fill in this field.",
+    validation_email:         "Please enter a valid email address.",
+    validation_min_length:    "The password must be at least {min} characters.",
+
     nav_admin_users:          "Users",
     nav_admin_log:            "Log",
     nav_admin_presentation:   "Presentation",
@@ -907,6 +917,11 @@ const translations = {
 
     access_first_name:        "Vorname",
     access_last_name:         "Nachname",
+
+    validation_required:      "Bitte füllen Sie dieses Feld aus.",
+    validation_email:         "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    validation_min_length:    "Das Passwort muss mindestens {min} Zeichen lang sein.",
+
     nav_admin_users:          "Benutzer",
     nav_admin_log:            "Protokoll",
     nav_admin_presentation:   "Präsentation",
@@ -1235,6 +1250,11 @@ const translations = {
 
     access_first_name:        "Förnamn",
     access_last_name:         "Efternamn",
+
+    validation_required:      "Vänligen fyll i det här fältet.",
+    validation_email:         "Vänligen ange en giltig e-postadress.",
+    validation_min_length:    "Lösenordet måste vara minst {min} tecken.",
+
     nav_admin_users:          "Användare",
     nav_admin_log:            "Logg",
     nav_admin_presentation:   "Presentation",
@@ -1564,6 +1584,11 @@ const translations = {
 
     access_first_name:        "Prénom",
     access_last_name:         "Nom de famille",
+
+    validation_required:      "Veuillez remplir ce champ.",
+    validation_email:         "Veuillez saisir une adresse e-mail valide.",
+    validation_min_length:    "Le mot de passe doit comporter au moins {min} caractères.",
+
     nav_admin_users:          "Utilisateurs",
     nav_admin_log:            "Journal",
     nav_admin_presentation:   "Présentation",
@@ -1725,6 +1750,25 @@ function _updateThemeBtn() {
 // Init – kjører straks scriptet lastes (DOM er klar siden script er nederst i body)
 currentLang = detectLanguage();
 applyTranslations();
+
+// Oversett nettleserens innebygde valideringsmeldinger til valgt språk
+document.addEventListener("invalid", function(e) {
+  const el = e.target;
+  const v  = el.validity;
+  let msg = "";
+  if (v.valueMissing) {
+    msg = t("validation_required");
+  } else if (v.typeMismatch && el.type === "email") {
+    msg = t("validation_email");
+  } else if (v.tooShort) {
+    msg = t("validation_min_length").replace("{min}", el.minLength);
+  }
+  el.setCustomValidity(msg);
+}, true);
+
+document.addEventListener("input", function(e) {
+  if (e.target.setCustomValidity) e.target.setCustomValidity("");
+}, true);
 
 // Hent antall ventende tilgangsforespørsler og vis i sidebar-badge (alle sider)
 if (window.IS_ADMIN) {
