@@ -358,6 +358,7 @@
     const isOpen = accessCard.classList.contains("is-open");
     accessCard.classList.toggle("is-open", !isOpen);
     accessTrigger.classList.toggle("is-open", !isOpen);
+    if (!isOpen) setTimeout(() => document.getElementById("accessFirstName").focus(), 450);
   }
 
   function openAccessForm() {
