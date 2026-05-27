@@ -230,6 +230,7 @@ const translations = {
 
     nav_contact:              "Kontakt",
     nav_change_password:      "Endre passord",
+    nav_privacy:              "Personvern",
     change_pw_success:        "Passordet er oppdatert.",
     nav_admin_users:          "Brukere",
     nav_admin_log:            "Logg",
@@ -540,6 +541,7 @@ const translations = {
 
     nav_contact:              "Contact",
     nav_change_password:      "Change password",
+    nav_privacy:              "Privacy policy",
     change_pw_success:        "Password updated.",
     nav_admin_users:          "Users",
     nav_admin_log:            "Log",
@@ -849,6 +851,7 @@ const translations = {
 
     nav_contact:              "Kontakt",
     nav_change_password:      "Passwort ändern",
+    nav_privacy:              "Datenschutz",
     change_pw_success:        "Passwort wurde aktualisiert.",
     nav_admin_users:          "Benutzer",
     nav_admin_log:            "Protokoll",
@@ -1158,6 +1161,7 @@ const translations = {
 
     nav_contact:              "Kontakt",
     nav_change_password:      "Ändra lösenord",
+    nav_privacy:              "Integritetspolicy",
     change_pw_success:        "Lösenordet har uppdaterats.",
     nav_admin_users:          "Användare",
     nav_admin_log:            "Logg",
@@ -1468,6 +1472,7 @@ const translations = {
 
     nav_contact:              "Contact",
     nav_change_password:      "Changer le mot de passe",
+    nav_privacy:              "Confidentialité",
     change_pw_success:        "Mot de passe mis à jour.",
     nav_admin_users:          "Utilisateurs",
     nav_admin_log:            "Journal",

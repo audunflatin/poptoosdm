@@ -232,7 +232,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=45 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=46 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=15 |
 | `admin-log.js` | v=3 |
