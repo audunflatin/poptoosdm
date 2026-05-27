@@ -21,7 +21,7 @@ import ijson
 from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, EventLog, AccessRequest, init_db
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET, ALLOWED_ORIGINS
-from backend.email_utils import send_welcome_email, send_reset_email, send_reset_link_email, send_contact_email, send_access_request_email
+from backend.email_utils import send_welcome_email, send_reset_link_email, send_contact_email, send_access_request_email
 
 import logging
 logger = logging.getLogger(__name__)
@@ -1202,29 +1202,6 @@ def admin_add_user(request: Request, email: str = Form(...), is_admin: str = For
         return {"ok": True, "email": email, "email_sent": True}
     except Exception as exc:
         logger.error("Kunne ikke sende velkomst-e-post til %s: %s", email, exc)
-        return {"ok": True, "email": email, "email_sent": False}
-
-@app.post("/admin/reset-password")
-def admin_reset_password(request: Request, email: str = Form(...)):
-    require_admin(request)
-    email = email.lower()
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.email == email).first()
-        if not user or not user.is_active:
-            raise HTTPException(status_code=404, detail="Bruker ikke funnet")
-        new_password = generate_password()
-        user.password_hash = hash_password(new_password)
-        user.must_change_password = True
-        db.commit()
-    finally:
-        db.close()
-    log_event(request.session.get("user_email"), "admin_password_reset", detail={"email": email})
-    try:
-        send_reset_email(email, new_password)
-        return {"ok": True, "email": email, "email_sent": True}
-    except Exception as exc:
-        logger.error("Kunne ikke sende reset-e-post til %s: %s", email, exc)
         return {"ok": True, "email": email, "email_sent": False}
 
 @app.post("/admin/set-admin")

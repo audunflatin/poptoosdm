@@ -147,17 +147,3 @@ def send_access_request_email(name: str, from_email: str, org: str, recipients: 
         subject=f"OSDMTools - tilgangsforespørsel fra {name}",
         html=_email_html('Tilgangsforespørsel fra <span style="color:#ff5959;">OSDMTools</span>', body),
     )
-
-
-def send_reset_email(to: str, password: str) -> None:
-    s = _STYLE
-    email_link = f'<a href="mailto:{to}" style="color:#ffffff;text-decoration:none;">{to}</a>'
-    body = f"""
-    <p style="{s['p']}">Your password for OSDMTools has been reset.</p>
-    {_cred_row("Email", email_link)}
-    {_cred_row("Temporary password", password)}
-    <p style="{s['p']}">You will be asked to choose a new password on your next login.</p>
-    <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
-      <a href="{APP_URL}" style="{s['btn']}">Log in</a>
-    </td></tr></table>"""
-    _send(to=to, subject="New password – OSDMTools", html=_email_html("New password", body))
