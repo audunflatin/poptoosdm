@@ -1930,12 +1930,17 @@ def admin_event_log(
 def kontakt_page(request: Request):
     if "user_email" not in request.session:
         return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
-    is_admin  = bool(request.session.get("is_admin"))
+    is_admin   = bool(request.session.get("is_admin"))
     user_email = request.session.get("user_email", "")
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == user_email).first()
+        first = (user.first_name or "").strip() if user else ""
+        last  = (user.last_name  or "").strip() if user else ""
+    user_name = f"{first} {last}".strip()
     html = Path("frontend/contact.html").read_text(encoding="utf-8")
     html = html.replace(
         "</head>",
-        f"<script>window.IS_ADMIN = {str(is_admin).lower()}; window.USER_EMAIL = {json.dumps(user_email)};</script></head>"
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()}; window.USER_EMAIL = {json.dumps(user_email)}; window.USER_NAME = {json.dumps(user_name)};</script></head>"
     )
     return HTMLResponse(html)
 

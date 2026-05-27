@@ -91,6 +91,9 @@
   if (window.USER_EMAIL) {
     document.getElementById("contactEmail").value = window.USER_EMAIL;
   }
+  if (window.USER_NAME) {
+    document.getElementById("contactName").value = window.USER_NAME;
+  }
 
   document.getElementById("contactForm").onsubmit = async e => {
     e.preventDefault();
