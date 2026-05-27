@@ -193,6 +193,41 @@ def login_page(request: Request):
 def health():
     return {"status": "ok"}
 
+@app.get("/robots.txt", response_class=Response)
+def robots_txt():
+    content = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Allow: /login\n"
+        "Disallow: /admin/\n"
+        "Disallow: /ui/\n"
+        "Disallow: /logout\n"
+        "Disallow: /endre-passord\n"
+        "Disallow: /price-adjust\n"
+        "Disallow: /osdmtoexcel\n"
+        "Disallow: /fare-discount\n"
+        "Disallow: /fix-osdm\n"
+        "Disallow: /kontakt\n"
+        "Disallow: /request-access\n"
+        "\n"
+        "Sitemap: https://osdmtools.com/sitemap.xml\n"
+    )
+    return Response(content=content, media_type="text/plain")
+
+@app.get("/sitemap.xml", response_class=Response)
+def sitemap_xml():
+    content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url>\n'
+        '    <loc>https://osdmtools.com/</loc>\n'
+        '    <changefreq>monthly</changefreq>\n'
+        '    <priority>1.0</priority>\n'
+        '  </url>\n'
+        '</urlset>\n'
+    )
+    return Response(content=content, media_type="application/xml")
+
 # ---------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------
