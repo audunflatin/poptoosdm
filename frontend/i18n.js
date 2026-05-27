@@ -326,6 +326,8 @@ const translations = {
     adjust_error_failed:    "Noe gikk galt. Sjekk at filen er gyldig OSDM JSON.",
     adjust_success:         "Priser justert — filen lastes ned.",
 
+    landing_request_btn:  "Be om tilgang",
+
     // Tilgangsforespørsel
     access_trigger:       "Ikke aktiv bruker? Be om tilgang",
     access_section_title: "Be om tilgang",
@@ -661,6 +663,8 @@ const translations = {
     adjust_success:         "Prices adjusted — file is downloading.",
 
     // Request access
+    landing_request_btn:  "Request access",
+
     access_trigger:       "Don't have access? Request it",
     access_section_title: "Request access",
     access_section_desc:  "OSDMTools is available for European railway operators. Send a request and I'll get back to you.",
@@ -994,6 +998,8 @@ const translations = {
     adjust_success:         "Preise angepasst — Datei wird heruntergeladen.",
 
     // Zugriffsanfrage
+    landing_request_btn:  "Zugang beantragen",
+
     access_trigger:       "Noch kein Zugang? Zugang beantragen",
     access_section_title: "Zugang beantragen",
     access_section_desc:  "OSDMTools steht europäischen Eisenbahnbetreibern zur Verfügung. Senden Sie eine Anfrage und ich melde mich bei Ihnen.",
@@ -1327,6 +1333,8 @@ const translations = {
     adjust_success:         "Priser justerade — filen laddas ner.",
 
     // Åtkomstbegäran
+    landing_request_btn:  "Begär åtkomst",
+
     access_trigger:       "Ingen åtkomst? Begär åtkomst",
     access_section_title: "Begär åtkomst",
     access_section_desc:  "OSDMTools är tillgängligt för europeiska järnvägsoperatörer. Skicka en förfrågan, så kontaktar jag dig.",
@@ -1661,6 +1669,8 @@ const translations = {
     adjust_success:         "Prix ajustés — le fichier est en cours de téléchargement.",
 
     // Demande d'accès
+    landing_request_btn:  "Demander l'accès",
+
     access_trigger:       "Pas encore d'accès ? Faire une demande",
     access_section_title: "Demander l'accès",
     access_section_desc:  "OSDMTools est disponible pour les opérateurs ferroviaires européens. Envoyez une demande et je vous recontacterai.",
