@@ -1285,6 +1285,8 @@ def admin_approve_request(request: Request, email: str = Form(...)):
             is_admin=False,
             is_active=True,
             must_change_password=True,
+            first_name=req.first_name or "",
+            last_name=req.last_name or "",
         )
         db.add(user)
         req.status = "approved"
@@ -1921,18 +1923,72 @@ def kontakt_page(request: Request):
     )
     return HTMLResponse(html)
 
-@app.get("/endre-passord", response_class=HTMLResponse)
-@app.head("/endre-passord")
-def endre_passord_page(request: Request):
+@app.get("/endre-passord")
+def endre_passord_redirect():
+    return RedirectResponse("/min-konto", status_code=301)
+
+@app.get("/min-konto", response_class=HTMLResponse)
+@app.head("/min-konto")
+def min_konto_page(request: Request):
     if "user_email" not in request.session:
         return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
     is_admin = bool(request.session.get("is_admin"))
-    html = Path("frontend/endre-passord.html").read_text(encoding="utf-8")
+    html = Path("frontend/min-konto.html").read_text(encoding="utf-8")
     html = html.replace(
         "</head>",
         f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
     )
     return HTMLResponse(html)
+
+@app.get("/account")
+def get_account(request: Request):
+    require_login(request)
+    user_email = request.session.get("user_email")
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            raise HTTPException(status_code=404)
+        return {
+            "email": user.email,
+            "first_name": user.first_name or "",
+            "last_name": user.last_name or "",
+            "is_admin": user.is_admin,
+        }
+
+@app.post("/account/name")
+def update_account_name(request: Request, first_name: str = Form(...), last_name: str = Form(...)):
+    require_login(request)
+    user_email = request.session.get("user_email")
+    first_name = first_name.strip()
+    last_name = last_name.strip()
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            raise HTTPException(status_code=404)
+        user.first_name = first_name
+        user.last_name = last_name
+        db.commit()
+    log_event(user_email, "account_name_updated")
+    return {"ok": True}
+
+@app.delete("/account")
+def delete_account(request: Request):
+    require_login(request)
+    user_email = request.session.get("user_email")
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            raise HTTPException(status_code=404)
+        if user.is_admin:
+            raise HTTPException(status_code=403, detail="Admins kan ikke slette sin egen konto")
+        db.query(EventLog).filter(EventLog.user_email == user_email).delete()
+        db.query(LoginLog).filter(LoginLog.email == user_email).delete()
+        db.query(PasswordResetToken).filter(PasswordResetToken.email == user_email).delete()
+        db.delete(user)
+        db.commit()
+    log_event(None, "account_deleted", detail={"email": user_email})
+    request.session.clear()
+    return {"ok": True}
 
 @app.post("/contact")
 def contact(
@@ -1952,7 +2008,8 @@ def contact(
 @app.post("/request-access")
 def request_access(
     request: Request,
-    name: str = Form(...),
+    first_name: str = Form(""),
+    last_name: str = Form(""),
     email: str = Form(...),
     org: str = Form(...),
     website: str = Form(""),
@@ -1961,21 +2018,29 @@ def request_access(
         return {"ok": True}
     ip = _get_client_ip(request)
     _check_access_rate_limit(ip)
-    email_clean = email.strip().lower()
-    name_clean  = name.strip()
-    org_clean   = org.strip()
+    email_clean      = email.strip().lower()
+    first_name_clean = first_name.strip()
+    last_name_clean  = last_name.strip()
+    name_clean       = f"{first_name_clean} {last_name_clean}".strip()
+    org_clean        = org.strip()
     with SessionLocal() as db:
         existing_user = db.query(User).filter(User.email == email_clean).first()
         if existing_user:
             return {"ok": True}
         existing_req = db.query(AccessRequest).filter(AccessRequest.email == email_clean).first()
         if existing_req:
-            existing_req.name = name_clean
-            existing_req.org  = org_clean
-            existing_req.status = "pending"
+            existing_req.name       = name_clean
+            existing_req.first_name = first_name_clean
+            existing_req.last_name  = last_name_clean
+            existing_req.org        = org_clean
+            existing_req.status     = "pending"
             existing_req.requested_at = datetime.now(timezone.utc)
         else:
-            db.add(AccessRequest(email=email_clean, name=name_clean, org=org_clean))
+            db.add(AccessRequest(
+                email=email_clean, name=name_clean,
+                first_name=first_name_clean, last_name=last_name_clean,
+                org=org_clean,
+            ))
         db.commit()
     try:
         send_access_request_email(name_clean, email_clean, org_clean)

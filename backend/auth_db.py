@@ -24,6 +24,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     must_change_password = Column(Boolean, default=True)
     first_login_at = Column(DateTime, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
 
 
 class LoginLog(Base):
@@ -62,6 +64,8 @@ class AccessRequest(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
     org = Column(String, nullable=False)
     requested_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     status = Column(String, default="pending")  # "pending" | "approved" | "rejected"
@@ -72,13 +76,22 @@ def _migrate():
     insp = sa_inspect(engine)
     user_cols = {c["name"] for c in insp.get_columns("users")}
     log_cols  = {c["name"] for c in insp.get_columns("login_log")}
+    ar_cols = {c["name"] for c in insp.get_columns("access_requests")}
     with engine.begin() as conn:
         if "must_change_password" not in user_cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT 0"))
         if "first_login_at" not in user_cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN first_login_at DATETIME"))
+        if "first_name" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN first_name VARCHAR"))
+        if "last_name" not in user_cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_name VARCHAR"))
         if "success" not in log_cols:
             conn.execute(text("ALTER TABLE login_log ADD COLUMN success BOOLEAN DEFAULT 1"))
+        if "first_name" not in ar_cols:
+            conn.execute(text("ALTER TABLE access_requests ADD COLUMN first_name VARCHAR"))
+        if "last_name" not in ar_cols:
+            conn.execute(text("ALTER TABLE access_requests ADD COLUMN last_name VARCHAR"))
 
         # Normaliser eksisterende e-poster til lowercase (idempotent)
         conn.execute(text("UPDATE users SET email = LOWER(email) WHERE email != LOWER(email)"))

@@ -44,7 +44,8 @@ Nye endepunkter som gjør tung prosessering (JSON-parse av store filer, valideri
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
 | `/admin/log` | `admin-log.html` | `admin-log.js` | Aktivitetslogg (kun admin) |
 | `/kontakt` | `contact.html` | — | Kontaktskjema |
-| `/endre-passord` | `endre-passord.html` | — | Endre passord |
+| `/min-konto` | `min-konto.html` | — | Min konto (endre navn, passord, slett konto) |
+| `/endre-passord` | `endre-passord.html` | — | Endre passord (301-redirect til /min-konto) |
 
 Felles styling: `styles.css`. Flerspråklig: `i18n.js` (lastes før side-spesifikk JS).
 
@@ -232,7 +233,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=46 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=47 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=15 |
 | `admin-log.js` | v=3 |
@@ -245,9 +246,9 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=45:
+HTML-filer som laster `i18n.js` med v=47:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
+`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
 
 HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
