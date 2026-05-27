@@ -112,7 +112,7 @@ def _cleanup_jobs():
     while True:
         time.sleep(600)
         cutoff = time.time() - _JOB_TTL
-        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS):
+        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS, OSDM_STORE, FIX_OSDM_STORE):
             stale = [k for k, v in list(jobs.items()) if v.get("created_at", 0) < cutoff]
             for k in stale:
                 jobs.pop(k, None)
@@ -1003,7 +1003,7 @@ def generate_osdm(
     content = json.dumps(data, indent=2, ensure_ascii=False)
 
     user_email = request.session.get("user_email", "")
-    OSDM_STORE[user_email] = {"filename": filename, "content": content}
+    OSDM_STORE[user_email] = {"filename": filename, "content": content, "created_at": time.time()}
 
     log_event(request.session.get("user_email"), "osdm_generated", detail={
         "deliveryId": datasetId,
@@ -2682,7 +2682,7 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
     out_name = f"{base}_fixed.json"
 
     user_email = request.session.get("user_email")
-    FIX_OSDM_STORE[user_email] = {"filename": out_name, "content": result_bytes}
+    FIX_OSDM_STORE[user_email] = {"filename": out_name, "content": result_bytes, "created_at": time.time()}
 
     log_event(user_email, "osdm_analyzed", detail=stats)
 
