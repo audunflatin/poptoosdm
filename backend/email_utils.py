@@ -141,7 +141,10 @@ def send_access_request_email(name: str, from_email: str, org: str, recipients: 
     <p style="{s['p']}">New access request from the landing page on osdmtools.com.</p>
     {_cred_row("Name", name)}
     {_cred_row("Email", from_email)}
-    {_cred_row("Railway operator", org)}"""
+    {_cred_row("Railway operator", org)}
+    <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
+      <a href="{APP_URL}/admin/users" style="{s['btn']}">Manage users</a>
+    </td></tr></table>"""
     _send(
         to=recipients or [CONTACT_EMAIL],
         subject=f"OSDMTools - tilgangsforespørsel fra {name}",

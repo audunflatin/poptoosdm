@@ -204,11 +204,24 @@ def root(request: Request):
 def personvern_page():
     return HTMLResponse(Path("frontend/personvern.html").read_text(encoding="utf-8"))
 
+def _safe_next(next_url: str) -> str:
+    """Validate next URL to prevent open redirect. Returns safe URL or empty string."""
+    if next_url and next_url.startswith("/") and not next_url.startswith("//") and next_url not in ("/login", "/logout"):
+        return next_url
+    return ""
+
 @app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
+def login_page(request: Request, next: str = ""):
     if "user_email" in request.session:
         return RedirectResponse("/", status_code=302)
-    return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+    html = Path("frontend/login.html").read_text(encoding="utf-8")
+    safe = _safe_next(next)
+    if safe:
+        html = html.replace(
+            '<button type="submit"',
+            f'<input type="hidden" name="next" value="{safe}"><button type="submit"'
+        )
+    return HTMLResponse(html)
 
 # ---------------------------------------------------------------------
 # Health
@@ -258,7 +271,7 @@ def sitemap_xml():
 # ---------------------------------------------------------------------
 
 @app.post("/login")
-def login(request: Request, email: str = Form(...), password: str = Form(...)):
+def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form("")):
     ip = _get_client_ip(request)
     _rate_limit_check(ip)
     email = email.lower()
@@ -283,7 +296,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...)):
         db.commit()
     finally:
         db.close()
-    return RedirectResponse("/price-adjust", status_code=302)
+    return RedirectResponse(_safe_next(next) or "/", status_code=302)
 
 @app.get("/logout")
 def logout(request: Request):
@@ -1835,13 +1848,17 @@ def osdm_to_csv_download(job_id: str, request: Request):
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_redirect(request: Request):
-    if "user_email" not in request.session or not _check_is_admin_from_db(request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/login?next=/admin/users", status_code=302)
+    if not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     return RedirectResponse("/admin/users", status_code=302)
 
 @app.get("/admin/users", response_class=HTMLResponse)
 def admin_users_page(request: Request):
-    if "user_email" not in request.session or not _check_is_admin_from_db(request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/login?next=/admin/users", status_code=302)
+    if not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/admin.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
@@ -1849,7 +1866,9 @@ def admin_users_page(request: Request):
 
 @app.get("/admin/log", response_class=HTMLResponse)
 def admin_log_page(request: Request):
-    if "user_email" not in request.session or not _check_is_admin_from_db(request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/login?next=/admin/log", status_code=302)
+    if not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/admin-log.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
@@ -1857,7 +1876,9 @@ def admin_log_page(request: Request):
 
 @app.get("/admin/presentation", response_class=HTMLResponse)
 def admin_presentation_page(request: Request):
-    if "user_email" not in request.session or not _check_is_admin_from_db(request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/login?next=/admin/presentation", status_code=302)
+    if not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/presentation.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
@@ -1919,7 +1940,7 @@ def admin_event_log(
 @app.head("/kontakt")
 def kontakt_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/kontakt", status_code=302)
     is_admin   = bool(request.session.get("is_admin"))
     user_email = request.session.get("user_email", "")
     with SessionLocal() as db:
@@ -1942,7 +1963,7 @@ def endre_passord_redirect():
 @app.head("/min-konto")
 def min_konto_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/min-konto", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/min-konto.html").read_text(encoding="utf-8")
     html = html.replace(
@@ -2066,7 +2087,7 @@ def request_access(
 @app.head("/price-adjust")
 def price_adjust_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/price-adjust", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/price-adjust.html").read_text(encoding="utf-8")
     html = html.replace(
@@ -2234,7 +2255,7 @@ def fare_discount_rics(request: Request):
 @app.head("/fare-discount")
 def fare_discount_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/fare-discount", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/fare-discount.html").read_text(encoding="utf-8")
     html = html.replace(
@@ -2827,7 +2848,7 @@ async def fix_osdm_download(request: Request):
 @app.head("/osdmtoexcel")
 def osdmtoexcel_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/osdmtoexcel", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/osdmtoexcel.html").read_text(encoding="utf-8")
     html = html.replace(
@@ -2840,7 +2861,7 @@ def osdmtoexcel_page(request: Request):
 @app.head("/fix-osdm")
 def fix_osdm_page(request: Request):
     if "user_email" not in request.session:
-        return HTMLResponse(Path("frontend/login.html").read_text(encoding="utf-8"))
+        return RedirectResponse("/login?next=/fix-osdm", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/fix-osdm.html").read_text(encoding="utf-8")
     html = html.replace(
