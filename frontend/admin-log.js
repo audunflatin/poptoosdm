@@ -133,7 +133,7 @@ async function loadLog() {
 
   if (totalPages > 1) {
     paginationEl.style.display = "flex";
-    pageInfoEl.innerText = `Side ${logPage} av ${totalPages}`;
+    pageInfoEl.innerText = `${t("page_label")} ${logPage} ${t("of_label")} ${totalPages}`;
     prevBtn.disabled = logPage <= 1;
     nextBtn.disabled = logPage >= totalPages;
   } else {

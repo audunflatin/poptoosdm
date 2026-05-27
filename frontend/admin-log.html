@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/static/favicon-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512x512.png">
 
-  <link rel="stylesheet" href="/static/styles.css?v=22">
+  <link rel="stylesheet" href="/static/styles.css?v=25">
   <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('poptoosdm_theme')||'dark')</script>
   <style>
     input[type="date"].log-date {
@@ -19,9 +19,7 @@
       background: var(--input-bg);
       color: var(--text);
       font-size: 0.95rem;
-      color-scheme: dark;
     }
-    input[type="date"].log-date::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.6); }
     select.log-select {
       padding: 0.45rem 0.65rem;
       border-radius: 6px;
@@ -31,9 +29,7 @@
       font-size: 0.95rem;
       color-scheme: dark;
     }
-    [data-theme="light"] input[type="date"].log-date,
     [data-theme="light"] select.log-select { color-scheme: light; }
-    [data-theme="light"] input[type="date"].log-date::-webkit-calendar-picker-indicator { filter: none; opacity: 0.6; }
     .badge-ok    { color: #5ac39a; font-weight: 700; font-size: 0.8rem; }
     .badge-error { color: #ff5959; font-weight: 700; font-size: 0.8rem; }
     .detail-text { color: var(--text-muted); font-size: 0.82rem; font-family: monospace; }
@@ -136,19 +132,17 @@
     </div>
 
     <!-- Pagination -->
-    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-      <div id="logPagination" style="display:none; align-items:center; gap:0.75rem;">
-        <button class="btn-table" id="logPrev" onclick="changePage(-1)">&#8592;</button>
-        <span id="logPageInfo" style="color:var(--list-text); font-size:0.9rem;"></span>
-        <button class="btn-table" id="logNext" onclick="changePage(1)">&#8594;</button>
-      </div>
-      <span id="logTotal" style="color:var(--text-muted); font-size:0.85rem;"></span>
+    <div id="logPagination" style="display:none; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+      <button class="btn-table" id="logPrev" onclick="changePage(-1)">&#8592;</button>
+      <span id="logPageInfo" style="color:var(--list-text); font-size:0.9rem;"></span>
+      <button class="btn-table" id="logNext" onclick="changePage(1)">&#8594;</button>
     </div>
+    <span id="logTotal" style="color:var(--text-muted); font-size:0.85rem;"></span>
 
   </section>
 </div>
 
 <script src="/static/i18n.js?v=45"></script>
-<script src="/static/admin-log.js?v=2"></script>
+<script src="/static/admin-log.js?v=3"></script>
 </body>
 </html>

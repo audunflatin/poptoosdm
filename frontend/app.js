@@ -399,22 +399,12 @@ if (window.IS_ADMIN) {
   });
 });
 
-const fpOnChange = () => {
-  const errorEl = document.getElementById("validationError");
-  errorEl.style.display = "none";
-  errorEl.innerText = "";
-};
-
-flatpickr("#validFrom", {
-  dateFormat: "Y-m-d",
-  locale: "no",
-  onChange: fpOnChange,
-});
-
-flatpickr("#validTo", {
-  dateFormat: "Y-m-d",
-  locale: "no",
-  onChange: fpOnChange,
+["validFrom", "validTo"].forEach(id => {
+  document.getElementById(id).addEventListener("change", () => {
+    const errorEl = document.getElementById("validationError");
+    errorEl.style.display = "none";
+    errorEl.innerText = "";
+  });
 });
 
 // Oppdater valutakurs-etikett ved språkbytte

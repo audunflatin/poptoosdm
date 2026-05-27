@@ -231,14 +231,14 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=22 |
+| `styles.css` | v=25 |
 | `i18n.js` | v=45 (alle hovudsider) / v=19 (login-sider) |
-| `app.js` | v=20 |
+| `app.js` | v=21 |
 | `admin.js` | v=15 |
-| `admin-log.js` | v=1 |
+| `admin-log.js` | v=3 |
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |
-| `priceAdjust.js` | v=9 |
+| `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=2 |
 | `presentation.js` | v=7 |
 

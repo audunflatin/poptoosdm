@@ -142,18 +142,8 @@ adjustPctInput.addEventListener("input", () => {
   }
 });
 
-// ── Flatpickr ─────────────────────────────────────────────────────────────────
-
-flatpickr("#validFrom", {
-  dateFormat: "Y-m-d",
-  locale: "no",
-  onChange: () => hideStatus(),
-});
-
-flatpickr("#validTo", {
-  dateFormat: "Y-m-d",
-  locale: "no",
-  onChange: () => hideStatus(),
+["validFrom", "validTo"].forEach(id => {
+  document.getElementById(id).addEventListener("change", () => hideStatus());
 });
 
 // ── Juster og last ned ────────────────────────────────────────────────────────
