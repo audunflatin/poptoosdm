@@ -310,7 +310,7 @@
 </div>
 
 <footer style="margin-top:4rem; color:rgba(255,255,255,0.22); font-size:0.78rem; text-align:center; padding-bottom:2rem;">
-  © 2025 osdmtools.com
+  © <span id="cpYear"></span> osdmtools.com
   <span style="margin:0 0.5rem;">·</span>
   <a href="/personvern" data-i18n="nav_privacy" style="color:rgba(255,255,255,0.35); text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Personvern</a>
 </footer>
@@ -358,6 +358,7 @@
       accessError.style.display = "block";
     }
   };
+  document.getElementById("cpYear").textContent = new Date().getFullYear();
 </script>
 </body>
 </html>
