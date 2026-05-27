@@ -142,9 +142,20 @@ def require_login(request: Request):
     if "user_email" not in request.session:
         raise HTTPException(status_code=401, detail="Ikke innlogget")
 
+def _check_is_admin_from_db(request: Request) -> bool:
+    """Les is_admin direkte fra DB og oppdater sesjonen. Returnerer True/False."""
+    user_email = request.session.get("user_email")
+    if not user_email:
+        return False
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == user_email).first()
+        is_admin = bool(user and user.is_admin)
+    request.session["is_admin"] = is_admin
+    return is_admin
+
 def require_admin(request: Request):
     require_login(request)
-    if not request.session.get("is_admin"):
+    if not _check_is_admin_from_db(request):
         raise HTTPException(status_code=403, detail="Ikke administrator")
 
 # ---------------------------------------------------------------------
@@ -1845,13 +1856,13 @@ def osdm_to_csv_download(job_id: str, request: Request):
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_redirect(request: Request):
-    if "user_email" not in request.session or not request.session.get("is_admin"):
+    if "user_email" not in request.session or not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     return RedirectResponse("/admin/users", status_code=302)
 
 @app.get("/admin/users", response_class=HTMLResponse)
 def admin_users_page(request: Request):
-    if "user_email" not in request.session or not request.session.get("is_admin"):
+    if "user_email" not in request.session or not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/admin.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
@@ -1859,7 +1870,7 @@ def admin_users_page(request: Request):
 
 @app.get("/admin/log", response_class=HTMLResponse)
 def admin_log_page(request: Request):
-    if "user_email" not in request.session or not request.session.get("is_admin"):
+    if "user_email" not in request.session or not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/admin-log.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
@@ -1867,7 +1878,7 @@ def admin_log_page(request: Request):
 
 @app.get("/admin/presentation", response_class=HTMLResponse)
 def admin_presentation_page(request: Request):
-    if "user_email" not in request.session or not request.session.get("is_admin"):
+    if "user_email" not in request.session or not _check_is_admin_from_db(request):
         return RedirectResponse("/", status_code=302)
     html = Path("frontend/presentation.html").read_text(encoding="utf-8")
     html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
