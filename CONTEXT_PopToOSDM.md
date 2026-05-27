@@ -131,7 +131,7 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=21 |
+| `styles.css` | v=22 |
 | `i18n.js` | v=45 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=20 |
 | `admin.js` | v=15 |

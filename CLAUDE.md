@@ -231,7 +231,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=21 |
+| `styles.css` | v=22 |
 | `i18n.js` | v=45 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=20 |
 | `admin.js` | v=15 |
