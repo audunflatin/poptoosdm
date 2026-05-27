@@ -1,3 +1,5 @@
+if (!window.IS_ADMIN) { window.location.replace("/"); }
+
 let allUsers = [];
 let currentPage = 1;
 const PAGE_SIZE = 15;

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.types import Scope
 
 from pathlib import Path
 import csv
@@ -37,7 +38,16 @@ from datetime import datetime, timezone, timedelta
 
 app = FastAPI(title="OSDMTools")
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+class _NoHTMLStaticFiles(StaticFiles):
+    """Block direct access to .html files — they must go through Python routes."""
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        if path.endswith(".html"):
+            raise HTTPException(status_code=404)
+        return await super().get_response(path, scope)
+
+
+app.mount("/static", _NoHTMLStaticFiles(directory="frontend"), name="static")
 
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, same_site="strict")
 app.add_middleware(
@@ -1843,19 +1853,25 @@ def admin_redirect(request: Request):
 def admin_users_page(request: Request):
     if "user_email" not in request.session or not request.session.get("is_admin"):
         return RedirectResponse("/", status_code=302)
-    return HTMLResponse(Path("frontend/admin.html").read_text(encoding="utf-8"))
+    html = Path("frontend/admin.html").read_text(encoding="utf-8")
+    html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
+    return HTMLResponse(html)
 
 @app.get("/admin/log", response_class=HTMLResponse)
 def admin_log_page(request: Request):
     if "user_email" not in request.session or not request.session.get("is_admin"):
         return RedirectResponse("/", status_code=302)
-    return HTMLResponse(Path("frontend/admin-log.html").read_text(encoding="utf-8"))
+    html = Path("frontend/admin-log.html").read_text(encoding="utf-8")
+    html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
+    return HTMLResponse(html)
 
 @app.get("/admin/presentation", response_class=HTMLResponse)
 def admin_presentation_page(request: Request):
     if "user_email" not in request.session or not request.session.get("is_admin"):
         return RedirectResponse("/", status_code=302)
-    return HTMLResponse(Path("frontend/presentation.html").read_text(encoding="utf-8"))
+    html = Path("frontend/presentation.html").read_text(encoding="utf-8")
+    html = html.replace("</head>", "<script>window.IS_ADMIN = true;</script></head>")
+    return HTMLResponse(html)
 
 @app.get("/admin/event-log")
 def admin_event_log(

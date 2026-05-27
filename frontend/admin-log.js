@@ -1,4 +1,5 @@
 // admin-log.js – Aktivitetslogg
+if (!window.IS_ADMIN) { window.location.replace("/"); }
 
 const LOG_PAGE_SIZE = 50;
 let logPage  = 1;
