@@ -2074,8 +2074,10 @@ def request_access(
                 org=org_clean,
             ))
         db.commit()
+    with SessionLocal() as db:
+        admin_emails = [u.email for u in db.query(User).filter(User.is_admin == True, User.is_active == True).all()]
     try:
-        send_access_request_email(name_clean, email_clean, org_clean)
+        send_access_request_email(name_clean, email_clean, org_clean, recipients=admin_emails or None)
     except Exception as exc:
         logger.warning("Kunne ikke sende tilgangsforespørsel-epost: %s", exc)
     log_event(None, "access_request", detail={"name": name_clean, "email": email_clean, "org": org_clean})
