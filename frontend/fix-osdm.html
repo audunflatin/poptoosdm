@@ -67,8 +67,8 @@
     <label data-i18n="label_osdm_file">OSDM JSON-fil</label>
     <input id="fixOsdmFile" type="file" accept=".json" />
 
-    <button id="fixBtn" onclick="doFix()" disabled style="margin-top:1.5rem;" data-i18n="btn_fix_osdm">
-      Fiks OSDM-filen automatisk
+    <button id="fixBtn" onclick="doAnalyze()" disabled style="margin-top:1.5rem;" data-i18n="btn_fix_osdm">
+      Analyser fil
     </button>
 
     <div id="spinner" class="spinner" style="display:none;"></div>
@@ -78,8 +78,8 @@
 
 </div>
 
-<script src="/static/i18n.js?v=44"></script>
-<script src="/static/fixOsdm.js?v=1"></script>
+<script src="/static/i18n.js?v=45"></script>
+<script src="/static/fixOsdm.js?v=2"></script>
 <script>
   if (window.IS_ADMIN) {
     const el = document.getElementById("adminLink"); if (el) el.style.display = "";

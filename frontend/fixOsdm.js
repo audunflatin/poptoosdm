@@ -1,34 +1,39 @@
-// fixOsdm.js — Rydd opp i OSDM
+// fixOsdm.js — Rydd opp i OSDM (to-stegs flyt: analyser → bekreft → last ned)
 
-function buildFixSuccessHtml(stats) {
-  const statLabels = {
-    removed_bad_rcs:       t("fix_stat_bad_rcs"),
-    removed_bad_fares:     t("fix_stat_bad_fares"),
-    removed_unused_prices: t("fix_stat_unused_prices"),
-    removed_unused_pcs:    t("fix_stat_unused_pcs"),
-    removed_unused_rcs:    t("fix_stat_unused_rcs"),
-  };
+const _STAT_LABELS = () => ({
+  removed_bad_rcs:       t("fix_stat_bad_rcs"),
+  removed_bad_fares:     t("fix_stat_bad_fares"),
+  removed_unused_prices: t("fix_stat_unused_prices"),
+  removed_unused_pcs:    t("fix_stat_unused_pcs"),
+  removed_unused_rcs:    t("fix_stat_unused_rcs"),
+});
 
+function _buildPreviewHtml(stats) {
   const total = Object.values(stats).reduce((a, b) => a + b, 0);
 
   if (total === 0) {
     return `<div class="check-ok">${t("fix_osdm_nothing")}</div>`;
   }
 
+  const labels = _STAT_LABELS();
   const items = Object.entries(stats)
     .filter(([, n]) => n > 0)
-    .map(([key, n]) => `<li><b>${n}</b> ${statLabels[key] || key}</li>`)
+    .map(([key, n]) => `<li><b>${n}</b> ${labels[key] || key}</li>`)
     .join("");
 
-  return `<div class="info-box">
-    <div>
-      <strong style="color:var(--success);">✓ ${t("fix_osdm_success")}</strong>
-      <ul style="margin:0.4rem 0 0;padding-left:1.2rem;font-size:0.85rem;opacity:0.85;">${items}</ul>
+  return `
+    <div class="info-box" style="margin-bottom:1rem;">
+      <div>
+        <strong>${t("fix_preview_heading")}</strong>
+        <ul style="margin:0.4rem 0 0;padding-left:1.2rem;font-size:0.85rem;opacity:0.85;">${items}</ul>
+      </div>
     </div>
-  </div>`;
+    <button id="applyFixBtn" onclick="doDownload()" style="margin-top:0.25rem;">
+      ${t("btn_apply_fix")}
+    </button>`;
 }
 
-async function doFix() {
+async function doAnalyze() {
   const fileInput = document.getElementById("fixOsdmFile");
   if (!fileInput.files.length) return;
 
@@ -47,8 +52,25 @@ async function doFix() {
     const r = await fetch("/ui/fix-osdm", { method: "POST", body: fd });
     if (!r.ok) throw new Error(await r.text());
 
-    const statsRaw = r.headers.get("X-Fix-Stats");
-    const stats    = statsRaw ? JSON.parse(statsRaw) : {};
+    const data = await r.json();
+    result.innerHTML = _buildPreviewHtml(data.stats || {});
+  } catch (err) {
+    result.innerHTML = `<div class="status-error">${err.message || t("unknown_error")}</div>`;
+  } finally {
+    spinner.style.display = "none";
+    btn.disabled = false;
+  }
+}
+
+async function doDownload() {
+  const applyBtn = document.getElementById("applyFixBtn");
+  const result   = document.getElementById("fixResult");
+
+  if (applyBtn) applyBtn.disabled = true;
+
+  try {
+    const r = await fetch("/ui/fix-osdm/download");
+    if (!r.ok) throw new Error(await r.text());
 
     const blob = await r.blob();
     const cd   = r.headers.get("Content-Disposition") || "";
@@ -61,15 +83,13 @@ async function doFix() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    result.innerHTML = buildFixSuccessHtml(stats);
+    result.innerHTML = `<div class="check-ok">${t("fix_osdm_success")}</div>`;
   } catch (err) {
     result.innerHTML = `<div class="status-error">${err.message || t("unknown_error")}</div>`;
-  } finally {
-    spinner.style.display = "none";
-    btn.disabled = false;
   }
 }
 
 document.getElementById("fixOsdmFile").addEventListener("change", function () {
   document.getElementById("fixBtn").disabled = !this.files.length;
+  document.getElementById("fixResult").innerHTML = "";
 });

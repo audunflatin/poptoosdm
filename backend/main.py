@@ -100,7 +100,8 @@ def _check_access_rate_limit(ip: str):
 TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
-OSDM_STORE: dict[str, dict] = {}  # user_email → {"filename": str, "content": str}
+OSDM_STORE: dict[str, dict] = {}     # user_email → {"filename": str, "content": str}
+FIX_OSDM_STORE: dict[str, dict] = {} # user_email → {"filename": str, "content": bytes}
 XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows, owner, created_at}
 VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
 PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
@@ -2680,15 +2681,28 @@ async def fix_osdm(request: Request, osdmFile: UploadFile = File(...)):
     base = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
     out_name = f"{base}_fixed.json"
 
-    log_event(request.session.get("user_email"), "osdm_fixed", detail=stats)
+    user_email = request.session.get("user_email")
+    FIX_OSDM_STORE[user_email] = {"filename": out_name, "content": result_bytes}
 
+    log_event(user_email, "osdm_analyzed", detail=stats)
+
+    from fastapi.responses import JSONResponse as _JSONResponse
+    return _JSONResponse({"stats": stats, "filename": out_name})
+
+
+@app.get("/ui/fix-osdm/download")
+async def fix_osdm_download(request: Request):
+    user_email = request.session.get("user_email")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Ikke innlogget")
+    entry = FIX_OSDM_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fikset fil funnet — last opp og analyser først")
+    log_event(user_email, "osdm_fixed", detail={"filename": entry["filename"]})
     return Response(
-        content=result_bytes,
+        content=entry["content"],
         media_type="application/json",
-        headers={
-            "Content-Disposition": f'attachment; filename="{out_name}"',
-            "X-Fix-Stats": json.dumps(stats),
-        },
+        headers={"Content-Disposition": f'attachment; filename="{entry["filename"]}"'},
     )
 
 
