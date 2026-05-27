@@ -64,30 +64,33 @@
       margin-bottom: 2.25rem;
     }
 
-    .hero-btn {
-      display: inline-block;
-      background: #ff5959;
-      color: white;
-      text-decoration: none;
+    .hero-btn, .hero-btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       font-size: 1.05rem;
       font-weight: 700;
+      line-height: 1;
       padding: 0.8rem 2.5rem;
       border-radius: 8px;
+      text-decoration: none;
+      font-family: inherit;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .hero-btn {
+      background: #ff5959;
+      color: white;
+      border: none;
       transition: background 0.15s;
     }
     .hero-btn:hover { background: #e04444; }
     .hero-btn-ghost {
-      display: inline-block;
       background: transparent;
       color: rgba(255,255,255,0.7);
-      text-decoration: none;
-      font-size: 1.05rem;
       font-weight: 600;
       padding: 0.8rem 2rem;
-      border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.25);
-      cursor: pointer;
-      font-family: inherit;
       transition: border-color 0.15s, color 0.15s;
     }
     .hero-btn-ghost:hover { border-color: rgba(255,255,255,0.6); color: white; }
