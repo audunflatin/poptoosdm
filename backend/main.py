@@ -22,6 +22,7 @@ from backend.auth_db import SessionLocal, User, LoginLog, PasswordResetToken, Ev
 from backend.auth_utils import verify_password, generate_password, hash_password
 from backend.core.settings import SESSION_SECRET, ALLOWED_ORIGINS
 from backend.email_utils import send_welcome_email, send_reset_link_email, send_contact_email, send_access_request_email
+import backend.osdm_editor as osdm_editor
 
 import logging
 logger = logging.getLogger(__name__)
@@ -112,6 +113,7 @@ GENERATION_PROGRESS = {"status": "idle", "percent": 0}
 OSDM_IN = Path("data/input/1076-OSDM-template.json")
 OSDM_STORE: dict[str, dict] = {}     # user_email → {"filename": str, "content": str}
 FIX_OSDM_STORE: dict[str, dict] = {} # user_email → {"filename": str, "content": bytes}
+EDIT_STORE: dict[str, dict] = {}     # user_email → osdm_editor store entry + {"filename": str, "created_at": float}
 XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows, owner, created_at}
 VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
 PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
@@ -122,7 +124,7 @@ def _cleanup_jobs():
     while True:
         time.sleep(600)
         cutoff = time.time() - _JOB_TTL
-        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS, OSDM_STORE, FIX_OSDM_STORE):
+        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS, OSDM_STORE, FIX_OSDM_STORE, EDIT_STORE):
             stale = [k for k, v in list(jobs.items()) if v.get("created_at", 0) < cutoff]
             for k in stale:
                 jobs.pop(k, None)
@@ -2864,6 +2866,121 @@ def fix_osdm_page(request: Request):
         return RedirectResponse("/login?next=/fix-osdm", status_code=302)
     is_admin = bool(request.session.get("is_admin"))
     html = Path("frontend/fix-osdm.html").read_text(encoding="utf-8")
+    html = html.replace(
+        "</head>",
+        f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"
+    )
+    return HTMLResponse(html)
+
+# ---------------------------------------------------------------------
+# OSDM Editor
+# ---------------------------------------------------------------------
+
+@app.post("/osdm-editor/load")
+async def editor_load(request: Request, osdmFile: UploadFile = File(...)):
+    require_login(request)
+    user_email = request.session["user_email"]
+    content = await osdmFile.read()
+    try:
+        entry = osdm_editor.load_osdm(content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Ugyldig OSDM-fil: {e}")
+    entry["filename"] = _safe_filename(osdmFile.filename or "osdm.json")
+    entry["created_at"] = time.time()
+    EDIT_STORE[user_email] = entry
+    log_event(user_email, "editor_load", detail={"filename": entry["filename"]})
+    return osdm_editor.get_summary(entry, entry["filename"])
+
+
+@app.get("/osdm-editor/summary")
+def editor_summary(request: Request):
+    require_login(request)
+    user_email = request.session["user_email"]
+    entry = EDIT_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fil lastet")
+    return osdm_editor.get_summary(entry, entry.get("filename", ""))
+
+
+@app.post("/osdm-editor/metadata")
+async def editor_metadata(request: Request):
+    require_login(request)
+    user_email = request.session["user_email"]
+    entry = EDIT_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fil lastet")
+    body = await request.json()
+    osdm_editor.update_delivery(entry, body)
+    return {"ok": True}
+
+
+@app.post("/osdm-editor/passenger/{pc_id}")
+async def editor_passenger(request: Request, pc_id: str):
+    require_login(request)
+    user_email = request.session["user_email"]
+    entry = EDIT_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fil lastet")
+    body = await request.json()
+    new_ratio = body.get("ratio")
+    if new_ratio is None:
+        raise HTTPException(status_code=422, detail="ratio mangler")
+    try:
+        new_ratio = float(new_ratio)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="ratio må være et tall")
+    result = osdm_editor.update_passenger_ratio(entry, pc_id, new_ratio)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    log_event(user_email, "editor_passenger", detail=result)
+    return result
+
+
+@app.post("/osdm-editor/relation")
+async def editor_relation(request: Request):
+    require_login(request)
+    user_email = request.session["user_email"]
+    entry = EDIT_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fil lastet")
+    body = await request.json()
+    try:
+        from_uic = str(body["from_uic"]).strip()
+        to_uic = str(body["to_uic"]).strip()
+        adult_price_eur = float(body["adult_price_eur"])
+        distance = int(body["distance"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=f"Ugyldig input: {e}")
+    if adult_price_eur <= 0 or distance < 0:
+        raise HTTPException(status_code=422, detail="Pris må være > 0 og avstand >= 0")
+    result = osdm_editor.add_relation(entry, from_uic, to_uic, adult_price_eur, distance)
+    log_event(user_email, "editor_relation", detail=result)
+    return result
+
+
+@app.get("/osdm-editor/download")
+def editor_download(request: Request):
+    require_login(request)
+    user_email = request.session["user_email"]
+    entry = EDIT_STORE.get(user_email)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Ingen fil lastet")
+    data = osdm_editor.serialize_osdm(entry)
+    filename = entry.get("filename", "edited.json")
+    return Response(
+        content=data,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/osdm-editor", response_class=HTMLResponse)
+@app.head("/osdm-editor")
+def osdm_editor_page(request: Request):
+    if "user_email" not in request.session:
+        return RedirectResponse("/login?next=/osdm-editor", status_code=302)
+    is_admin = bool(request.session.get("is_admin"))
+    html = Path("frontend/osdm-editor.html").read_text(encoding="utf-8")
     html = html.replace(
         "</head>",
         f"<script>window.IS_ADMIN = {str(is_admin).lower()};</script></head>"

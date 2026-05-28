@@ -72,6 +72,12 @@ const T = {
     s8b_b3: "Feil stasjonsreferanser rettes automatisk",
     s8b_b4: "Statistikk over fjernede elementer vises etter nedlasting",
 
+    s8c_heading: "OSDM-editor",
+    s8c_b1: "Last opp en OSDM fareDelivery-fil for redigering",
+    s8c_b2: "Rediger passasjerprofiler – endre ratio og recalkuler alle priser",
+    s8c_b3: "Legg til nye strekningsrelasjoner med UIC-koder, voksenpris og avstand",
+    s8c_b4: "Last ned den redigerte filen klar for bruk",
+
     s9_heading: "Teknisk",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (brukere + logg)",
@@ -153,6 +159,12 @@ const T = {
     s8b_b2: "Unused prices, passenger constraints and regional constraints are removed",
     s8b_b3: "Invalid station references are fixed automatically",
     s8b_b4: "Statistics on removed elements are shown after download",
+
+    s8c_heading: "OSDM editor",
+    s8c_b1: "Upload an OSDM fareDelivery file for editing",
+    s8c_b2: "Edit passenger profiles – change ratio and recalculate all prices",
+    s8c_b3: "Add new route relations with UIC codes, adult price and distance",
+    s8c_b4: "Download the edited file ready for use",
 
     s9_heading: "Technical",
     s9_left_label: "Backend",
@@ -236,6 +248,12 @@ const T = {
     s8b_b3: "Fehlerhafte Stationsreferenzen werden automatisch korrigiert",
     s8b_b4: "Statistiken über entfernte Elemente werden nach dem Download angezeigt",
 
+    s8c_heading: "OSDM-Editor",
+    s8c_b1: "Eine OSDM fareDelivery-Datei zur Bearbeitung hochladen",
+    s8c_b2: "Fahrgastprofile bearbeiten – Verhältnis ändern und alle Preise neu berechnen",
+    s8c_b3: "Neue Streckenrelationen mit UIC-Codes, Erwachsenenpreis und Entfernung hinzufügen",
+    s8c_b4: "Die bearbeitete Datei für den Einsatz bereit herunterladen",
+
     s9_heading: "Technisch",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (Benutzer + Protokoll)",
@@ -318,6 +336,12 @@ const T = {
     s8b_b3: "Ogiltiga stationsreferenser korrigeras automatiskt",
     s8b_b4: "Statistik över borttagna element visas efter nedladdning",
 
+    s8c_heading: "OSDM-editor",
+    s8c_b1: "Ladda upp en OSDM fareDelivery-fil för redigering",
+    s8c_b2: "Redigera passagerarprofiler – ändra ratio och beräkna om alla priser",
+    s8c_b3: "Lägg till nya streckrelasjoner med UIC-koder, vuxenpris och avstånd",
+    s8c_b4: "Ladda ner den redigerade filen redo för användning",
+
     s9_heading: "Tekniskt",
     s9_left_label: "Backend",
     s9_left_b2: "SQLite (användare + logg)",
@@ -399,6 +423,12 @@ const T = {
     s8b_b2: "Les prix, contraintes passagers et contraintes régionales inutilisés sont supprimés",
     s8b_b3: "Les références de gare invalides sont corrigées automatiquement",
     s8b_b4: "Les statistiques sur les éléments supprimés sont affichées après le téléchargement",
+
+    s8c_heading: "Éditeur OSDM",
+    s8c_b1: "Téléverser un fichier OSDM fareDelivery pour modification",
+    s8c_b2: "Modifier les profils passagers – changer le ratio et recalculer tous les prix",
+    s8c_b3: "Ajouter de nouvelles relations de trajet avec codes UIC, prix adulte et distance",
+    s8c_b4: "Télécharger le fichier modifié prêt à l'emploi",
 
     s9_heading: "Technique",
     s9_left_label: "Backend",
@@ -510,6 +540,12 @@ function getSlides() {
       type: "bullets",
       heading: L("s8b_heading"),
       bullets: [L("s8b_b1"), L("s8b_b2"), L("s8b_b3"), L("s8b_b4")],
+    },
+    // 8c. OSDM-editor
+    {
+      type: "bullets",
+      heading: L("s8c_heading"),
+      bullets: [L("s8c_b1"), L("s8c_b2"), L("s8c_b3"), L("s8c_b4")],
     },
     // 9. Teknisk
     {

@@ -41,6 +41,7 @@ Nye endepunkter som gjør tung prosessering (JSON-parse av store filer, valideri
 | `/osdmtoexcel` | `osdmtoexcel.html` | `osdmtoExcel.js` | OSDM JSON → Excel |
 | `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte priser i eksisterende OSDM |
 | `/fix-osdm` | `fix-osdm.html` | `fixOsdm.js` | Rydd opp i OSDM (fjern ubrukte elementer) |
+| `/osdm-editor` | `osdm-editor.html` | `osdmEditor.js` | Rediger passasjerprofiler, metadata, relasjoner i OSDM |
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
 | `/admin/log` | `admin-log.html` | `admin-log.js` | Aktivitetslogg (kun admin) |
 | `/kontakt` | `contact.html` | — | Kontaktskjema |
@@ -59,6 +60,7 @@ Definert øverst i `backend/main.py`:
 TEN_TABLE: list | None         # Lastes ved POST /ui/validate-ten — brukes av generate
 OSDM_STORE: dict               # user_email → {"filename": str, "content": str, "created_at": float}
 FIX_OSDM_STORE: dict           # user_email → {"filename": str, "content": bytes, "created_at": float}
+EDIT_STORE: dict               # user_email → osdm_editor store entry + {"filename": str, "created_at": float}
 XLSX_JOBS: dict                # job_id → {status, result, percent, user_email, ...}
 VALIDATION_JOBS: dict          # job_id → {status, result, percent, user_email, ...}
 PARSE_JOBS: dict               # job_id → {status, result, percent, user_email, ...}
@@ -70,7 +72,7 @@ GENERATION_PROGRESS: dict      # {"status": ..., "percent": ...} for progressbar
 **Konsekvens:** TEN-filen og OSDM-filen må valideres i riktig rekkefølge per server-sesjon.
 Ingenting skrives til disk under generering.
 
-En bakgrunnstråd rydder alle fem stores eldre enn 2 timer hvert 10. minutt (`XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS`, `OSDM_STORE`, `FIX_OSDM_STORE`).
+En bakgrunnstråd rydder alle seks stores eldre enn 2 timer hvert 10. minutt (`XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS`, `OSDM_STORE`, `FIX_OSDM_STORE`, `EDIT_STORE`).
 
 ---
 
@@ -233,7 +235,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=51 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=52 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=19 |
 | `admin-log.js` | v=4 |
@@ -241,14 +243,15 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=3 |
+| `osdmEditor.js` | v=1 |
 | `presentation.js` | v=7 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=49:
+HTML-filer som laster `i18n.js` med v=52:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
+`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`, `osdm-editor.html`
 
 HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
