@@ -364,12 +364,19 @@ def get_summary(store_entry: dict, filename: str = "") -> dict:
 
 
 def update_delivery(store_entry: dict, fields: dict) -> None:
-    """Oppdater delivery-metadata (deliveryId, previousDeliveryId, usage, optionalDelivery)."""
+    """Oppdater delivery-metadata og kalender-gyldighet."""
     delivery = store_entry["data"]["fareDelivery"]["delivery"]
+    fs = store_entry["data"]["fareDelivery"]["fareStructure"]
     allowed = {"deliveryId", "previousDeliveryId", "usage", "optionalDelivery"}
     for key, value in fields.items():
         if key in allowed:
             delivery[key] = value
+    if "valid_from" in fields or "valid_until" in fields:
+        for cal in fs.get("calendars", []):
+            if "valid_from" in fields and fields["valid_from"]:
+                cal["fromDate"] = fields["valid_from"]
+            if "valid_until" in fields and fields["valid_until"]:
+                cal["untilDate"] = fields["valid_until"]
 
 
 def update_passenger_ratio(store_entry: dict, pc_id: str, new_ratio: float) -> dict:

@@ -90,7 +90,11 @@ function renderSummary(s) {
 
   // Metadata fields
   document.getElementById("metaDeliveryId").value = s.delivery.deliveryId || "";
-  document.getElementById("metaPrevDeliveryId").value = s.delivery.previousDeliveryId || "";
+  // Pre-fill previousDeliveryId with the loaded file's deliveryId if not already set
+  document.getElementById("metaPrevDeliveryId").value =
+    s.delivery.previousDeliveryId || s.delivery.deliveryId || "";
+  document.getElementById("metaValidFrom").value = (s.validity && s.validity.from_date) ? s.validity.from_date : "";
+  document.getElementById("metaValidUntil").value = (s.validity && s.validity.until_date) ? s.validity.until_date : "";
   document.getElementById("metaUsage").value = s.delivery.usage || "PRODUCTION";
   document.getElementById("metaOptional").checked = !!s.delivery.optionalDelivery;
 
@@ -159,6 +163,8 @@ async function saveMetadata() {
   const body = {
     deliveryId:         document.getElementById("metaDeliveryId").value.trim(),
     previousDeliveryId: document.getElementById("metaPrevDeliveryId").value.trim(),
+    valid_from:         document.getElementById("metaValidFrom").value,
+    valid_until:        document.getElementById("metaValidUntil").value,
     usage:              document.getElementById("metaUsage").value,
     optionalDelivery:   document.getElementById("metaOptional").checked,
   };

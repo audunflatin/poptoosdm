@@ -235,7 +235,7 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=52 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=53 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=19 |
 | `admin-log.js` | v=4 |
@@ -243,13 +243,13 @@ Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 | `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=3 |
-| `osdmEditor.js` | v=1 |
+| `osdmEditor.js` | v=2 |
 | `presentation.js` | v=7 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=52:
+HTML-filer som laster `i18n.js` med v=53:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
 `contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`, `osdm-editor.html`
 
