@@ -121,10 +121,21 @@ def _build_cp_maps(connection_points: list) -> tuple[dict, dict]:
 def _build_station_name_map(station_names: list) -> dict[str, str]:
     result: dict[str, str] = {}
     for s in station_names:
-        code = str(s.get("code", ""))
         name = s.get("nameUtf8") or s.get("name") or ""
-        if code:
-            result[code] = name
+        if not name:
+            continue
+        # Flat code field (most operators)
+        if "code" in s:
+            code = str(s["code"])
+            if code:
+                result[code] = name
+        # Trenitalia / Italian format: country + localCode
+        elif "country" in s and "localCode" in s:
+            try:
+                uic = str(int(s["country"]) * 100000 + int(s["localCode"]))
+                result[uic] = name
+            except (TypeError, ValueError):
+                pass
     return result
 
 
