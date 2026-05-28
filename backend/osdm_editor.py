@@ -601,6 +601,85 @@ def add_relation(
     }
 
 
+def set_prices_from_adult(store_entry: dict, rc_adult_prices: dict[str, float]) -> dict:
+    """
+    Sett priser for alle ikke-rabatterte farer i de angitte RC-ene.
+    rc_adult_prices: rc_id → ny voksenpris i EUR (allerede i filvaluta hvis ikke EUR)
+    Returnerer statistikk: updated_fares, new_prices.
+    """
+    data = store_entry["data"]
+    fs = data["fareDelivery"]["fareStructure"]
+    adult_id = store_entry["adult_id"]
+    ratios = store_entry["ratios"]
+    id_prefix = store_entry["id_prefix"]
+
+    prices_list: list = fs["prices"]
+    fares_list: list = fs["fares"]
+
+    currency, price_scale = _detect_price_format(prices_list)
+    amount_to_price_id = _build_amount_to_price_id(prices_list)
+    next_price_num = _max_id_num(prices_list, id_prefix, "I") + 1
+
+    # (rc, carrier, sc, pc) → fare index
+    fare_index: dict[tuple, int] = {}
+    for i, fare in enumerate(fares_list):
+        if fare.get("reductionConstraintRef"):
+            continue
+        key = (
+            fare.get("regionalConstraintRef"),
+            fare.get("carrierConstraintRef"),
+            fare.get("serviceClassRef"),
+            fare.get("passengerConstraintRef"),
+        )
+        if all(k is not None for k in key):
+            fare_index[key] = i
+
+    # (rc, carrier, sc) combos present in the file
+    combos: set[tuple] = {(k[0], k[1], k[2]) for k in fare_index}
+
+    updated_fares = 0
+    new_prices_count = 0
+
+    for rc_id, adult_eur in rc_adult_prices.items():
+        if adult_eur <= 0:
+            continue
+        adult_eur_rounded = _round_to_20_cents(adult_eur)
+
+        for (_, carrier, sc) in (c for c in combos if c[0] == rc_id):
+            for pc_id, ratio in ratios.items():
+                target_key = (rc_id, carrier, sc, pc_id)
+                if target_key not in fare_index:
+                    continue
+
+                if pc_id == adult_id:
+                    price_eur = adult_eur_rounded
+                elif ratio <= 0:
+                    price_eur = 0.0
+                else:
+                    price_eur = _round_to_20_cents(adult_eur * ratio)
+
+                cents = _eur_to_amount_int(price_eur, price_scale)
+
+                if cents in amount_to_price_id:
+                    price_id = amount_to_price_id[cents]
+                else:
+                    price_id = f"{id_prefix}I__{next_price_num}"
+                    next_price_num += 1
+                    prices_list.append({
+                        "id": price_id,
+                        "price": [{"currency": currency, "amount": cents,
+                                   "scale": price_scale, "vatDetails": []}],
+                    })
+                    amount_to_price_id[cents] = price_id
+                    new_prices_count += 1
+
+                fares_list[fare_index[target_key]]["priceRef"] = price_id
+                updated_fares += 1
+
+    store_entry["price_map"] = _build_price_map(prices_list)
+    return {"updated_fares": updated_fares, "new_prices": new_prices_count}
+
+
 def serialize_osdm(store_entry: dict) -> bytes:
     """Serialiser endret OSDM til JSON-bytes."""
     return json.dumps(

@@ -59,6 +59,7 @@ Definert øverst i `backend/main.py`:
 ```python
 TEN_TABLE: list | None         # Lastes ved POST /ui/validate-ten — brukes av generate
 OSDM_STORE: dict               # user_email → {"filename": str, "content": str, "created_at": float}
+INPUT_OSDM_STORE: dict         # user_email → {"filename": str, "bytes": bytes, "created_at": float}
 FIX_OSDM_STORE: dict           # user_email → {"filename": str, "content": bytes, "created_at": float}
 EDIT_STORE: dict               # user_email → osdm_editor store entry + {"filename": str, "created_at": float}
 XLSX_JOBS: dict                # job_id → {status, result, percent, user_email, ...}
@@ -67,12 +68,12 @@ PARSE_JOBS: dict               # job_id → {status, result, percent, user_email
 GENERATION_PROGRESS: dict      # {"status": ..., "percent": ...} for progressbar
 ```
 
-**Viktig:** `OSDM_STORE` og `FIX_OSDM_STORE` er per bruker (keyed på `user_email`) — to brukere kan generere OSDM samtidig uten konflikt. Alle job-dicts lagrer `user_email`; progress- og download-endepunkter sjekker eierskap (403 hvis annen bruker).
+**Viktig:** `OSDM_STORE`, `INPUT_OSDM_STORE` og `FIX_OSDM_STORE` er per bruker (keyed på `user_email`) — to brukere kan generere OSDM samtidig uten konflikt. Alle job-dicts lagrer `user_email`; progress- og download-endepunkter sjekker eierskap (403 hvis annen bruker).
 
-**Konsekvens:** TEN-filen og OSDM-filen må valideres i riktig rekkefølge per server-sesjon.
+**Konsekvens:** TEN-filen og OSDM-malfilen må valideres i riktig rekkefølge per server-sesjon.
 Ingenting skrives til disk under generering.
 
-En bakgrunnstråd rydder alle seks stores eldre enn 2 timer hvert 10. minutt (`XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS`, `OSDM_STORE`, `FIX_OSDM_STORE`, `EDIT_STORE`).
+En bakgrunnstråd rydder alle syv stores eldre enn 2 timer hvert 10. minutt (`XLSX_JOBS`, `VALIDATION_JOBS`, `PARSE_JOBS`, `OSDM_STORE`, `INPUT_OSDM_STORE`, `FIX_OSDM_STORE`, `EDIT_STORE`).
 
 ---
 
@@ -93,9 +94,9 @@ Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skale
 | # | Kall | Handling |
 |---|---|---|
 | 1 | `POST /ui/validate-ten` | Parser TEN-CSV, lagrer i `TEN_TABLE` |
-| 2 | `POST /ui/validate-osdm` | Validerer struktur, returnerer warnings + deliveryId |
+| 2 | `POST /ui/validate-osdm` | Validerer struktur, lagrer råbytes i `INPUT_OSDM_STORE[user_email]`, returnerer warnings + deliveryId |
 | 3 | `GET /ui/exchange-rate?from_=EUR&to=NOK` | Henter kurs fra frankfurter.app (ECB) |
-| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + template, lagrer i `OSDM_STORE[user_email]` |
+| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + `INPUT_OSDM_STORE[user_email]` (ingen hardkodet template), lagrer i `OSDM_STORE[user_email]` |
 | 5 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_STORE[user_email]` (krever innlogging) |
 | 6 | `POST /ui/excel-from-generated` | Konverterer `OSDM_STORE[user_email]` til Excel (async) |
 
@@ -158,55 +159,15 @@ Frontend (`fixOsdm.js`): viser oppsummering av hva som vil bli fjernet, med "Las
 
 ---
 
-## OSDM-template – nøkkel-IDer
+## OSDM-struktur – nøkkelkonsepter
 
-Template-fil: `data/input/1076-OSDM-template.json`
-Template deliveryId (erstattes ved generering): `7.0`
-ID-mønster: `1076_{deliveryId}_{kode}__{nr}`
+ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=connectionPoint, K=regionalConstraint, I=price, G=passengerConstraint, C=carrierConstraint, S=bundle
 
-### ConnectionPoints (CP-er)
-| Stasjon | UIC | CP-ID (v7.0) |
-|---|---|---|
-| Kornsjø grense | 7600551 | `1076_7.0_E__56` |
-| Oslo S | 7600100 | `1076_7.0_E__76` |
+**Ratio-innsikt (viktig):** Ratio er IKKE lagret i OSDM-filer — den utledes ved å dele passasjerkategoriens pris på voksenprisen. Voksen = passasjerkategori med høyest gjennomsnittlig ikke-null pris. `osdm_editor.load_osdm()` gjør dette automatisk og lagrer `adult_id` og `ratios` i store_entry.
 
-### RegionalConstraints – Kornsjø gr ↔ Oslo S
-| RC-ID (v7.0) | Entry CP | Exit CP | Distanse |
-|---|---|---|---|
-| `1076_7.0_K__117` | E__56 (Kornsjø) | E__76 (Oslo S) | 188 km |
-| `1076_7.0_K__118` | E__76 (Oslo S) | E__56 (Kornsjø) | 188 km |
-
-(To RC-er fordi én per retning.)
-
-### CarrierConstraints (eksisterende)
-| ID (v7.0) | Provider |
-|---|---|
-| `1076_7.0_C__1` | GoAhead (3781) |
-| `1076_7.0_C__2` | Vy (1076) |
-| `1076_7.0_C__3` | SJ Nord (3733) |
-| `1076_7.0_C__4` | (3822) |
-
-Neste ledige: `C__5` → skal brukes til DSB (1186).
-
-### FareConstraintBundles
-| ID (v7.0) | Beskrivelse |
-|---|---|
-| `1076_7.0_S__1` | Primær bundle for alle ordinære priser |
-| `1076_7.0_S__2` | Sekundær bundle |
-
-### Passasjerkategorier og ratio
-| PassengerConstraint (v7.0) | Kategori | Ratio |
-|---|---|---|
-| G__1 | Voksen | 1.00 |
-| G__2 | Voksen gruppe | 0.90 |
-| G__8 | Senior | 0.50 |
-| G__3 | Barn 6–17 | 0.25 |
-| G__4 | Barn 6–17 gruppe | 0.25 |
-| G__6 | Barn 0–5 | 0.00 |
-| G__7 | Barn 0–5 gruppe | 0.00 |
-| G__1 (FIP) | FIP leisure voksen | 0.50 |
-| G__3 (FIP) | FIP leisure barn | 0.25 |
-| G__5 | Hund | 0.50 |
+**stationNames-format varierer per operatør:**
+- De fleste: `{"code": "8311705", "codeList": "UIC", ...}`
+- Trenitalia: `{"country": 83, "localCode": 11705, ...}` → UIC = `str(country * 100000 + localCode)`
 
 ### fareStructure-seksjoner (alle nøkler)
 `calendars`, `serviceClassDefinitions`, `texts`, `prices`,
@@ -215,8 +176,6 @@ Neste ledige: `C__5` → skal brukes til DSB (1186).
 `salesAvailabilityConstraint`, `travelValidityConstraints`,
 `combinationConstraints`, `fulfillmentConstraints`,
 `connectionPoints`, `stationNames`
-
-Merk: `reductionConstraints` finnes ikke i denne templaten ennå.
 
 ---
 
@@ -289,7 +248,7 @@ og oppdateres via JS — se `updateExchangeRateLabel()` i `app.js`.
 
 ## Kjente fallgruver
 
-- **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt. Dette er by design (stateless storage mellom requests, men state lever i server-prosessen).
+- **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt. Tilsvarende for `INPUT_OSDM_STORE`. Dette er by design (stateless storage mellom requests, men state lever i server-prosessen).
 - **`import requests` var lenge glemt** i `main.py` (lagt til mai 2026). Valutahenting feilet stille.
 - **Priser rundes opp til nærmeste 0,20 EUR** (`math.ceil(eur / 0.20) * 0.20`). Dette er DRTF-krav.
-- **String-replace på serialisert JSON** brukes til å bytte deliveryId overalt — dette treffer alle 33+ felt-typer uten manuell iterasjon, men betyr at `old_delivery_id` ikke kan være en delstreng av noe annet i filen.
+- **String-replace på serialisert JSON** brukes til å bytte id-prefix overalt i generate_osdm — treffer alle ID-typer uten manuell iterasjon, men betyr at old_prefix ikke kan være delstreng av noe annet i filen.

@@ -110,10 +110,10 @@ def _check_access_rate_limit(ip: str):
 
 TEN_TABLE = None
 GENERATION_PROGRESS = {"status": "idle", "percent": 0}
-OSDM_IN = Path("data/input/1076-OSDM-template.json")
-OSDM_STORE: dict[str, dict] = {}     # user_email → {"filename": str, "content": str}
-FIX_OSDM_STORE: dict[str, dict] = {} # user_email → {"filename": str, "content": bytes}
-EDIT_STORE: dict[str, dict] = {}     # user_email → osdm_editor store entry + {"filename": str, "created_at": float}
+OSDM_STORE: dict[str, dict] = {}       # user_email → {"filename": str, "content": str}
+INPUT_OSDM_STORE: dict[str, dict] = {} # user_email → {"filename": str, "bytes": bytes, "created_at": float}
+FIX_OSDM_STORE: dict[str, dict] = {}  # user_email → {"filename": str, "content": bytes}
+EDIT_STORE: dict[str, dict] = {}       # user_email → osdm_editor store entry + {"filename": str, "created_at": float}
 XLSX_JOBS: dict = {}        # job_id → {status, result, error, filename, percent, rows, owner, created_at}
 VALIDATION_JOBS: dict = {}  # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
 PARSE_JOBS: dict = {}       # job_id → {status, percent, phase, start_time, file_size, result, error, owner}
@@ -124,7 +124,7 @@ def _cleanup_jobs():
     while True:
         time.sleep(600)
         cutoff = time.time() - _JOB_TTL
-        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS, OSDM_STORE, FIX_OSDM_STORE, EDIT_STORE):
+        for jobs in (XLSX_JOBS, VALIDATION_JOBS, PARSE_JOBS, OSDM_STORE, INPUT_OSDM_STORE, FIX_OSDM_STORE, EDIT_STORE):
             stale = [k for k, v in list(jobs.items()) if v.get("created_at", 0) < cutoff]
             for k in stale:
                 jobs.pop(k, None)
@@ -729,12 +729,18 @@ def _run_osdm_validation(job_id: str, file_bytes: bytes) -> None:
 async def validate_osdm(request: Request, osdmFile: UploadFile = File(...)):
     require_login(request)
     file_bytes = await osdmFile.read()
+    user_email = request.session.get("user_email", "")
+    INPUT_OSDM_STORE[user_email] = {
+        "filename": osdmFile.filename or "osdm.json",
+        "bytes": file_bytes,
+        "created_at": time.time(),
+    }
     job_id = str(uuid.uuid4())
     VALIDATION_JOBS[job_id] = {
         "status": "running", "percent": 0, "phase": "parsing",
         "start_time": time.time(), "file_size": len(file_bytes),
         "result": None, "error": None,
-        "owner": request.session.get("user_email"), "created_at": time.time(),
+        "owner": user_email, "created_at": time.time(),
     }
     threading.Thread(target=_run_osdm_validation, args=(job_id, file_bytes), daemon=True).start()
     return {"jobId": job_id}
@@ -925,23 +931,23 @@ def generate_osdm(
 ):
     require_login(request)
 
+    user_email = request.session.get("user_email", "")
+
     if TEN_TABLE is None:
         raise HTTPException(status_code=400, detail="TEN-CSV er ikke validert")
+
+    input_entry = INPUT_OSDM_STORE.get(user_email)
+    if not input_entry:
+        raise HTTPException(status_code=400, detail="OSDM-malfil er ikke lastet opp og validert")
 
     GENERATION_PROGRESS["status"] = "running"
     GENERATION_PROGRESS["percent"] = 0
 
-    data = json.loads(OSDM_IN.read_text(encoding="utf-8"))
-
-    # Erstatt gammel delivery-id med ny datasetId overalt i strukturen
-    old_delivery_id = data["fareDelivery"]["delivery"]["deliveryId"]
-    if old_delivery_id and old_delivery_id != datasetId:
-        raw = json.dumps(data)
-        raw = raw.replace(f"1076_{old_delivery_id}_", f"1076_{datasetId}_")
-        data = json.loads(raw)
-
+    store_entry = osdm_editor.load_osdm(input_entry["bytes"])
+    data = store_entry["data"]
     fs = data["fareDelivery"]["fareStructure"]
 
+    # Update delivery metadata
     data["fareDelivery"]["delivery"]["deliveryId"] = datasetId
     if previousDeliveryId.strip():
         data["fareDelivery"]["delivery"]["previousDeliveryId"] = previousDeliveryId.strip()
@@ -952,140 +958,77 @@ def generate_osdm(
         "TEST_ONLY" if environment == "test" else "PRODUCTION"
     )
 
-    # Sett datoer og utcOffset basert på Oslo-tidssone
+    # Update calendars (Oslo timezone)
     oslo_tz = ZoneInfo("Europe/Oslo")
     from_dt = datetime.fromisoformat(validFrom).replace(tzinfo=oslo_tz)
-    until_dt = datetime.fromisoformat(validTo).replace(hour=23, minute=59, second=59, tzinfo=oslo_tz)
     utc_offset_from = int(from_dt.utcoffset().total_seconds() / 60)
-
     from_date = f"{validFrom}T00:00:00+0000"
     until_date = f"{validTo}T23:59:59+0000"
-
     for cal in fs.get("calendars", []):
         cal["fromDate"] = from_date
         cal["untilDate"] = until_date
         cal["utcOffset"] = utc_offset_from
 
-    # Bygg eksempel-oppslag: UIC-kode -> connectionPointId
-    cp_for_uic = {}
-    for cp in fs["connectionPoints"]:
-        for ss in cp.get("stationSets", []):
-            for s in ss:
-                if s.get("codeList") == "UIC":
-                    cp_for_uic[s["code"]] = cp["id"]
-
-    example_routes = [
-        ("Oslo S",  "Bergen stasjon",    "7600100", "7602351"),
-        ("Oslo S",  "Trondheim S",       "7600100", "7601126"),
-        ("Oslo S",  "Stavanger stasjon", "7600100", "7602234"),
-        ("Oslo S",  "Halden stasjon",    "7600100", "7600546"),
-        ("Oslo S",  "Kornsjø grense",    "7600100", "7600551"),
-    ]
-
-    # Kategoriratio mot voksen
-    # (nameRef-suffix, passengerConstraintRef-suffix, ratio)
-    CATEGORY_RATIOS = [
-        ("P__7",  "G__1", 1.00),   # Voksen
-        ("P__34", "G__2", 0.90),   # Voksen gruppe
-        ("P__11", "G__8", 0.50),   # Senior
-        ("P__8",  "G__3", 0.25),   # Barn 6-17 år
-        ("P__35", "G__4", 0.25),   # Barn 6-17 år gruppe
-        ("P__9",  "G__6", 0.00),   # Barn 0-5 år
-        ("P__36", "G__7", 0.00),   # Barn 0-5 år gruppe
-        ("P__5",  "G__1", 0.50),   # FIP leisure reduction voksen
-        ("P__5",  "G__3", 0.25),   # FIP leisure reduction barn
-        ("P__10", "G__5", 0.50),   # Hund
-    ]
-
-    # Finn id-prefix fra eksisterende fare-id-er (f.eks. "1076_8.2_")
-    sample_nr = fs["fares"][0].get("nameRef", "") if fs.get("fares") else ""
-    id_prefix = "_".join(sample_nr.split("_")[:2]) + "_" if sample_nr else f"1076_{datasetId}_"
-
-    new_prices = []
-    price_index = 1
-    total = len(fs["regionalConstraints"])
-    examples = {}
-    example_idx = 1
-
-    # rc_id -> { (nameRef, passengerConstraintRef) -> ny price_id }
-    rc_fare_price_map: dict = {}
-
-    for idx, rc in enumerate(fs["regionalConstraints"], start=1):
+    # Compute adult price in EUR for each RC from TEN table + exchange rate
+    rcs = fs.get("regionalConstraints", [])
+    total = len(rcs) or 1
+    rc_adult_prices: dict[str, float] = {}
+    for idx, rc in enumerate(rcs, start=1):
         km = rc.get("distance")
-        if km is None:
+        if km is not None:
+            try:
+                local_price = nok_price_from_distance(km)
+                rc_adult_prices[rc["id"]] = local_price * exchangeRate
+            except ValueError:
+                pass
+        GENERATION_PROGRESS["percent"] = int(idx / total * 60)
+
+    # Set all prices using ratios inferred from the uploaded OSDM file
+    result = osdm_editor.set_prices_from_adult(store_entry, rc_adult_prices)
+    GENERATION_PROGRESS["percent"] = 90
+
+    # Build example fares from first few RCs that got prices
+    cp_to_uic = store_entry["cp_to_uic"]
+    station_name_map = store_entry["station_name_map"]
+    examples: dict[str, str] = {}
+    example_idx = 1
+    for rc in rcs:
+        if example_idx > 5:
+            break
+        rc_id = rc["id"]
+        if rc_id not in rc_adult_prices:
             continue
+        from_uic = cp_to_uic.get(rc.get("entryConnectionPointId", ""), "")
+        to_uic = cp_to_uic.get(rc.get("exitConnectionPointId", ""), "")
+        from_name = station_name_map.get(from_uic, from_uic or "?")
+        to_name = station_name_map.get(to_uic, to_uic or "?")
+        adult_eur = math.ceil(rc_adult_prices[rc_id] / 0.20) * 0.20
+        examples[f"example_{example_idx}"] = (
+            f"{from_name} → {to_name}: {adult_eur:.2f} EUR ({rc.get('distance', '?')} km)"
+        )
+        example_idx += 1
 
-        nok = nok_price_from_distance(km)
-        rc_fare_price_map[rc["id"]] = {}
-        voksen_amount = None
-
-        for nr_sfx, pc_sfx, ratio in CATEGORY_RATIOS:
-            nr_key = id_prefix + nr_sfx
-            pc_key = id_prefix + pc_sfx
-
-            if ratio > 0:
-                raw_eur = nok * exchangeRate * ratio
-                cat_amount = int(math.ceil(raw_eur / 0.20) * 0.20 * 100)
-            else:
-                cat_amount = 0
-
-            # Lagre voksenbeløpet for eksempelpriser
-            if nr_sfx == "P__7" and pc_sfx == "G__1":
-                voksen_amount = cat_amount
-
-            price_id = f"1076_{datasetId}_I__{price_index}"
-            new_prices.append({
-                "id": price_id,
-                "price": [{
-                    "amount": cat_amount,
-                    "currency": "EUR",
-                    "scale": 2,
-                    "vatDetails": []
-                }]
-            })
-            rc_fare_price_map[rc["id"]][(nr_key, pc_key)] = price_id
-            price_index += 1
-
-        # Eksempelpriser bruker voksenprisen
-        if voksen_amount is not None:
-            for from_name, to_name, from_uic, to_uic in example_routes:
-                if (
-                    rc["entryConnectionPointId"] == cp_for_uic.get(from_uic)
-                    and rc["exitConnectionPointId"] == cp_for_uic.get(to_uic)
-                ):
-                    examples[f"example_{example_idx}"] = (
-                        f"{from_name} -> {to_name}: {voksen_amount / 100:.2f} EUR ({km} km)"
-                    )
-                    example_idx += 1
-
-        GENERATION_PROGRESS["percent"] = int(idx / total * 100)
-
-    fs["prices"] = new_prices
-
-    # Oppdater priceRef i alle fares til å peke på nye price-id-er
-    for fare in fs["fares"]:
-        rc_ref = fare.get("regionalConstraintRef")
-        nr = fare.get("nameRef")
-        pc = fare.get("passengerConstraintRef")
-        new_price_id = rc_fare_price_map.get(rc_ref, {}).get((nr, pc))
-        if new_price_id:
-            fare["priceRef"] = new_price_id
+    # Replace id-prefix in all IDs (string-replace on serialised JSON)
+    old_prefix = store_entry["id_prefix"]
+    fare_provider = old_prefix.split("_")[0]
+    new_prefix = f"{fare_provider}_{datasetId}_"
+    content = json.dumps(store_entry["data"], indent=2, ensure_ascii=False)
+    if old_prefix != new_prefix:
+        content = content.replace(old_prefix, new_prefix)
 
     GENERATION_PROGRESS["status"] = "done"
     GENERATION_PROGRESS["percent"] = 100
 
-    filename = f"1076_{datasetId}_{environment}.json"
-    content = json.dumps(data, indent=2, ensure_ascii=False)
-
-    user_email = request.session.get("user_email", "")
+    filename = _safe_filename(f"{fare_provider}_{datasetId}_{environment}.json")
     OSDM_STORE[user_email] = {"filename": filename, "content": content, "created_at": time.time()}
 
-    log_event(request.session.get("user_email"), "osdm_generated", detail={
+    log_event(user_email, "osdm_generated", detail={
         "deliveryId": datasetId,
         "environment": environment,
         "validFrom": validFrom,
         "validTo": validTo,
-        "priceCount": len(new_prices),
+        "updatedFares": result["updated_fares"],
+        "newPrices": result["new_prices"],
     })
 
     return {
@@ -1093,7 +1036,7 @@ def generate_osdm(
         "ok": True,
         "outputFile": filename,
         "summary": {
-            "pricesUpdated": len(fs["prices"]),
+            "pricesUpdated": result["updated_fares"],
             "exchangeRate": exchangeRate,
             "environment": environment,
             "utcOffset": utc_offset_from,
