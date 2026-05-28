@@ -29,19 +29,15 @@ def _email_html(heading: str, body_rows: str) -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <style>
-    :root {{ color-scheme: light dark; supported-color-schemes: light dark; }}
+    :root {{ color-scheme: light; }}
     body, .email-wrap, .email-card {{ background-color: #0d1b2a !important; }}
-    .email-card {{ border-top: 3px solid #ff5959 !important; }}
+    .email-card {{ border-top: 3px solid #ff5959 !important; background-color: #152535 !important; }}
     h1, p, .cred-val {{ color: #ffffff !important; }}
     .cred-label {{ color: rgba(255,255,255,0.5) !important; }}
     .email-footer span {{ color: rgba(255,255,255,0.3) !important; }}
-    @media (prefers-color-scheme: dark) {{
-      body, .email-wrap {{ background-color: #0d1b2a !important; }}
-      .email-card {{ background-color: #152535 !important; }}
-    }}
   </style>
 </head>
 <body style="{s['body']}" class="email-wrap">
