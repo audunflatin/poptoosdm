@@ -159,6 +159,37 @@ Frontend (`fixOsdm.js`): viser oppsummering av hva som vil bli fjernet, med "Las
 
 ---
 
+## OSDM-editor – flyt og endepunkter
+
+`backend/osdm_editor.py` inneholder all logikk; `EDIT_STORE[user_email]` holder parse-resultat per bruker.
+
+| Kall | Handling |
+|---|---|
+| `POST /osdm-editor/load` | Parser OSDM-fil, lagrer store_entry i `EDIT_STORE[user_email]`, returnerer summary |
+| `GET /osdm-editor/summary` | Returnerer summary fra eksisterende `EDIT_STORE[user_email]` |
+| `POST /osdm-editor/metadata` | Oppdaterer delivery-felt + kalenderperiode i store_entry |
+| `POST /osdm-editor/passenger/{pc_id}` | Setter ny ratio for en passasjerkategori, rekalkuderer alle priser for den kategorien |
+| `POST /osdm-editor/relation` | Legger til ny relasjon (RC + fares for alle passasjerkategorier × serviceklasser) |
+| `GET /osdm-editor/download` | Serialiserer og returnerer endret OSDM-fil |
+
+### `osdm_editor.load_osdm(content: bytes)` — returnerer store_entry dict med:
+- `data` — hele den parsede JSON (muteres av alle operations)
+- `adult_id` — PC-id for voksen (høyest gjennomsnittspris)
+- `ratios` — `{pc_id: float}` — utledet fra eksisterende priser
+- `price_map` — `{cents: price_id}` — for rask pris-lookup
+- `uic_to_cp`, `cp_to_uic` — UIC ↔ CP-ID maps
+- `station_name_map` — UIC → stasjonsnavn
+- `text_map` — tekst-ID → tekst
+- `id_prefix` — f.eks. `"1076_7.0_"` eller `"0083_3.1_"`
+- `fare_templates` — liste over fare-strukturer for `add_relation`
+
+### `osdm_editor.set_prices_from_adult(store_entry, rc_adult_prices: dict[str, float])` — brukes av generate_osdm:
+- Tar `{rc_id: adult_eur}` og setter priser for alle PC × SC-kombinasjoner
+- Runder opp til nærmeste 0,20 EUR (DRTF-krav)
+- Returnerer `{updated_fares, new_prices}`
+
+---
+
 ## OSDM-struktur – nøkkelkonsepter
 
 ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=connectionPoint, K=regionalConstraint, I=price, G=passengerConstraint, C=carrierConstraint, S=bundle
@@ -203,7 +234,7 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 | `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=3 |
 | `osdmEditor.js` | v=2 |
-| `presentation.js` | v=7 |
+| `presentation.js` | v=8 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.

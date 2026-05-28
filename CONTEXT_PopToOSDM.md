@@ -37,6 +37,7 @@ Produksjonsdomene: **https://osdmtools.com**
 ```
 backend/
   main.py          — all applikasjonslogikk (FastAPI)
+  osdm_editor.py   — OSDM-parsing, ratio-inferens, priskalkulering, relasjon-tillegg
   auth_db.py       — SQLAlchemy-modeller: User, LoginLog, EventLog + migrering
   auth_utils.py    — passord-hashing og generering
   email_utils.py   — e-postutsending via Resend API
@@ -49,6 +50,7 @@ frontend/
   index.html       — hoved-GUI (Priser fra avstandsfil)
   price-adjust.html — Prisregulering (skaler priser med fast %)
   fare-discount.html — legg til rabatterte priser i eksisterende OSDM
+  osdm-editor.html — OSDM-editor (passasjerprofiler, metadata, relasjoner)
   admin.html       — admin-panel (brukerhåndtering, kun for admins)
   admin-log.html   — aktivitetslogg (kun for admins)
   fix-osdm.html    — rydd opp i OSDM (to-stegs flyt)
@@ -61,6 +63,7 @@ frontend/
   reset_password.html  — tilbakestill passord via e-postlenke
   app.js           — JavaScript for index.html
   priceAdjust.js   — JavaScript for price-adjust.html
+  osdmEditor.js    — JavaScript for osdm-editor.html
   admin.js         — JavaScript for admin.html (paginering, søk, brukertabell)
   admin-log.js     — JavaScript for admin-log.html
   fareDiscount.js  — JavaScript for fare-discount.html
@@ -71,7 +74,6 @@ frontend/
   admin_mock.js    — lokal testdata for admin-siden (i .gitignore)
 data/
   input/
-    1076-OSDM-template.json          — OSDM-template med farestruktur
     connectionpoint_to_stopplace.csv — kobling CP-id → stopplace
     uic_to_stopplace.csv             — kobling UIC → stopplace
 schemas/           — JSON-skjemaer for OSDM-validering
@@ -139,7 +141,7 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 | Fil | Versjon |
 |---|---|
 | `styles.css` | v=25 |
-| `i18n.js` | v=51 (alle hovudsider) / v=19 (login-sider) |
+| `i18n.js` | v=54 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=19 |
 | `admin-log.js` | v=4 |
@@ -147,11 +149,12 @@ Støtter **5 språk**: norsk (no), engelsk (en), tysk (de), svensk (sv), fransk 
 | `fareDiscount.js` | v=18 |
 | `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=3 |
-| `presentation.js` | v=7 |
+| `osdmEditor.js` | v=2 |
+| `presentation.js` | v=8 |
 
-HTML-filer som laster `i18n.js` med v=51:
+HTML-filer som laster `i18n.js` med v=54:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`
+`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`, `osdm-editor.html`
 
 HTML-filer med v=19 (login-sider, endres sjelden):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
@@ -163,21 +166,23 @@ HTML-filer med v=19 (login-sider, endres sjelden):
 Definert øverst i `backend/main.py`:
 
 ```python
-TEN_TABLE: list | None      # Lastes ved POST /ui/validate-ten
-OSDM_STORE: dict            # user_email → {"filename": str, "content": str, "created_at": float}
-FIX_OSDM_STORE: dict        # user_email → {"filename": str, "content": bytes, "created_at": float}
-XLSX_JOBS: dict             # job_id → {status, result, percent, user_email, ...}
-VALIDATION_JOBS: dict       # job_id → {status, percent, phase, result, user_email, ...}
-PARSE_JOBS: dict            # job_id → {status, percent, phase, result, user_email, ...}
-GENERATION_PROGRESS: dict   # {"status": ..., "percent": ...}
-_login_attempts: dict       # IP → [timestamps] — rate limiting innlogging
-_access_requests: dict      # IP → [timestamps] — rate limiting tilgangsforespørsler
+TEN_TABLE: list | None         # Lastes ved POST /ui/validate-ten
+OSDM_STORE: dict               # user_email → {"filename": str, "content": str, "created_at": float}
+INPUT_OSDM_STORE: dict         # user_email → {"filename": str, "bytes": bytes, "created_at": float}
+FIX_OSDM_STORE: dict           # user_email → {"filename": str, "content": bytes, "created_at": float}
+EDIT_STORE: dict               # user_email → osdm_editor store_entry + {"filename": str, "created_at": float}
+XLSX_JOBS: dict                # job_id → {status, result, percent, user_email, ...}
+VALIDATION_JOBS: dict          # job_id → {status, percent, phase, result, user_email, ...}
+PARSE_JOBS: dict               # job_id → {status, percent, phase, result, user_email, ...}
+GENERATION_PROGRESS: dict      # {"status": ..., "percent": ...}
+_login_attempts: dict          # IP → [timestamps] — rate limiting innlogging
+_access_requests: dict         # IP → [timestamps] — rate limiting tilgangsforespørsler
 ```
 
-En bakgrunnstråd rydder alle fem stores eldre enn 2 timer hvert 10. minutt.
+En bakgrunnstråd rydder alle syv stores eldre enn 2 timer hvert 10. minutt.
 `OSDM_STORE` og `FIX_OSDM_STORE` kan inneholde store filer (opp til ~1,2 GB for Deutsche Bahn).
 
-**Konsekvens:** TEN-filen og OSDM-filen må valideres i riktig rekkefølge per server-sesjon.
+**Konsekvens:** TEN-filen og OSDM-malfilen må valideres i riktig rekkefølge per server-sesjon.
 Ingenting skrives til disk under generering.
 
 ---
@@ -291,20 +296,17 @@ Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skale
 | # | Kall | Handling |
 |---|---|---|
 | 1 | `POST /ui/validate-ten` | Parser TEN-CSV, lagrer i `TEN_TABLE` |
-| 2 | `POST /ui/validate-osdm` | Validerer struktur, returnerer warnings + deliveryId |
+| 2 | `POST /ui/validate-osdm` | Validerer struktur, lagrer råbytes i `INPUT_OSDM_STORE[user_email]`, returnerer warnings + deliveryId |
 | 3 | `GET /ui/exchange-rate?from_=EUR&to=NOK` | Henter kurs fra frankfurter.app (ECB) |
-| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + template, lagrer i `OSDM_STORE[user_email]` |
+| 4 | `POST /ui/generate-osdm` | Bruker `TEN_TABLE` + `INPUT_OSDM_STORE[user_email]` (ingen hardkodet template), lagrer i `OSDM_STORE[user_email]` |
 | 5 | `GET /ui/download-osdm/{filename}` | Serverer `OSDM_STORE[user_email]` |
 | 6 | `POST /ui/excel-from-generated` | Konverterer `OSDM_STORE[user_email]` til Excel (async) |
 
-### OSDM-template
-- Template-fil: `data/input/1076-OSDM-template.json`
-- Template deliveryId (erstattes ved generering): `7.0`
-- ID-mønster: `1076_{deliveryId}_{kode}__{nr}`
-- String-replace på serialisert JSON brukes til å bytte deliveryId overalt — treffer alle 33+ felttyper
-
-### Priser
-- Beregnes per regionalConstraint per kategori
+### Generering
+- Bruker `osdm_editor.load_osdm()` for å lese ratioer fra den opplastede OSDM-filen
+- Ratioer er IKKE lagret i OSDM — de utledes fra eksisterende priser (voksen = høyest gjennomsnittspris)
+- Priser settes via `osdm_editor.set_prices_from_adult(store_entry, rc_adult_prices)`
+- Id-prefix byttes via string-replace på serialisert JSON etter at prisene er satt
 - Rundes opp til nærmeste 0,20 EUR (DRTF-krav): `math.ceil(eur / 0.20) * 0.20`
 - Valutakurs hentes live fra frankfurter.app (ECB)
 
@@ -362,6 +364,43 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 
 ---
 
+## OSDM-editor – flyt og endepunkter
+
+`backend/osdm_editor.py` inneholder all logikk; `EDIT_STORE[user_email]` holder parse-resultat per bruker.
+
+| Kall | Handling |
+|---|---|
+| `POST /osdm-editor/load` | Parser OSDM-fil via `osdm_editor.load_osdm()`, lagrer i `EDIT_STORE`, returnerer summary |
+| `GET /osdm-editor/summary` | Returnerer summary fra eksisterende `EDIT_STORE[user_email]` |
+| `POST /osdm-editor/metadata` | Oppdaterer delivery-felt (deliveryId, previousDeliveryId, usage, optionalDelivery) + kalenderperiode |
+| `POST /osdm-editor/passenger/{pc_id}` | Setter ny ratio for en passasjerkategori, rekalkuderer alle priser |
+| `POST /osdm-editor/relation` | Legger til ny relasjon (RC + fares for alle PC × SC-kombinasjoner) |
+| `GET /osdm-editor/download` | Serialiserer og returnerer endret OSDM-fil |
+
+Frontend (`osdm-editor.html` / `osdmEditor.js`): 4-fane layout — Oversikt/metadata, Passasjerprofiler (ratio-redigering), Relasjoner (legg til ny RC + pristabell), Last ned.
+
+---
+
+## OSDM-struktur – nøkkelkonsepter
+
+ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=connectionPoint, K=regionalConstraint, I=price, G=passengerConstraint, C=carrierConstraint, S=bundle
+
+**Ratio-innsikt (viktig):** Ratio er IKKE lagret i OSDM-filer — den utledes ved å dele passasjerkategoriens pris på voksenprisen. Voksen = passasjerkategori med høyest gjennomsnittlig ikke-null pris (ekskl. reduction-fares). `osdm_editor.load_osdm()` gjør dette automatisk og lagrer `adult_id` og `ratios` i store_entry.
+
+**stationNames-format varierer per operatør:**
+- De fleste: `{"code": "8311705", "codeList": "UIC", ...}`
+- Trenitalia: `{"country": 83, "localCode": 11705, ...}` → UIC = `str(country * 100000 + localCode)`
+
+### fareStructure-seksjoner (alle nøkler)
+`calendars`, `serviceClassDefinitions`, `texts`, `prices`,
+`regionalConstraints`, `carrierConstraints`, `passengerConstraints`,
+`fareConstraintBundles`, `passengerCombinationConstraints`, `fares`,
+`salesAvailabilityConstraint`, `travelValidityConstraints`,
+`combinationConstraints`, `fulfillmentConstraints`,
+`connectionPoints`, `stationNames`
+
+---
+
 ## Viktige tekniske detaljer
 
 ### UIC-koder å merke seg
@@ -369,10 +408,10 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - Kornsjø grense: `7600551`
 
 ### Kjente fallgruver
-- **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt (by design)
+- **`TEN_TABLE` er None etter serverrestart** — brukeren må validere TEN-filen på nytt. Tilsvarende for `INPUT_OSDM_STORE`. Dette er by design.
 - **`import requests` var lenge glemt** i `main.py` (lagt til mai 2026) — valutahenting feilet stille
 - **`padding-left: 220px` på body** i `styles.css` gjelder hovudsider med sidemeny — login-sider må overstyre med `padding: 0`
-- **String-replace på deliveryId** — `old_delivery_id` kan ikke være en delstreng av andre verdier i filen
+- **String-replace på id-prefix** i generate_osdm — `old_prefix` kan ikke være delstreng av andre verdier i filen
 
 ### Store OSDM-filer
 - Deutsche Bahn (1080): 1,2 GB JSON, 1 210 300 fares, 48 412 RC-er
@@ -400,6 +439,10 @@ med leverandør, delivery-ID, gyldighetsperiode, transportør(er) med RICS-navn.
 - ✅ Legg til rabatterte priser i eksisterende OSDM-fil
 - ✅ Rydd opp i OSDM (to-stegs: analyser → bekreft → last ned)
 - ✅ Prisregulering – skaler OSDM-priser med fast prosentsats
+- ✅ OSDM-editor: rediger passasjerprofiler (ratio), metadata, legg til relasjoner
+- ✅ Priser fra avstandsfil: generisk for alle operatører (ikke lenger begrenset til Vy/1076-template)
+- ✅ Dynamisk ratio-inferens fra opplastet OSDM-fil (voksen = høyest gjennomsnittspris)
+- ✅ Stasjonsnavn fra alle operatørers OSDM-filer (inkl. Trenitalia-format)
 - ✅ Flerspråklig støtte (norsk, engelsk, tysk, svensk, fransk)
 - ✅ HTML5-valideringsmeldinger oversatt til valgt språk
 - ✅ Sikkerhet: blokkert direkte HTML-tilgang, admin sjekket mot DB per kall
