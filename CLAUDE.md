@@ -14,8 +14,11 @@ Rask referanse for Claude. Detaljert arkitektur og kontekst: `CONTEXT_PopToOSDM.
 
 ## Viktig: Når du legger til en ny tjeneste
 
-**Hver gang en ny side/tjeneste legges til, MÅ `presentation.js` oppdateres.**
-Legg til et nytt slide i `getSlides()`-arrayen med beskrivelse av tjenesten på alle 5 språk (no, en, de, sv, fr), og bump `presentation.js`-versjonen i `presentation.html`.
+**Hver gang en ny side/tjeneste legges til, MÅ følgende oppdateres:**
+
+1. **`landing.html`** — legg til et nytt feature-kort (`.feat-card`) med passende SVG-ikon, `data-i18n`-tittel og -beskrivelse. Legg til de tilhørende i18n-nøklene i alle 5 språk i `i18n.js`.
+
+2. **`presentation.js`** — legg til et nytt slide i `getSlides()`-arrayen med beskrivelse av tjenesten på alle 5 språk (no, en, de, sv, fr), og bump `presentation.js`-versjonen i `presentation.html`.
 
 ## Designkrav som alltid gjelder
 
