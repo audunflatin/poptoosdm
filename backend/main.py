@@ -1136,7 +1136,13 @@ def list_users(request: Request):
         db.close()
 
 @app.post("/admin/add-user")
-def admin_add_user(request: Request, email: str = Form(...), is_admin: str = Form("false")):
+def admin_add_user(
+    request: Request,
+    email: str = Form(...),
+    is_admin: str = Form("false"),
+    first_name: str = Form(""),
+    last_name: str = Form(""),
+):
     require_admin(request)
     email = email.lower()
     db = SessionLocal()
@@ -1147,6 +1153,8 @@ def admin_add_user(request: Request, email: str = Form(...), is_admin: str = For
         db.add(User(
             email=email,
             password_hash=hash_password(password),
+            first_name=first_name.strip(),
+            last_name=last_name.strip(),
             is_admin=(is_admin.lower() == "true"),
             is_active=True,
             must_change_password=True,

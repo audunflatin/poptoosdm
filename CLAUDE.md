@@ -230,7 +230,7 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 | `styles.css` | v=25 |
 | `i18n.js` | v=54 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
-| `admin.js` | v=19 |
+| `admin.js` | v=20 |
 | `admin-log.js` | v=4 |
 | `osdmtoExcel.js` | v=7 |
 | `fareDiscount.js` | v=18 |

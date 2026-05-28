@@ -227,6 +227,8 @@ document.getElementById("addUserForm").onsubmit = async e => {
   e.preventDefault();
   const addResultEl = document.getElementById("addUserResult");
   const fd = new FormData();
+  fd.append("first_name", document.getElementById("newUserFirstName").value.trim());
+  fd.append("last_name", document.getElementById("newUserLastName").value.trim());
   fd.append("email", document.getElementById("newUserEmail").value);
   fd.append("is_admin", document.getElementById("newUserIsAdmin").checked ? "true" : "false");
   const r = await fetch("/admin/add-user", { method: "POST", body: fd });
@@ -235,6 +237,8 @@ document.getElementById("addUserForm").onsubmit = async e => {
     setResult(addResultEl, res.email_sent
       ? `${t("user_created")} - ${t("email_sent_ok")} (${res.email})`
       : `${t("user_created")} - ${t("email_sent_fail")} (${res.email})`, true);
+    document.getElementById("newUserFirstName").value = "";
+    document.getElementById("newUserLastName").value = "";
     document.getElementById("newUserEmail").value = "";
     document.getElementById("newUserIsAdmin").checked = false;
     loadUserList();
