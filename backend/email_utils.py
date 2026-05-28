@@ -102,7 +102,7 @@ def send_welcome_email(to: str, password: str) -> None:
     {_cred_row("Temporary password", password)}
     <p style="{s['p']}">You will be asked to choose a new password on your first login.</p>
     <table cellpadding="0" cellspacing="0"><tr><td style="{s['btn_td']}">
-      <a href="{APP_URL}" style="{s['btn']}">Log in</a>
+      <a href="{APP_URL}/login" style="{s['btn']}">Log in</a>
     </td></tr></table>"""
     _send(to=to, subject="Welcome to OSDMTools", html=_email_html('Welcome to <span style="color:#ff5959;">OSDM</span>Tools', body))
 
