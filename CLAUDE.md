@@ -45,6 +45,7 @@ Nye endepunkter som gjør tung prosessering (JSON-parse av store filer, valideri
 | `/fare-discount` | `fare-discount.html` | `fareDiscount.js` | Legg til rabatterte priser i eksisterende OSDM |
 | `/fix-osdm` | `fix-osdm.html` | `fixOsdm.js` | Rydd opp i OSDM (fjern ubrukte elementer) |
 | `/osdm-editor` | `osdm-editor.html` | `osdmEditor.js` | Rediger passasjerprofiler, metadata, relasjoner i OSDM |
+| `/stasjonssok` | `station-lookup.html` | `stationLookup.js` | Søk opp jernbanestasjoner via Wikidata (navn/UIC-kode) |
 | `/admin/users` | `admin.html` | `admin.js` | Brukerhåndtering (kun admin) |
 | `/admin/log` | `admin-log.html` | `admin-log.js` | Aktivitetslogg (kun admin) |
 | `/kontakt` | `contact.html` | — | Kontaktskjema |
@@ -227,8 +228,8 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=25 |
-| `i18n.js` | v=54 (alle hovudsider) / v=19 (login-sider) |
+| `styles.css` | v=26 |
+| `i18n.js` | v=55 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=20 |
 | `admin-log.js` | v=4 |
@@ -237,14 +238,15 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 | `priceAdjust.js` | v=10 |
 | `fixOsdm.js` | v=3 |
 | `osdmEditor.js` | v=2 |
+| `stationLookup.js` | v=1 |
 | `presentation.js` | v=8 |
 
 Ved endringer i statiske filer: bump versjonsnummeret i **alle**
 HTML-filer som laster den aktuelle filen.
 
-HTML-filer som laster `i18n.js` med v=54:
+HTML-filer som laster `i18n.js` med v=55:
 `landing.html`, `index.html`, `admin.html`, `admin-log.html`, `fare-discount.html`,
-`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`, `osdm-editor.html`
+`contact.html`, `endre-passord.html`, `min-konto.html`, `osdmtoexcel.html`, `price-adjust.html`, `fix-osdm.html`, `osdm-editor.html`, `station-lookup.html`
 
 HTML-filer med eldre i18n.js (v=19, endres ikke nå):
 `login.html`, `change_password.html`, `forgot_password.html`, `reset_password.html`
