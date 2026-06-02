@@ -1,10 +1,6 @@
 # PopToOSDM
 
-PopToOSDM er et internverktøy for å generere OSDM `fareDelivery`‑filer basert på:
-
-- TEN‑avstander
-- TEN‑pristabell (CSV)
-- Brukerinput via web‑GUI
+PopToOSDM er et internverktøy for å generere og redigere OSDM `fareDelivery`‑filer basert på TEN‑avstandsfiler og brukeropplastede OSDM-maler.
 
 Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 
@@ -14,34 +10,42 @@ Produksjonsdomene: **https://osdmtools.com**
 
 ## Funksjonalitet
 
-- Landingsside for uinnloggede brukere med info og tilgangsforespørselsskjema
-- **Prisregulering** (`/price-adjust`) — skaler alle priser i en OSDM-fil med fast prosentsats; voksen skaleres og alle kategorier beregnes automatisk
-- **Priser fra avstandsfil** (`/`) — validering av TEN‑CSV, generering av OSDM JSON med:
-  - DeliveryId, Miljø (test / prod), Optional delivery, Gyldighetsperiode
+- **Landingsside** — info om tjenesten og tilgangsforespørselsskjema (med rate limiting og honeypot)
+- **Priser fra avstandsfil** (`/`) — validering av TEN‑CSV + brukeropplastet OSDM-mal → ny OSDM-fil:
+  - DeliveryId, miljø (test/prod), valgfri leveranse, gyldighetsperiode
   - Valutakurs (EUR, NOK, SEK, DKK, GBP, CHF, BGN, CZK, HUF, ISK, PLN, RON, TRY) hentet live fra ECB
-  - Visning av eksempelpriser og nedlasting av ferdig OSDM‑fil
-- Legg til rabatterte priser i eksisterende OSDM-fil (`/fare-discount`)
-- Konvertering av OSDM JSON → Excel (`/osdmtoexcel`)
-  - Stilisert metadata-boks øverst i Excel med leveranseinformasjon
-  - ERA RICS-navn på transportørkoder (f.eks. `1076` → `Vygruppen AS (1076)`)
+  - Prisratioer utledes dynamisk fra den opplastede OSDM-filen (ingen hardkodet mal)
+  - Priser rundes opp til nærmeste 0,20 EUR (DRTF-krav)
+- **Prisregulering** (`/price-adjust`) — skaler alle priser i en OSDM-fil med fast prosentsats
+- **OSDM → Excel** (`/osdmtoexcel`) — konverter OSDM JSON til stilisert Excel:
+  - Metadata-boks med leveranseinformasjon
+  - ERA RICS-navn på transportørkoder (f.eks. `1076` → `Vygruppen AS`)
   - Støtter stasjonspar med flere operatører
-- Admin‑panel for brukerhåndtering (`/admin/users`)
-  - Invitasjon av nye brukere via e-post (Resend)
+- **Legg til rabatt i OSDM** (`/fare-discount`) — legg rabatterte farer til en eksisterende OSDM-fil
+- **Rydd opp i OSDM** (`/fix-osdm`) — fjern ubrukte priser, passasjerkategorier og regionsbegrensninger automatisk
+- **OSDM-editor** (`/osdm-editor`) *(beta)* — rediger passasjerprofiler, leveransemetadata og strekningsrelasjoner direkte i en OSDM-fil
+- **Stasjonssøk** (`/stasjonssok`) — søk opp jernbanestasjoner via Wikidata (navn eller UIC-kode), viser navn, land og UIC-kode
+- **Kontaktskjema** (`/kontakt`) — send melding til admin
+- **Min konto** (`/min-konto`) — endre navn, passord og slett konto
+- **Admin: brukerhåndtering** (`/admin/users`):
+  - Invitasjon av nye brukere med automatisk velkomst-e-post (Resend)
+  - Godkjenning/avvisning av tilgangsforespørsler
+  - Tildel/fjern admin-tilgang, deaktiver brukere
   - Tvungen passordbytte ved første innlogging
-  - Logging av innlogginger
-  - Paginering (15 per side) og søk i brukerlisten
-  - Admin-tilgang kan tildeles/fjernes per bruker
-- Aktivitetslogg for admin (`/admin/log`)
-- Tilgangsforespørselsskjema på landingssiden (med rate limiting og honeypot)
+  - Paginering og søk i brukerlisten
+- **Admin: aktivitetslogg** (`/admin/log`)
+- **Admin: presentasjon** (`/admin/presentation`) — slideshow-presentasjon av tjenestene
+- Flerspråklig: norsk, engelsk, tysk, svensk, fransk
 
 ---
 
 ## Arkitektur
 
-- **Backend:** FastAPI (Python)
+- **Backend:** FastAPI (Python 3.12)
 - **Frontend:** Statisk HTML/JS (servert via FastAPI)
 - **Database:** SQLite (persistent disk på Railway)
-- **Autentisering:** Session‑basert
+- **Autentisering:** Session‑basert med tvungen passordbytte ved første innlogging
+- **E-post:** Resend API
 - **Drift:** Railway
 - **DNS:** Cloudflare
 - **Domene:** osdmtools.com
@@ -50,20 +54,30 @@ Produksjonsdomene: **https://osdmtools.com**
 Browser
   ↓
 FastAPI (backend/main.py)
-  ├─ /                 → Landingsside (landing.html) — uinnlogget
-  ├─ /login            → Innloggingsside (login.html)
-  ├─ /                 → Hoved-GUI (index.html) — innlogget
-  ├─ /price-adjust     → Prisregulering (price-adjust.html)
-  ├─ /fare-discount    → Legg til rabatterte priser (fare-discount.html)
-  ├─ /osdmtoexcel      → OSDM til Excel (osdmtoexcel.html)
-  ├─ /admin/users      → Admin-panel (admin.html, kun for admins)
-  ├─ /admin/log        → Aktivitetslogg (admin-log.html, kun for admins)
-  ├─ /kontakt          → Kontaktskjema (contact.html)
-  ├─ /endre-passord    → Endre passord (endre-passord.html)
-  ├─ /ui/*             → API (TEN / OSDM)
-  ├─ /admin/*          → Brukeradministrasjon API
-  ├─ /request-access   → Tilgangsforespørsel (åpent endepunkt)
-  └─ /static/*         → CSS, JS, favicon
+  ├─ /                    → Landingsside (landing.html) — uinnlogget
+  │                       → Hoved-GUI (index.html) — innlogget
+  ├─ /login               → Innlogging (login.html)
+  ├─ /forgot-password     → Glemt passord (forgot_password.html)
+  ├─ /reset-password/{t}  → Nullstill passord (reset_password.html)
+  ├─ /price-adjust        → Prisregulering (price-adjust.html)
+  ├─ /osdmtoexcel         → OSDM → Excel (osdmtoexcel.html)
+  ├─ /fare-discount       → Legg til rabatt (fare-discount.html)
+  ├─ /fix-osdm            → Rydd opp i OSDM (fix-osdm.html)
+  ├─ /osdm-editor         → OSDM-editor (osdm-editor.html)
+  ├─ /stasjonssok         → Stasjonssøk (station-lookup.html)
+  ├─ /kontakt             → Kontaktskjema (contact.html)
+  ├─ /min-konto           → Min konto (min-konto.html)
+  ├─ /admin/users         → Brukerhåndtering (admin.html)
+  ├─ /admin/log           → Aktivitetslogg (admin-log.html)
+  ├─ /admin/presentation  → Presentasjon (presentation.html)
+  ├─ /personvern          → Personvernerklæring (personvern.html)
+  ├─ /ui/*                → API: TEN / OSDM-generering / Excel
+  ├─ /admin/*             → API: brukerhåndtering
+  ├─ /fare-discount/*     → API: rabatterte farer
+  ├─ /fix-osdm/*          → API: opprydding
+  ├─ /osdm-editor/*       → API: OSDM-editor
+  ├─ /request-access      → Tilgangsforespørsel (åpent endepunkt)
+  └─ /static/*            → CSS, JS, favicon
 
 Database: SQLite (/data/users.db — Railway persistent disk)
 ```
@@ -77,7 +91,7 @@ Database: SQLite (/data/users.db — Railway persistent disk)
 - Python 3.12 eller nyere
 - Git
 
-### Oppsett av virtual environment
+### Virtual environment
 
 ```bash
 python3 -m venv .venv
@@ -87,16 +101,15 @@ pip install -r requirements.txt
 
 ### Miljøvariabler
 
-| Variabel         | Beskrivelse                          | Standard                |
-|------------------|--------------------------------------|-------------------------|
-| `SESSION_SECRET` | Hemmelig nøkkel for sessions         | `CHANGE_ME_BEFORE_PROD` |
-| `DATABASE_URL`   | SQLite-sti (valgfri)                 | SQLite lokalt           |
-| `RESEND_API_KEY` | API‑nøkkel for Resend (e-post)       | _(tom – e-post deaktivert)_ |
-| `SENDER_EMAIL`   | Avsenderadresse for e-poster         | `noreply@osdmtools.com` |
-| `CONTACT_EMAIL`  | Mottaker for kontaktskjema og tilgangsforespørsler | _(må settes)_ |
-| `APP_URL`        | Basis-URL i e-postlenker             | `https://osdmtools.com` |
+| Variabel         | Beskrivelse                                          | Standard                    |
+|------------------|------------------------------------------------------|-----------------------------|
+| `SESSION_SECRET` | Hemmelig nøkkel for sessions                         | `CHANGE_ME_BEFORE_PROD`     |
+| `DATABASE_URL`   | SQLite-sti (valgfri)                                 | SQLite lokalt               |
+| `RESEND_API_KEY` | API‑nøkkel for Resend (e-post)                       | _(tom – e-post deaktivert)_ |
+| `SENDER_EMAIL`   | Avsenderadresse for e-poster                         | `noreply@osdmtools.com`     |
+| `CONTACT_EMAIL`  | Mottaker for kontaktskjema og tilgangsforespørsler   | _(må settes)_               |
+| `APP_URL`        | Basis-URL i e-postlenker                             | `https://osdmtools.com`     |
 
-Lokalt trenger du ikke sette `DATABASE_URL` — SQLite brukes automatisk.
 `RESEND_API_KEY` og `CONTACT_EMAIL` må settes for at e-postfunksjonene skal virke.
 
 ### Start applikasjonen lokalt
@@ -116,8 +129,9 @@ Genererte filer følger kravene fra **UIC DRTF**:
 - `delivery.usage`: `TEST` → `TEST_ONLY`, `PROD` → `PRODUCTION`
 - `deliveryId` styres fra GUI
 - `optionalDelivery` settes eksplisitt
-- Gyldighet leses kun fra `fareStructure.calendars`
-- Priser rundes opp til nærmeste 0,20 EUR (DRTF-krav)
+- Gyldighet leses fra `fareStructure.calendars`
+- Priser rundes opp til nærmeste 0,20 EUR
+- Prisratioer utledes dynamisk fra opplastet OSDM-fil (ingen hardkodet mal)
 
 OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
 
@@ -128,12 +142,16 @@ OSDM‑filer generert med dette verktøyet validerer grønt i **UIC DRTF**.
 ✅ Produksjonsklar  
 ✅ Validert mot UIC DRTF  
 ✅ SQLite i produksjon (Railway persistent disk)  
-✅ Admin‑panel med paginering, søk og aktivitetslogg  
-✅ E-postinvitasjon via Resend  
-✅ Tvungen passordbytte ved første innlogging  
-✅ OSDM til Excel-konvertering med metadata-boks og RICS-navn  
-✅ Legg til rabatterte priser i eksisterende OSDM-fil  
-✅ Prisregulering – skaler OSDM-priser med fast prosentsats  
 ✅ Flerspråklig (norsk, engelsk, tysk, svensk, fransk)  
+✅ Priser fra avstandsfil med dynamiske ratioer fra opplastet OSDM-mal  
+✅ Prisregulering – skaler OSDM-priser med fast prosentsats  
+✅ OSDM til Excel med metadata-boks og RICS-navn  
+✅ Legg til rabatterte priser i eksisterende OSDM-fil  
+✅ Rydd opp i OSDM – fjern ubrukte elementer automatisk  
+✅ OSDM-editor – rediger passasjerprofiler og relasjoner direkte  
+✅ Stasjonssøk via Wikidata (navn og UIC-kode)  
+✅ Admin‑panel med brukerhåndtering, tilgangsforespørsler og aktivitetslogg  
+✅ E-postinvitasjon og passordtilbakestilling via Resend  
+✅ Tvungen passordbytte ved første innlogging  
 ✅ Landingsside med tilgangsforespørselsskjema  
 ✅ Deployet på Railway (osdmtools.com)  
