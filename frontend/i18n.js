@@ -342,7 +342,7 @@ const translations = {
 
     // Landingsside
     landing_tagline:    "Automatisert prissetting for europeiske jernbaneoperatører",
-    landing_desc:       "OSDMTools hjelper deg med å generere, konvertere og tilpasse OSDM fareDelivery-filer — raskt og uten manuelt arbeid.",
+    landing_desc:       "OSDMTools hjelper deg med å generere, konvertere og tilpasse OSDM fareDelivery-filer — raskt, gratis og uten manuelt arbeid.",
     landing_login_btn:  "Logg inn",
     landing_feat1_title:"Priser fra avstandsfil",
     landing_feat1_desc: "Last opp avstandsfil og OSDM-fil. Prisene beregnes automatisk fra tabellen og valutakursen, og du får en oppdatert leveranse tilbake.",
@@ -722,7 +722,7 @@ const translations = {
 
     // Landing page
     landing_tagline:    "Automated pricing for European railway operators",
-    landing_desc:       "OSDMTools helps you generate, convert and customise OSDM fareDelivery files — quickly and without manual work.",
+    landing_desc:       "OSDMTools helps you generate, convert and customise OSDM fareDelivery files — quickly, free of charge, and without manual work.",
     landing_login_btn:  "Log in",
     landing_feat1_title:"Prices from distance file",
     landing_feat1_desc: "Upload a distance file and an OSDM file. Prices are recalculated automatically from the table and exchange rate, and you get an updated delivery back.",
@@ -1101,7 +1101,7 @@ const translations = {
 
     // Landingseite
     landing_tagline:    "Automatisierte Preisgestaltung für europäische Eisenbahnbetreiber",
-    landing_desc:       "OSDMTools hilft Ihnen, OSDM fareDelivery-Dateien zu generieren, zu konvertieren und anzupassen — schnell und ohne manuelle Arbeit.",
+    landing_desc:       "OSDMTools hilft Ihnen, OSDM fareDelivery-Dateien zu generieren, zu konvertieren und anzupassen — schnell, kostenlos und ohne manuelle Arbeit.",
     landing_login_btn:  "Anmelden",
     landing_feat1_title:"Preise aus Entfernungsdatei",
     landing_feat1_desc: "Laden Sie eine Entfernungsdatei und eine OSDM-Datei hoch. Die Preise werden automatisch aus der Tabelle und dem Wechselkurs berechnet.",
@@ -1480,7 +1480,7 @@ const translations = {
 
     // Landningssida
     landing_tagline:    "Automatiserad prissättning för europeiska järnvägsoperatörer",
-    landing_desc:       "OSDMTools hjälper dig att generera, konvertera och anpassa OSDM fareDelivery-filer — snabbt och utan manuellt arbete.",
+    landing_desc:       "OSDMTools hjälper dig att generera, konvertera och anpassa OSDM fareDelivery-filer — snabbt, gratis och utan manuellt arbete.",
     landing_login_btn:  "Logga in",
     landing_feat1_title:"Priser från avståndsfil",
     landing_feat1_desc: "Ladda upp en avståndsfil och en OSDM-fil. Priserna beräknas automatiskt från tabellen och växelkursen.",
@@ -1860,7 +1860,7 @@ const translations = {
 
     // Page d'accueil
     landing_tagline:    "Tarification automatisée pour les opérateurs ferroviaires européens",
-    landing_desc:       "OSDMTools vous aide à générer, convertir et personnaliser des fichiers OSDM fareDelivery — rapidement et sans travail manuel.",
+    landing_desc:       "OSDMTools vous aide à générer, convertir et personnaliser des fichiers OSDM fareDelivery — rapidement, gratuitement et sans travail manuel.",
     landing_login_btn:  "Se connecter",
     landing_feat1_title:"Prix depuis fichier de distances",
     landing_feat1_desc: "Téléchargez un fichier de distances et un fichier OSDM. Les prix sont recalculés automatiquement à partir du tableau et du taux de change.",
