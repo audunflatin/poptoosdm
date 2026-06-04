@@ -140,9 +140,11 @@ def _build_station_name_map(station_names: list) -> dict[str, str]:
 
 
 def _find_adult_id(pcs: list, fares: list, price_map: dict) -> str:
-    """Passasjertype med høyest gjennomsnittlig ikke-null pris (ingen reductionConstraintRef)."""
-    total: dict[str, float] = {}
-    count: dict[str, int] = {}
+    """Passasjertype med høyest gjennomsnittlig ikke-null pris (ingen reductionConstraintRef).
+    Bruker maks-pris per (rc, carrier, sc, pc)-gruppe for å hindre at FIP/rabattfarer
+    fortyner snittet og fører til at feil PC velges som voksen."""
+    # Maks pris per unik (rc, carrier, sc, pc)-kombinasjon
+    max_prices: dict[tuple, float] = {}
     for fare in fares:
         if fare.get("reductionConstraintRef"):
             continue
@@ -153,6 +155,19 @@ def _find_adult_id(pcs: list, fares: list, price_map: dict) -> str:
         eur = price_map.get(price_id, 0.0)
         if eur <= 0:
             continue
+        key = (
+            fare.get("regionalConstraintRef"),
+            fare.get("carrierConstraintRef"),
+            fare.get("serviceClassRef"),
+            pc_id,
+        )
+        if key not in max_prices or eur > max_prices[key]:
+            max_prices[key] = eur
+
+    # Gjennomsnitt av maks-priser per PC
+    total: dict[str, float] = {}
+    count: dict[str, int] = {}
+    for (_, _, _, pc_id), eur in max_prices.items():
         total[pc_id] = total.get(pc_id, 0.0) + eur
         count[pc_id] = count.get(pc_id, 0) + 1
 
@@ -185,13 +200,15 @@ def _compute_ratios(adult_id: str, pcs: list, fares: list, price_map: dict) -> d
             fare.get("carrierConstraintRef"),
             fare.get("serviceClassRef"),
         )
-        if not pc_id or not all(key):
+        if not pc_id or not key[0]:  # kun regionalConstraintRef er påkrevd
             continue
         price_id = fare.get("priceRef")
         eur = price_map.get(price_id, 0.0)
         if key not in groups:
             groups[key] = {}
-        groups[key][pc_id] = eur
+        # Behold høyeste pris per PC (primærfare) — unngår at FIP/rabattfarer forringer ratioen
+        if pc_id not in groups[key] or eur > groups[key][pc_id]:
+            groups[key][pc_id] = eur
 
     ratio_sum: dict[str, float] = {}
     ratio_cnt: dict[str, int] = {}
@@ -411,55 +428,70 @@ def update_passenger_ratio(store_entry: dict, pc_id: str, new_ratio: float) -> d
     price_map = _build_price_map(prices_list)
     amount_to_price_id = _build_amount_to_price_id(prices_list)
 
-    # Bygg (rc, carrier, sc) → {pc_id: price_id} for rask oppslag
-    combo_prices: dict[tuple, dict[str, str]] = {}
-    fare_index: dict[tuple, int] = {}
+    # Bygg (rc, carrier, sc) → {pc_id: maks_eur} for voksenprisen
+    # og (rc, carrier, sc, pc) → [(fare_idx, curr_eur)] for alle farer
+    combo_adult_eur: dict[tuple, float] = {}   # gruppenøkkel → høyeste voksenpris
+    fare_groups: dict[tuple, list] = {}         # (rc,carrier,sc,pc) → [(idx, curr_eur)]
     for i, fare in enumerate(fares_list):
         if fare.get("reductionConstraintRef"):
             continue
         pc = fare.get("passengerConstraintRef")
-        key = (
+        key3 = (
             fare.get("regionalConstraintRef"),
             fare.get("carrierConstraintRef"),
             fare.get("serviceClassRef"),
         )
-        if not pc or not all(key):
+        if not pc or not key3[0]:
             continue
-        if key not in combo_prices:
-            combo_prices[key] = {}
-        combo_prices[key][pc] = fare.get("priceRef", "")
-        fare_index[(key[0], key[1], key[2], pc)] = i
+        curr_eur = price_map.get(fare.get("priceRef", ""), 0.0)
+        # Voksenprisen: behold høyeste (primærfare, ikke FIP)
+        if pc == adult_id:
+            if key3 not in combo_adult_eur or curr_eur > combo_adult_eur[key3]:
+                combo_adult_eur[key3] = curr_eur
+        # Alle farer for target-PC samles med indeks og nåværende pris
+        if pc == pc_id:
+            key4 = (key3[0], key3[1], key3[2], pc)
+            if key4 not in fare_groups:
+                fare_groups[key4] = []
+            fare_groups[key4].append((i, curr_eur))
 
     next_price_num = _max_id_num(prices_list, store_entry["id_prefix"], "I") + 1
     updated_count = 0
 
-    for key, pc_prices in combo_prices.items():
-        adult_price_id = pc_prices.get(adult_id)
-        target_key = (key[0], key[1], key[2], pc_id)
-        if not adult_price_id or target_key not in fare_index:
-            continue
-
-        adult_price_eur = price_map.get(adult_price_id, 0.0)
+    for key3, adult_price_eur in combo_adult_eur.items():
         if adult_price_eur <= 0:
             continue
+        key4 = (key3[0], key3[1], key3[2], pc_id)
+        group = fare_groups.get(key4, [])
+        if not group:
+            continue
 
-        new_price_eur = _round_to_20_cents(adult_price_eur * new_ratio)
-        new_cents = _eur_to_amount_int(new_price_eur, price_scale)
+        base_price_eur = _round_to_20_cents(adult_price_eur * new_ratio)
+        max_curr = max(eur for _, eur in group)
 
-        if new_cents in amount_to_price_id:
-            new_price_id = amount_to_price_id[new_cents]
-        else:
-            new_price_id = f"{store_entry['id_prefix']}I__{next_price_num}"
-            next_price_num += 1
-            prices_list.append({
-                "id": new_price_id,
-                "price": [{"currency": currency, "amount": new_cents, "scale": price_scale, "vatDetails": []}],
-            })
-            amount_to_price_id[new_cents] = new_price_id
-            price_map[new_price_id] = new_price_eur
+        for fare_idx, curr_eur in group:
+            # Primærfare (høyest pris) → ny ratio direkte
+            # Sekundærfare (FIP etc.) → proporsjonalt skalert
+            if max_curr <= 0 or curr_eur >= max_curr:
+                new_price_eur = base_price_eur
+            else:
+                new_price_eur = _round_to_20_cents(base_price_eur * curr_eur / max_curr)
 
-        fares_list[fare_index[target_key]]["priceRef"] = new_price_id
-        updated_count += 1
+            new_cents = _eur_to_amount_int(new_price_eur, price_scale)
+            if new_cents in amount_to_price_id:
+                new_price_id = amount_to_price_id[new_cents]
+            else:
+                new_price_id = f"{store_entry['id_prefix']}I__{next_price_num}"
+                next_price_num += 1
+                prices_list.append({
+                    "id": new_price_id,
+                    "price": [{"currency": currency, "amount": new_cents, "scale": price_scale, "vatDetails": []}],
+                })
+                amount_to_price_id[new_cents] = new_price_id
+                price_map[new_price_id] = new_price_eur
+
+            fares_list[fare_idx]["priceRef"] = new_price_id
+            updated_count += 1
 
     store_entry["ratios"][pc_id] = new_ratio
     store_entry["price_map"] = price_map
@@ -620,8 +652,10 @@ def set_prices_from_adult(store_entry: dict, rc_adult_prices: dict[str, float]) 
     amount_to_price_id = _build_amount_to_price_id(prices_list)
     next_price_num = _max_id_num(prices_list, id_prefix, "I") + 1
 
-    # (rc, carrier, sc, pc) → fare index
-    fare_index: dict[tuple, int] = {}
+    # (rc, carrier, sc, pc) → liste av (fare_index, nåværende_eur)
+    # Holder ALLE farer per kombinasjon (f.eks. vanlig voksen + FIP voksen)
+    _price_map_curr = {p["id"]: _get_price_eur(p) for p in prices_list}
+    fare_groups: dict[tuple, list] = {}
     for i, fare in enumerate(fares_list):
         if fare.get("reductionConstraintRef"):
             continue
@@ -631,11 +665,13 @@ def set_prices_from_adult(store_entry: dict, rc_adult_prices: dict[str, float]) 
             fare.get("serviceClassRef"),
             fare.get("passengerConstraintRef"),
         )
-        if all(k is not None for k in key):
-            fare_index[key] = i
+        if key[0] is not None and key[3] is not None:
+            curr_eur = _price_map_curr.get(fare.get("priceRef", ""), 0.0)
+            if key not in fare_groups:
+                fare_groups[key] = []
+            fare_groups[key].append((i, curr_eur))
 
-    # (rc, carrier, sc) combos present in the file
-    combos: set[tuple] = {(k[0], k[1], k[2]) for k in fare_index}
+    combos: set[tuple] = {(k[0], k[1], k[2]) for k in fare_groups}
 
     updated_fares = 0
     new_prices_count = 0
@@ -648,33 +684,47 @@ def set_prices_from_adult(store_entry: dict, rc_adult_prices: dict[str, float]) 
         for (_, carrier, sc) in (c for c in combos if c[0] == rc_id):
             for pc_id, ratio in ratios.items():
                 target_key = (rc_id, carrier, sc, pc_id)
-                if target_key not in fare_index:
+                group = fare_groups.get(target_key, [])
+                if not group:
                     continue
 
+                # Basisprisen for primærfaren (høyest nåverdi = vanlig voksen/barn/etc.)
                 if pc_id == adult_id:
-                    price_eur = adult_eur_rounded
+                    base_price_eur = adult_eur_rounded
                 elif ratio <= 0:
-                    price_eur = 0.0
+                    base_price_eur = 0.0
                 else:
-                    price_eur = _round_to_20_cents(adult_eur * ratio)
+                    base_price_eur = _round_to_20_cents(adult_eur * ratio)
 
-                cents = _eur_to_amount_int(price_eur, price_scale)
+                max_curr_eur = max(eur for _, eur in group)
 
-                if cents in amount_to_price_id:
-                    price_id = amount_to_price_id[cents]
-                else:
-                    price_id = f"{id_prefix}I__{next_price_num}"
-                    next_price_num += 1
-                    prices_list.append({
-                        "id": price_id,
-                        "price": [{"currency": currency, "amount": cents,
-                                   "scale": price_scale, "vatDetails": []}],
-                    })
-                    amount_to_price_id[cents] = price_id
-                    new_prices_count += 1
+                for fare_idx, curr_eur in group:
+                    # Primærfare (høyest pris) → basisprisen direkte
+                    # Sekundærfare (FIP etc.) → skalert proporsjonalt
+                    if base_price_eur <= 0 or max_curr_eur <= 0:
+                        price_eur = base_price_eur
+                    elif curr_eur >= max_curr_eur:
+                        price_eur = base_price_eur
+                    else:
+                        price_eur = _round_to_20_cents(base_price_eur * curr_eur / max_curr_eur)
 
-                fares_list[fare_index[target_key]]["priceRef"] = price_id
-                updated_fares += 1
+                    cents = _eur_to_amount_int(price_eur, price_scale)
+
+                    if cents in amount_to_price_id:
+                        price_id = amount_to_price_id[cents]
+                    else:
+                        price_id = f"{id_prefix}I__{next_price_num}"
+                        next_price_num += 1
+                        prices_list.append({
+                            "id": price_id,
+                            "price": [{"currency": currency, "amount": cents,
+                                       "scale": price_scale, "vatDetails": []}],
+                        })
+                        amount_to_price_id[cents] = price_id
+                        new_prices_count += 1
+
+                    fares_list[fare_idx]["priceRef"] = price_id
+                    updated_fares += 1
 
     store_entry["price_map"] = _build_price_map(prices_list)
     return {"updated_fares": updated_fares, "new_prices": new_prices_count}

@@ -2184,9 +2184,13 @@ async def price_adjust(
         cal["untilDate"] = until_date
         cal["utcOffset"] = utc_offset
 
-    # If deliveryId changed, do byte-level string-replace first
+    # If deliveryId changed, do byte-level string-replace first (fares, RCs, CPs, etc.)
+    # Sync price IDs i Python-lista ETTER at new_eur_amounts er brukt (bruker gamle IDer),
+    # MEN FØR json.dumps — ellers får fares nye IDer mens prices beholder gamle.
     if old_id and old_id != delivery_id:
         content = content.replace(f"_{old_id}_".encode(), f"_{delivery_id}_".encode())
+        for price in prices:
+            price["id"] = price["id"].replace(f"_{old_id}_", f"_{delivery_id}_")
 
     # Find byte spans and replace sections
     try:
