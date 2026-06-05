@@ -271,6 +271,18 @@ body {
   box-shadow: inset 3px 0 0 var(--coral);
 }
 
+/* Eksplisitt farge på span-tekst (f.eks. OSDM-editor og Brukere som pakker tekst i <span>) */
+.sidebar-link span:not(.beta-tag),
+.sidebar-sublink span:not(.beta-tag) {
+  color: var(--text-muted);
+}
+.sidebar-link:hover span:not(.beta-tag),
+.sidebar-sublink:hover span:not(.beta-tag),
+.sidebar-link.active span:not(.beta-tag),
+.sidebar-sublink.active span:not(.beta-tag) {
+  color: var(--text);
+}
+
 /* BETA badge */
 .beta-tag {
   display: inline-block;
