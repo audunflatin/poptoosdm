@@ -89,7 +89,9 @@ En bakgrunnstråd rydder alle syv stores eldre enn 2 timer hvert 10. minutt (`XL
 | `POST /price-adjust` | Mottar OSDM-fil + %, beregner nye priser, oppdaterer delivery-felt, returnerer justert fil |
 
 Parametere: `osdm_file`, `pct`, `delivery_id`, `previous_delivery_id`, `environment`, `optional_delivery`, `valid_from`, `valid_to`.
-Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skaler med `1 + pct/100` → rund opp til 0,20 EUR → beregn øvrige kategorier fra ratio.
+Algoritme: grupper fares etter (RC, carrier, bundle) → maks = voksen → skaler med `1 + pct/100` → rund opp til 0,20 EUR → beregn øvrige kategorier fra ratio. Merk: alle farer i en gruppe (inkl. FIP-varianter) skaleres proporsjonalt fra maks-prisen.
+
+**Kjent feil (rettet juni 2026):** Når `delivery_id` endres, ble byte-level ID-replace gjort på rå-filen (alle fare-priceRef-er fikk ny ID), men `prices`-listen i Python ble serialisert med **gamle** ID-er → brutte referanser i output. Nå synkroniseres `price["id"]` i Python-listen etter byte-replace, før `json.dumps`.
 
 ---
 
@@ -178,9 +180,9 @@ Frontend (`fixOsdm.js`): viser oppsummering av hva som vil bli fjernet, med "Las
 
 ### `osdm_editor.load_osdm(content: bytes)` — returnerer store_entry dict med:
 - `data` — hele den parsede JSON (muteres av alle operations)
-- `adult_id` — PC-id for voksen (høyest gjennomsnittspris)
+- `adult_id` — PC-id for voksen (høyest gjennomsnittspris basert på primærfarer)
 - `ratios` — `{pc_id: float}` — utledet fra eksisterende priser
-- `price_map` — `{cents: price_id}` — for rask pris-lookup
+- `price_map` — `{price_id: float}` — for rask pris-lookup (EUR)
 - `uic_to_cp`, `cp_to_uic` — UIC ↔ CP-ID maps
 - `station_name_map` — UIC → stasjonsnavn
 - `text_map` — tekst-ID → tekst
@@ -189,6 +191,7 @@ Frontend (`fixOsdm.js`): viser oppsummering av hva som vil bli fjernet, med "Las
 
 ### `osdm_editor.set_prices_from_adult(store_entry, rc_adult_prices: dict[str, float])` — brukes av generate_osdm:
 - Tar `{rc_id: adult_eur}` og setter priser for alle PC × SC-kombinasjoner
+- Håndterer filer med **duplikat-farer per (RC, carrier, sc, PC)** — se avsnittet nedenfor
 - Runder opp til nærmeste 0,20 EUR (DRTF-krav)
 - Returnerer `{updated_fares, new_prices}`
 
@@ -198,7 +201,7 @@ Frontend (`fixOsdm.js`): viser oppsummering av hva som vil bli fjernet, med "Las
 
 ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=connectionPoint, K=regionalConstraint, I=price, G=passengerConstraint, C=carrierConstraint, S=bundle
 
-**Ratio-innsikt (viktig):** Ratio er IKKE lagret i OSDM-filer — den utledes ved å dele passasjerkategoriens pris på voksenprisen. Voksen = passasjerkategori med høyest gjennomsnittlig ikke-null pris. `osdm_editor.load_osdm()` gjør dette automatisk og lagrer `adult_id` og `ratios` i store_entry.
+**Ratio-innsikt (viktig):** Ratio er IKKE lagret i OSDM-filer — den utledes ved å dele passasjerkategoriens pris på voksenprisen. Voksen = passasjerkategori med høyest gjennomsnittlig pris (beregnet fra primærfarer, ikke FIP-farer). `osdm_editor.load_osdm()` gjør dette automatisk og lagrer `adult_id` og `ratios` i store_entry.
 
 **stationNames-format varierer per operatør:**
 - De fleste: `{"code": "8311705", "codeList": "UIC", ...}`
@@ -211,6 +214,42 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 `salesAvailabilityConstraint`, `travelValidityConstraints`,
 `combinationConstraints`, `fulfillmentConstraints`,
 `connectionPoints`, `stationNames`
+
+---
+
+## OSDM – duplikat-farer per (RC, carrier, sc, PC): FIP og lignende
+
+**Dette er det viktigste nye vi lærte om OSDM-formatet (juni 2026).**
+
+NSB 1076-filen (og trolig andre operatørers filer) har **to eller flere farer for samme (RC, carrierConstraintRef, serviceClassRef, passengerConstraintRef)**-kombinasjon, typisk:
+
+- `nameRef = P__7` / PC = `G__1` → vanlig voksenpris, f.eks. 102,40 EUR (**primærfare**)
+- `nameRef = P__5` / PC = `G__1` → FIP-rabattert voksenpris, f.eks. 60,40 EUR (**sekundærfare**)
+
+Begge har **ingen `reductionConstraintRef`** — de ser ut som vanlige farer.
+
+Tilsvarende for barn (PC = `G__3`): én normal barnepris og én FIP-barnepris.
+
+### Konsekvenser for prislogikken i `osdm_editor.py`
+
+Alle fire funksjoner som leser farer må ta høyde for dette mønsteret:
+
+| Funksjon | Gammel feil | Løsning |
+|---|---|---|
+| `_find_adult_id` | FIP-priser fortynnet snittet → G__2 (gruppevoksen, 0,9×) ble valgt som "voksen" pga høyere gjennomsnitt | Bruk maks-pris per (rc, carrier, sc, pc)-gruppe; gjennomsnitt av maks-priser per PC |
+| `_compute_ratios` | FIP-pris overskrev primærpris → feil ratioer for alle PC-er | Behold kun høyeste pris per PC per gruppe (`if eur > groups[key][pc_id]`) |
+| `set_prices_from_adult` | `fare_index[key] = i` (dict) → siste fare (FIP) overskrev første (primær) → kun FIP-faren ble oppdatert; primærfaren (vanlig voksen) ble aldri endret | Bruk `fare_groups[key] = list of (idx, curr_eur)` → oppdater alle farer proporsjonalt: primærfare (høyest nåværende pris) → ny TEN-pris; sekundærfare (FIP) → ny TEN-pris × (FIP_current / primary_current) |
+| `update_passenger_ratio` | Samme dict-overskriving + feil voksenprisbasis | Samme proporsjonale tilnærming som set_prices_from_adult |
+
+### Proporsjonalitetsregelen (viktig):
+Når en (rc, carrier, sc, pc)-gruppe har flere farer, skal sekundærfarer skaleres proporsjonalt:
+```
+ny_sekundærpris = ny_primærpris × (gammel_sekundærpris / gammel_primærpris)
+```
+Eksempel: FIP-voksen var 60,40 av 102,40 EUR (ratio ≈ 0,59). Ny voksenpris = 108,60 EUR → ny FIP-voksen = 108,60 × 0,59 ≈ 64,20 EUR (rundet opp til 0,20 EUR).
+
+### `_get_fare_templates` (for `add_relation`):
+Denne bruker `(pc, carrier, sc)` som nøkkel og beholder første forekomst (`if key in seen: continue`). Nye relasjoner vil derfor kun få én fare per PC (primærfaren) — FIP-varianter kopieres ikke. Dette er akseptabelt for add_relation-funksjonen.
 
 ---
 
@@ -228,7 +267,7 @@ ID-mønster: `{fareProvider}_{deliveryId}_{typekode}__{nr}` — typekoder: E=con
 
 | Fil | Versjon |
 |---|---|
-| `styles.css` | v=26 |
+| `styles.css` | v=27 |
 | `i18n.js` | v=55 (alle hovudsider) / v=19 (login-sider) |
 | `app.js` | v=21 |
 | `admin.js` | v=20 |
@@ -288,3 +327,8 @@ og oppdateres via JS — se `updateExchangeRateLabel()` i `app.js`.
 - **`import requests` var lenge glemt** i `main.py` (lagt til mai 2026). Valutahenting feilet stille.
 - **Priser rundes opp til nærmeste 0,20 EUR** (`math.ceil(eur / 0.20) * 0.20`). Dette er DRTF-krav.
 - **String-replace på serialisert JSON** brukes til å bytte id-prefix overalt i generate_osdm — treffer alle ID-typer uten manuell iterasjon, men betyr at old_prefix ikke kan være delstreng av noe annet i filen.
+- **FIP-farer med `has_reduction = false`** — NSB 1076 har FIP-farer (nameRef P__5) som IKKE har `reductionConstraintRef`. De er ikke filtrerbare som "rabatt-farer" — de ser ut som vanlige farer og skaper duplikat-nøkler. Se eget avsnitt over.
+- **`_find_adult_id` kan velge feil PC** — hvis en PC har to farer med svært ulike priser (f.eks. vanlig og FIP), reduseres gjennomsnittet slik at en annen PC (f.eks. gruppevoksen med ~0,9× pris) kan få høyere snitt og bli valgt som "voksen". Løst med maks-pris per (rc, carrier, sc, pc)-gruppe.
+- **price-adjust: ID-mismatch ved ny delivery_id** — se avsnittet om prisregulering ovenfor.
+- **`ijson` returnerer Python `int` for heltall i JSON** (ikke `Decimal`). `Decimal` oppstår kun for desimaltall. I fix_osdm brukes ijson til full parse → `default=_ijson_default` i json.dumps håndterer eventuelle Decimal-verdier. I price-adjust og andre steder brukes ijson kun for streaming, og tallverdier er typisk heltall.
+- **Sidebar span-arving** — koblingene som pakker tekst i `<span>` (OSDM-editor med BETA-tag, Brukere med pending-badge) arvet ikke `--text-muted` korrekt fra parent-`<a>` i mørk modus. Løst med eksplisitte `.sidebar-link span:not(.beta-tag)` farger i `styles.css`.
