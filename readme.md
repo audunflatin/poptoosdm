@@ -2,7 +2,6 @@
 
 PopToOSDM er et internverktøy for å generere og redigere OSDM `fareDelivery`‑filer basert på TEN‑avstandsfiler og brukeropplastede OSDM-maler.
 
-Løsningen er validert mot **UIC DRTF** og følger **OSDM‑spesifikasjonen**.
 
 Produksjonsdomene: **https://osdmtools.com**
 
